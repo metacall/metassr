@@ -1,0 +1,22 @@
+[package]
+name = "metassr"
+version = "0.0.1-alpha"
+edition = "2021"
+authors = ["Mohamed Emad (hulxxv@gmail.com)"]
+description = "Another SSR framework but built with MetaCall!"
+
+
+[dependencies]
+anyhow = "1.0.82"
+axum = "0.7.5"
+clap = { version = "4.5.4", features = ["derive"] }
+metacall = "0.4.0"
+tokio = { version = "1.36.0", features = ["full"] }
+
+
+[workspace]
+members = ["metassr-cli"]
+
+[[bin]]
+name = "metassr-cli"
+path = "metassr-cli/src/main.rs"

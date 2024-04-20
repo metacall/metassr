@@ -1,0 +1,13 @@
+[package]
+name = "metassr-cli"
+version = "0.1.0-alpha"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.82"
+axum = "0.7.5"
+clap = { version = "4.5.4", features = ["derive"] }
+metacall = "0.4.0"
+tokio = "1.37.0"
