@@ -11,3 +11,7 @@ axum = "0.7.5"
 clap = { version = "4.5.4", features = ["derive"] }
 metacall = "0.4.0"
 tokio = "1.37.0"
+tower-http = { version = "0.5.2", features = ["trace"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
+logger = { path = "../crates/logger" }

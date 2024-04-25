@@ -581,6 +581,9 @@ dependencies = [
  "logger",
  "metacall",
  "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
