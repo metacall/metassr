@@ -1,0 +1,13 @@
+[package]
+name = "logger"
+version = "0.0.1-alpha"
+edition = "2021"
+description = "Custom Logging layer for tracing-rs is used in MetaSSR"
+
+[dependencies]
+
+chrono = "0.4.38"
+nu-ansi-term = "0.50.0"
+tokio = { version = "1.36.0", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18" }
