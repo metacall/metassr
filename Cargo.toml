@@ -9,13 +9,18 @@ description = "Another SSR framework but built with MetaCall!"
 [dependencies]
 anyhow = "1.0.82"
 axum = "0.7.5"
+chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive"] }
 metacall = "0.4.0"
+nu-ansi-term = "0.50.0"
 tokio = { version = "1.36.0", features = ["full"] }
-
+tower-http = { version = "0.5.2", features = ["trace"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
+logger = { path = "crates/logger" }
 
 [workspace]
-members = ["metassr-cli"]
+members = ["crates/logger", "metassr-cli"]
 
 [[bin]]
 name = "metassr-cli"
