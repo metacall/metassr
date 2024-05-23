@@ -18,9 +18,17 @@ tower-http = { version = "0.5.2", features = ["trace"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
 logger = { path = "crates/logger" }
+swc_common = "0.33.26"
+swc_ecma_ast = "0.113.2"
+swc_ecma_parser = "0.144.1"
+swc_ecma_transforms_typescript = "0.189.1"
+swc_ecma_visit = "0.99.1"
+swc = "0.275.0"
+swc_ecma_codegen = "0.149.1"
+swc_ecma_transforms_base = "0.138.2"
 
 [workspace]
-members = ["crates/logger", "metassr-cli"]
+members = ["crates/logger", "crates/metassr-swc", "metassr-cli"]
 
 [[bin]]
 name = "metassr-cli"
