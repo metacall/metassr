@@ -28,7 +28,7 @@ async fn main() {
         .unwrap();
 
     let _metacall = switch::initialize().unwrap();
-    loaders::from_single_file("ts", ["App.tsx"].concat()).unwrap();
+    loaders::from_single_file("ts", ["src/_app.tsx"].concat()).unwrap();
 
     server_runner(args.port, args.enable_http_logging)
         .await
@@ -52,7 +52,7 @@ async fn server_runner(port: u16, enable_http_logging: bool) -> Result<()> {
 
 async fn root() -> Html<String> {
     Html(
-        match metacall::<String>("Hello", ["Metacall!".to_string()]) {
+        match metacall::<String>("__App__", ["Metacall".to_string()]) {
             Err(e) => {
                 println!("{:?}", e);
                 panic!();
