@@ -12,3 +12,23 @@
 ```terminal
 $ cargo run --bin metassr-cli --root=tests/web-app
 ```
+
+
+
+## TODO
+
+#### Main features
+- [ ] Serving staic files are located in ``./static/**``
+
+- [ ] the HTML builder
+
+> the HTML builder takes react pages and generate it to HTML pages to rendering it
+
+
+- [ ] Build the files loader
+ 
+> it extract all files that locate in `/src` and catagorize it (react pages, or special files (like [_head.jsx](./tests/web-app/src/_head.tsx), [_app.jsx](./tests/web-app/src/_app_.tsx))), and load it to metacall.
+
+- [ ] Serving ``./src/pages/**``
+
+- [ ] Serving markdown files are located in `./static/**`
