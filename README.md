@@ -31,4 +31,6 @@ $ cargo run --bin metassr-cli --root=tests/web-app
 
 - [ ] Serving ``./src/pages/**``
 
+- [ ] implement custom fallback page 
+
 - [ ] Serving markdown files are located in `./static/**`
