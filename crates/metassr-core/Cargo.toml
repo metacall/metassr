@@ -1,0 +1,14 @@
+[package]
+name = "metassr-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.82"
+axum = "0.7.5"
+chrono = "0.4.38"
+tokio = { version = "1.36.0", features = ["full"] }
+tower-http = { version = "0.5.2", features = ["trace"] }
+tracing = "0.1.40"

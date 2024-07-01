@@ -1,16 +1,32 @@
+/// Tracing layer for MetaSSR internal server
 use axum::{
     http::{HeaderValue, Request},
     response::Response,
     Router,
 };
+
 use tokio::time::Duration;
 use tower_http::{classify::ServerErrorsFailureClass, trace::TraceLayer};
-
-// TODO: Refacor this part
 use tracing::{debug, error, Span};
-pub fn http_trace(router: Router, enable_http_logging: bool) -> Router {
-    let trace_layer = TraceLayer::new_for_http()
-        .on_failure(
+
+pub trait LayerSetup {
+    type LayerOptions;
+    fn setup(options: Self::LayerOptions, app: &mut Router);
+}
+
+#[derive(Debug)]
+pub struct TracingLayerOptions {
+    pub enable_http_logging: bool,
+}
+
+#[derive(Clone, Copy)]
+pub struct TracingLayer;
+
+impl LayerSetup for TracingLayer {
+    type LayerOptions = TracingLayerOptions;
+    fn setup(options: Self::LayerOptions, app: &mut Router) {
+        println!("{options:?}");
+        let trace_layer = TraceLayer::new_for_http().on_failure(
             |err: ServerErrorsFailureClass, latency: Duration, _span: &Span| {
                 error!(
                     target = "http",
@@ -20,7 +36,7 @@ pub fn http_trace(router: Router, enable_http_logging: bool) -> Router {
             },
         )
         .on_request(move |req: &Request<_>, _span: &Span| {
-            if enable_http_logging.clone() {
+            if options.enable_http_logging.clone() {
                 debug!(
                     target = "http",
                     user_agent=?  req.headers().get("user-agent").unwrap_or(&HeaderValue::from_str("Unknown").unwrap()),
@@ -31,7 +47,7 @@ pub fn http_trace(router: Router, enable_http_logging: bool) -> Router {
             }
         })
         .on_response(move |res: &Response<_>, latency: Duration, _span: &Span| {
-            if enable_http_logging.clone() {
+            if options.enable_http_logging.clone() {
                 debug!(
                     target = "http",
                     "[{}]: generated in {:?}",
@@ -40,5 +56,7 @@ pub fn http_trace(router: Router, enable_http_logging: bool) -> Router {
                 )
             }
         });
-    router.layer(trace_layer)
+
+        *app = app.clone().layer(trace_layer);
+    }
 }

@@ -929,6 +929,7 @@ dependencies = [
  "clap",
  "logger",
  "metacall",
+ "metassr-core",
  "nu-ansi-term 0.50.0",
  "swc",
  "swc_common",
@@ -953,10 +954,23 @@ dependencies = [
  "clap",
  "logger",
  "metacall",
+ "metassr-core",
  "tokio",
  "tower-http",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "metassr-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "tokio",
+ "tower-http",
+ "tracing",
 ]
 
 [[package]]
