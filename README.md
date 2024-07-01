@@ -18,7 +18,7 @@ $ cargo run --bin metassr-cli --root=tests/web-app
 ## TODO
 
 #### Main features
-- [ ] Serving staic files are located in ``./static/**``
+- [x] Serving staic files are located in ``./static/**``
 
 - [ ] the HTML builder
 

@@ -3,20 +3,23 @@ use layers::tracing::{LayerSetup, TracingLayer, TracingLayerOptions};
 
 use anyhow::Result;
 use axum::{response::Html, routing::get, Router};
+use std::path::Path;
+use tower_http::services::ServeDir;
 use tracing::info;
 
-pub struct ServerConfigs {
+pub struct ServerConfigs<'a> {
     pub port: u16,
     pub _enable_http_logging: bool,
+    pub root_path: &'a Path,
 }
 
-pub struct Server {
-    configs: ServerConfigs,
+pub struct Server<'a> {
+    configs: &'a ServerConfigs<'a>,
     app: Router,
 }
 
-impl Server {
-    pub fn new(configs: ServerConfigs) -> Self {
+impl<'a> Server<'a> {
+    pub fn new(configs: &'a ServerConfigs) -> Self {
         Self {
             configs,
             app: Router::new(),
@@ -24,12 +27,16 @@ impl Server {
     }
 
     pub async fn run(&self) -> Result<()> {
-        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.configs.port))
-            .await
-            .unwrap();
+        let listener =
+            tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.configs.port)).await?;
 
-        info!("listening on http://{}", listener.local_addr().unwrap());
-        let mut app = self.app.clone().route("/", get(root));
+        let static_dir = [&self.configs.root_path.to_str().unwrap(), "/static"].concat();
+
+        let mut app = self
+            .app
+            .clone()
+            .nest_service("/static", ServeDir::new(&static_dir))
+            .fallback_service(get(default_not_found));
 
         // **Setting up layers**
 
@@ -41,11 +48,12 @@ impl Server {
             &mut app,
         );
 
-        axum::serve(listener, app).await.unwrap();
+        info!("listening on http://{}", listener.local_addr()?);
+        axum::serve(listener, app).await?;
         Ok(())
     }
 }
 
-async fn root() -> Html<String> {
+async fn default_not_found() -> Html<String> {
     Html("<div>Hello world</div>".to_owned())
 }
