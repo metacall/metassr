@@ -968,6 +968,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "metassr-build"
+version = "0.1.0"
+
+[[package]]
 name = "metassr-cli"
 version = "0.1.0-alpha"
 dependencies = [
@@ -990,6 +994,7 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "metacall",
  "tokio",
  "tower-http",
  "tracing",
@@ -1011,6 +1016,14 @@ dependencies = [
  "swc_ecma_transforms_base",
  "swc_ecma_transforms_typescript",
  "swc_ecma_visit",
+]
+
+[[package]]
+name = "metassr-utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "walkdir",
 ]
 
 [[package]]

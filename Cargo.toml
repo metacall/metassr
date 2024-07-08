@@ -30,12 +30,15 @@ swc_ecma_transforms_base = "0.138.2"
 
 logger = { path = "crates/logger" }
 metassr-core = { path = "crates/metassr-core" }
+walkdir = "2.5.0"
 
 [workspace]
 members = [
     "crates/logger",
     "crates/metassr-core",
+    "crates/metassr-build",
     "crates/metassr-swc",
+    "crates/metassr-utils",
     "metassr-cli",
 ]
 
