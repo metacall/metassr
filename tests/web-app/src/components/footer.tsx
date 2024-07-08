@@ -1,11 +1,15 @@
-import React from 'react';
-
+import React, { useState } from 'react';
 export function Footer() {
-    return
-    <footer>
-        <div>This is a footer</div>
-    </footer>
-        ;
+    const [counter, setCounter] = useState(0)
+    return (
+        <footer>
+            <div>This is a footer</div>
+            <button onClick={() => setCounter(counter + 1)}>this is a counter from footer {counter}</button>
+        </footer>
+    );
 }
+
+
+
 
 

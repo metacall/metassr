@@ -6,3 +6,5 @@ description = "Web builder & bundler built on Rspack and built for MetaSSR."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+metacall = "0.4.0"
+anyhow = "1.0.82"

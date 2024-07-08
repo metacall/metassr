@@ -1,12 +1,20 @@
 import React, { useState, ReactNode } from 'react';
 import { renderToString } from 'react-dom/server';
+import { Header } from './components/header';
+import { Footer } from './components/footer';
+import { hydrateRoot, createRoot } from 'react-dom/client';
+import { PageLayout } from './layout/PageLayout';
 
-export function __App__(text: string) {
-	return renderToString(
-		<div>
+export default function App({ Component }) {
+	return (
+		<>
 			<script src="https://cdn.tailwindcss.com"></script>
-			<h1 className="text-4xl font-bold">Hello from {text}! </h1>
-		</div>
-	);
+			<PageLayout>
+				<Component />
+			</PageLayout>
+		</>
+	)
 }
+
+
 

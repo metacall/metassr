@@ -950,6 +950,7 @@ dependencies = [
  "clap",
  "logger",
  "metacall",
+ "metassr-build",
  "metassr-core",
  "nu-ansi-term 0.50.0",
  "swc",
@@ -970,6 +971,10 @@ dependencies = [
 [[package]]
 name = "metassr-build"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "metacall",
+]
 
 [[package]]
 name = "metassr-cli"
@@ -980,6 +985,7 @@ dependencies = [
  "clap",
  "logger",
  "metacall",
+ "metassr-build",
  "metassr-core",
  "tokio",
  "tower-http",

@@ -4,6 +4,8 @@ use std::{ffi::OsStr, marker::Sized, path::Path};
 
 static BUILD_SCRIPT: &str = include_str!("./scripts/bundle.js");
 const BUNDLING_FUNC: &str = "bundling_webapp";
+
+
 pub struct ClientBundler<'a> {
     pub target: &'a Path,
     pub dist_path: &'a Path,
