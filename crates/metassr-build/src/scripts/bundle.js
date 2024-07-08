@@ -1,4 +1,3 @@
-
 const { rspack } = require('@rspack/core')
 
 const config = {
@@ -77,7 +76,8 @@ const config = {
     }
 }
 
-function bundling_webapp(entry, dist) {
+
+function bundling_client(entry, dist) {
     const compiler = rspack(
         {
             ...config,
@@ -92,6 +92,7 @@ function bundling_webapp(entry, dist) {
             stats: { preset: 'errors-warnings', timings: true, colors: true },
             target: 'web',
         }
+
     );
 
     compiler.run((error, stats) => {
@@ -107,8 +108,9 @@ function bundling_webapp(entry, dist) {
             return;
         }
     });
+
 }
 
-
-
-`
+module.exports = {
+    bundling_client
+}
