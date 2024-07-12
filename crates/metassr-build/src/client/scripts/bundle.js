@@ -1,5 +1,17 @@
 const { rspack } = require('@rspack/core')
 
+function safelyParseJSON(json) {
+    let parsed
+
+    try {
+        parsed = JSON.parse(json)
+    } catch (_) {
+        parsed = undefined
+    }
+
+    return parsed // Could be undefined!
+}
+
 const config = {
 
     output: {
@@ -77,11 +89,12 @@ const config = {
 }
 
 
+
 function bundling_client(entry, dist) {
     const compiler = rspack(
         {
             ...config,
-            entry,
+            entry: safelyParseJSON(entry) ?? entry,
             output: dist ? {
                 ...config.output,
                 path: process.cwd() + "/" + dist
@@ -101,7 +114,6 @@ function bundling_client(entry, dist) {
             process.exit(2);
         }
         if (stats && stats.hasErrors()) {
-            console.log('stats', stats.toString({}));
             process.exitCode = 1;
         }
         if (!compiler || !stats) {
@@ -113,4 +125,4 @@ function bundling_client(entry, dist) {
 
 module.exports = {
     bundling_client
-}
+};
