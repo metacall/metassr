@@ -40,6 +40,7 @@ members = [
     "crates/metassr-build",
     "crates/metassr-swc",
     "crates/metassr-utils",
+    "crates/html-generator",
     "metassr-cli",
 ]
 
