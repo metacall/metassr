@@ -15,9 +15,7 @@ function safelyParseJSON(json) {
 const config = {
 
     output: {
-        filename: (pathData, asset) => {
-            return pathData.chunk.name === '_app' ? '[name].js' : '[name].[contenthash].bundle.js';
-        },
+        filename: "[name].bundle.js"
     },
     resolve: {
         extensions: ['.js', '.jsx', '.tsx', '.ts']
