@@ -1,1 +1,1 @@
-pub mod fs_analyzer;
+pub mod src_analyzer;
