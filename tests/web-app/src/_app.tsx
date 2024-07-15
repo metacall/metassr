@@ -4,6 +4,7 @@ import { Header } from './components/header';
 import { Footer } from './components/footer';
 import { hydrateRoot, createRoot } from 'react-dom/client';
 import { PageLayout } from './layout/PageLayout';
+import "./styles/global.css"
 
 export default function App({ Component }) {
 	return (
@@ -15,6 +16,3 @@ export default function App({ Component }) {
 		</>
 	)
 }
-
-
-
