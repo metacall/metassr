@@ -1,5 +1,6 @@
 import React from "react"
 import { hydrateRoot } from "react-dom/client"
+import { renderToString } from "react-dom/server"
 import Page from "%PAGE_PATH%"
 import App from "%APP_PATH%"
 
@@ -9,3 +10,5 @@ hydrateRoot(
         <App Component={Page}/>
     </React.StrictMode>
 );
+
+console.log(renderToString(<App Component={Page} />))
