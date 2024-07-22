@@ -1,3 +1,4 @@
+use crate::traits::AnalyzeDir;
 use anyhow::Result;
 use std::{
     collections::HashMap,
@@ -6,10 +7,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
-pub trait AnalyzeDir {
-    type Output;
-    fn analyze(&self) -> Result<Self::Output>;
-}
 
 #[derive(Debug, Clone)]
 pub struct SourceDirContainer {
@@ -38,18 +35,18 @@ impl<'a> AnalyzeDir for SourceDir<'a> {
         let mut specials: HashMap<String, Option<PathBuf>> =
             HashMap::from([("_app".to_owned(), None), ("_head".to_owned(), None)]);
 
-        for entry in WalkDir::new(src).into_iter().filter_map(|e| {
-            // Check if the entry is a js/ts file.
-            let exts: Vec<&str> = vec!["js", "jsx", "tsx", "ts"];
-            e.ok().and_then(|e| {
-                match e.path().is_file()
-                    && exts.contains(&e.path().extension().unwrap().to_str().unwrap())
-                {
-                    true => Some(e),
-                    false => None,
-                }
+        for entry in WalkDir::new(src)
+            .into_iter()
+            .filter_map(|e| match e.ok() {
+                Some(e) if e.path().is_file() => Some(e),
+                _ => None,
             })
-        }) {
+            .skip_while(|e| {
+                // Check if the entry is a js/ts file.
+                let exts: Vec<&str> = vec!["js", "jsx", "tsx", "ts"];
+                !exts.contains(&e.path().extension().unwrap().to_str().unwrap())
+            })
+        {
             let path = entry.path();
             let stem = path.file_stem().unwrap().to_str().unwrap();
             let stripped = path.strip_prefix(src)?;
