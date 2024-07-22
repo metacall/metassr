@@ -1,0 +1,11 @@
+import React from "react"
+import { hydrateRoot } from "react-dom/client"
+import Page from "%PAGE_PATH%"
+import App from "%APP_PATH%"
+
+hydrateRoot(
+    document.getElementById("%ROOT_ID%"),
+    <React.StrictMode>
+        <App Component={Page}/>
+    </React.StrictMode>
+);

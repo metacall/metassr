@@ -3,20 +3,22 @@
   "version": "1.0.0",
   "description": "",
   "main": "App.tsx",
-  "type": "module",
   "scripts": {
-    "build": "tsc App.tsx"
-  },
-  "dependencies": {
-    "metacall": "^0.4.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "build": "node scripts/build.js"
   },
   "devDependencies": {
     "@swc/cli": "^0.3.12",
     "@swc/core": "^1.4.16",
+    "@swc/helpers": "^0.5.11",
     "@types/react": "^18.0.24",
     "@types/react-dom": "^18.0.8",
+    "html-rspack-plugin": "^5.8.0",
+    "tsx": "^4.16.2",
     "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "@rspack/core": "^0.7.5",
+    "react-dom": "^18.3.1"
   }
 }
