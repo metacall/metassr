@@ -2,7 +2,9 @@ use anyhow::{anyhow, Result};
 use metacall::{loaders, metacall, MetacallNull};
 use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::Path};
 
-static BUILD_SCRIPT: &str = include_str!("./scripts/bundle.js");
+use crate::traits::Exec;
+
+static BUILD_SCRIPT: &str = include_str!("../scripts/bundle.js");
 const BUNDLING_FUNC: &str = "bundling_client";
 
 pub struct ClientBundler<'a> {
@@ -24,8 +26,11 @@ impl<'a> ClientBundler<'a> {
             dist_path: Path::new(dist_path),
         }
     }
+}
 
-    pub fn bundling(&self) -> Result<()> {
+impl<'a> Exec for ClientBundler<'a> {
+    type Output = ();
+    fn exec(&self) -> Result<Self::Output> {
         if let Err(e) = loaders::from_memory("node", BUILD_SCRIPT) {
             return Err(anyhow!("Cannot load bundling script: {e:?}"));
         }
@@ -58,7 +63,7 @@ mod tests {
             )]),
             "../../tests/web-app/dist",
         )
-        .bundling()
+        .exec()
         .unwrap()
     }
 }
