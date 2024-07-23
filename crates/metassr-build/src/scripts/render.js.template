@@ -1,0 +1,14 @@
+import React from "react"
+import { renderToString } from "react-dom/server"
+import Page from "%PAGE_PATH%"
+import App from "%APP_PATH%"
+
+
+export function render_%FUNC_ID%() {
+    return renderToString(
+        <React.StrictMode>
+            <App Component={Page}></App>
+        </React.StrictMode>
+    );
+}
+
