@@ -12,6 +12,9 @@ chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive"] }
 metacall = "0.4.0"
 nu-ansi-term = "0.50.0"
+walkdir = "2.5.0"
+serde_json = "1.0.120"
+lazy_static = "1.5.0"
 
 axum = "0.7.5"
 tokio = { version = "1.36.0", features = ["full"] }
@@ -19,30 +22,17 @@ tower-http = { version = "0.5.2", features = ["trace", "fs"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
 
-swc_common = "0.33.26"
-swc_ecma_ast = "0.113.2"
-swc_ecma_parser = "0.144.1"
-swc_ecma_transforms_typescript = "0.189.1"
-swc_ecma_visit = "0.99.1"
-swc = "0.275.0"
-swc_ecma_codegen = "0.149.1"
-swc_ecma_transforms_base = "0.138.2"
-
 logger = { path = "crates/logger" }
 metassr-core = { path = "crates/metassr-core" }
 metassr-build = { path = "crates/metassr-build" }
 metassr-utils = { path = "crates/metassr-utils" }
 html-generator = { path = "crates/html-generator" }
-walkdir = "2.5.0"
-serde_json = "1.0.120"
-lazy_static = "1.5.0"
 
 [workspace]
 members = [
     "crates/logger",
-    "crates/metassr-core",
     "crates/metassr-build",
-    "crates/metassr-swc",
+    "crates/metassr-core",
     "crates/metassr-utils",
     "crates/html-generator",
     "metassr-cli",
