@@ -1,19 +1,41 @@
 use anyhow::{anyhow, Result};
+use lazy_static::lazy_static;
 use metacall::{loaders, metacall, MetacallNull};
-use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::Path};
+use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::Path, sync::Mutex};
 
 use crate::traits::Exec;
+static BUILD_SCRIPT: &str = include_str!("./scripts/bundle.js");
+const BUNDLING_FUNC: &str = "web_bundling";
 
-static BUILD_SCRIPT: &str = include_str!("../scripts/bundle.js");
-const BUNDLING_FUNC: &str = "bundling_client";
+/// A detector for if the bundling script `./scripts/bundle.js` is loaded or not.
+#[derive(Debug)]
+pub struct BundleSciptLoadingState(bool);
 
-pub struct ClientBundler<'a> {
+impl BundleSciptLoadingState {
+    pub fn new() -> Self {
+        Self(false)
+    }
+    pub fn loaded(&mut self) {
+        self.0 = true
+    }
+    pub fn is_loaded(&self) -> bool {
+        self.0
+    }
+}
+
+
+#[derive(Debug)]
+
+pub struct WebBundler<'a> {
     pub targets: HashMap<String, &'a Path>,
     pub dist_path: &'a Path,
 }
 
-impl<'a> ClientBundler<'a> {
-    pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S) -> Self
+impl<'a> WebBundler<'a> {
+    pub fn new<S>(
+        targets: &'a HashMap<String, String>,
+        dist_path: &'a S,
+    ) -> Self
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -24,16 +46,17 @@ impl<'a> ClientBundler<'a> {
         Self {
             targets,
             dist_path: Path::new(dist_path),
+            bundling_type,
         }
     }
 }
 
-impl<'a> Exec for ClientBundler<'a> {
+impl<'a> Exec for WebBundler<'a> {
     type Output = ();
     fn exec(&self) -> Result<Self::Output> {
-        if let Err(e) = loaders::from_memory("node", BUILD_SCRIPT) {
-            return Err(anyhow!("Cannot load bundling script: {e:?}"));
-        }
+            if let Err(e) = loaders::from_memory("node", BUILD_SCRIPT) {
+                return Err(anyhow!("Cannot load bundling script: {e:?}"));
+            }
 
         if let Err(e) = metacall::<MetacallNull>(
             BUNDLING_FUNC,
@@ -56,7 +79,7 @@ mod tests {
     #[test]
     fn it_works() {
         let _metacall = switch::initialize().unwrap();
-        ClientBundler::new(
+        WebBundler::new(
             &HashMap::from([(
                 "pages/homes.tsx".to_owned(),
                 "../../tests/web-app/src/pages/home.tsx".to_owned(),

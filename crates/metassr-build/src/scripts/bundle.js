@@ -88,7 +88,7 @@ const config = {
 
 
 
-function bundling_client(entry, dist) {
+function web_bundling(entry, type, dist) {
     const compiler = rspack(
         {
             ...config,
