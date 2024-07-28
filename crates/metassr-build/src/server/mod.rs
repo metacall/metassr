@@ -1,7 +1,10 @@
 pub mod render;
 pub mod render_exec;
 
-use crate::traits::{Build, Exec, Generate};
+use crate::{
+    bundler::{BundlingType, WebBundler},
+    traits::{Build, Exec, Generate},
+};
 use html_generator::{builder::HtmlBuilder, html_props::HtmlProps, template::HtmlTemplate};
 use metassr_utils::{
     cache_dir::CacheDir, dist_analyzer::DistDir, src_analyzer::SourceDir, traits::AnalyzeDir,
@@ -12,7 +15,9 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fs,
-    path::{Path, PathBuf},
+    path::{self, Path, PathBuf},
+    thread::sleep,
+    time::Duration,
 };
 
 use anyhow::{anyhow, Result};
@@ -59,36 +64,63 @@ impl Build for ServerSideBuilder {
             .unwrap();
 
         let mut targets = HashMap::<i64, String>::new();
+        let mut bundling_targets = HashMap::<String, String>::new();
 
         for (page, page_path) in pages.iter() {
             let (func_id, render_script) = ServerRender::new(&app_path, &page_path).generate()?;
 
             // Page details
-            let page = match Path::new(page) {
+            let mut page = match Path::new(page) {
                 path if path.file_stem() != Some(OsStr::new("index")) => {
                     let mut path = path.to_path_buf();
                     path.set_extension("");
-                    path.join("index.server.tsx")
+                    path.join("index.server.js")
                 }
 
                 path => {
                     let mut path = path.to_path_buf();
-                    path.set_extension("server.tsx");
+                    path.set_extension("server.js");
                     path
                 }
             };
 
+            // TODO: refactor this part
+            let cached_pages = cache_dir.dir_path().join("pages");
+            let bundled_cached_pages = cache_dir.dir_path().join("bundled").join("pages");
+
             let pathname = cache_dir.insert(
-                &format!("pages/{}", page.display()),
+                PathBuf::from("pages").join(&page).to_str().unwrap(),
                 render_script.as_bytes(),
             )?;
-            targets.insert(func_id, pathname);
+            dbg!(&pathname);
+            page.set_extension("");
+            targets.insert(func_id, pathname.clone());
+            bundling_targets.insert(
+                cached_pages
+                    .strip_prefix("dist")?
+                    .join(&page)
+                    .to_str()
+                    .unwrap()
+                    .to_owned(),
+                PathBuf::from(&pathname)
+                    .canonicalize()?
+                    .to_str()
+                    .unwrap()
+                    .to_owned(),
+            );
         }
+
+        let bundler = WebBundler::new(&bundling_targets, &self.dist_path, BundlingType::Library);
+        // dbg!(&bundler, &targets);
+        if let Err(e) = bundler.exec() {
+            return Err(anyhow!("Bundling failed: {e}"));
+        }
+        sleep(Duration::from_secs(3));
 
         let output = MultiRenderExec::new(targets)?.exec()?;
         let dist_analyst = DistDir::new(&self.dist_path)?.analyze()?;
-        // dbg!(&output);
-        dbg!(&dist_analyst);
+
+        // dbg!(&dist_analyst);
 
         let cached_pages = cache_dir.dir_path().join("pages");
         for (path, html_body) in output {
@@ -107,19 +139,19 @@ impl Build for ServerSideBuilder {
                     let scripts: Vec<String> = p
                         .scripts
                         .iter()
-                        .map(|p| p.to_str().unwrap().to_owned())
+                        .map(|p| Path::new("/").join(p).to_str().unwrap().to_owned())
                         .collect();
 
                     let styles: Vec<String> = p
                         .styles
                         .iter()
-                        .map(|p| p.to_str().unwrap().to_owned())
+                        .map(|p| Path::new("/").join(p).to_str().unwrap().to_owned())
                         .collect();
 
                     let html_props = HtmlProps::new()
                         // TODO:  Get head content from `_head.tsx`
                         .head("")
-                        .body(&html_body)
+                        .body(&format!("<div id='root'>{html_body}</div>"))
                         .lang("en")
                         .scripts(scripts)
                         .styles(styles);

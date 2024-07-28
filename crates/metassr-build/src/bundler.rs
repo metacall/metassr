@@ -27,18 +27,35 @@ impl BundleSciptLoadingState {
     }
 }
 
+#[derive(Debug)]
+pub enum BundlingType {
+    Web,
+    Library,
+}
+
+impl ToString for BundlingType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Library => "library",
+            Self::Web => "web",
+        }
+        .to_string()
+    }
+}
 
 #[derive(Debug)]
 
 pub struct WebBundler<'a> {
     pub targets: HashMap<String, &'a Path>,
     pub dist_path: &'a Path,
+    pub bundling_type: BundlingType,
 }
 
 impl<'a> WebBundler<'a> {
     pub fn new<S>(
         targets: &'a HashMap<String, String>,
         dist_path: &'a S,
+        bundling_type: BundlingType,
     ) -> Self
     where
         S: AsRef<OsStr> + ?Sized,
@@ -63,12 +80,13 @@ impl<'a> Exec for WebBundler<'a> {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
             }
             IS_BUNDLING_SCRIPT_LOADED.lock().unwrap().loaded();
-            }
+        }
 
         if let Err(e) = metacall::<MetacallNull>(
             BUNDLING_FUNC,
             [
                 serde_json::to_string(&self.targets)?,
+                self.bundling_type.to_string(),
                 self.dist_path.to_str().unwrap().to_owned(),
             ],
         ) {
@@ -92,6 +110,7 @@ mod tests {
                 "../../tests/web-app/src/pages/home.tsx".to_owned(),
             )]),
             "../../tests/web-app/dist",
+            BundlingType::Web,
         )
         .exec()
         .unwrap()

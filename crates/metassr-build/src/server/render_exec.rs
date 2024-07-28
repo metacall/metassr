@@ -35,7 +35,7 @@ impl Exec for RenderExec {
     type Output = String;
     fn exec(&self) -> Result<Self::Output> {
         // let path = self.0.strip_prefix(current_dir()?)?;
-        if let Err(e) = loaders::from_single_file("ts", &self.path) {
+        if let Err(e) = loaders::from_single_file("node", &self.path) {
             return Err(anyhow!(
                 "Cannot load render script: {e:?} \n  path: {:#?}",
                 self.path
