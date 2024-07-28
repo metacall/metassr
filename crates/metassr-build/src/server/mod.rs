@@ -1,3 +1,6 @@
+// TODO: Refactoring `ServerSideBuilder.build()`. It's very ugly!
+
+pub mod head_renderer;
 pub mod render;
 pub mod render_exec;
 
@@ -9,6 +12,8 @@ use html_generator::{builder::HtmlBuilder, html_props::HtmlProps, template::Html
 use metassr_utils::{
     cache_dir::CacheDir, dist_analyzer::DistDir, src_analyzer::SourceDir, traits::AnalyzeDir,
 };
+
+use head_renderer::HeadRenderer;
 use render::ServerRender;
 use render_exec::MultiRenderExec;
 use std::{
@@ -62,6 +67,14 @@ impl Build for ServerSideBuilder {
             .expect("Error: Cannot detect '_app' in src directory")
             .as_ref()
             .unwrap();
+        let head_path = src
+            .specials
+            .get("_head")
+            .expect("Error: Cannot detect '_app' in src directory")
+            .as_ref()
+            .unwrap();
+
+        dbg!(&src);
 
         let mut targets = HashMap::<i64, String>::new();
         let mut bundling_targets = HashMap::<String, String>::new();
@@ -92,8 +105,8 @@ impl Build for ServerSideBuilder {
                 PathBuf::from("pages").join(&page).to_str().unwrap(),
                 render_script.as_bytes(),
             )?;
-            dbg!(&pathname);
             page.set_extension("");
+
             targets.insert(func_id, pathname.clone());
             bundling_targets.insert(
                 cached_pages
@@ -121,6 +134,9 @@ impl Build for ServerSideBuilder {
         let dist_analyst = DistDir::new(&self.dist_path)?.analyze()?;
 
         // dbg!(&dist_analyst);
+
+        let mut head_renderer = HeadRenderer::new(head_path, cache_dir.clone());
+        let head_content = head_renderer.render()?;
 
         let cached_pages = cache_dir.dir_path().join("pages");
         for (path, html_body) in output {
@@ -150,7 +166,7 @@ impl Build for ServerSideBuilder {
 
                     let html_props = HtmlProps::new()
                         // TODO:  Get head content from `_head.tsx`
-                        .head("")
+                        .head(&head_content)
                         .body(&format!("<div id='root'>{html_body}</div>"))
                         .lang("en")
                         .scripts(scripts)
