@@ -4,6 +4,10 @@ use metacall::{loaders, metacall, MetacallNull};
 use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::Path, sync::Mutex};
 
 use crate::traits::Exec;
+lazy_static! {
+    static ref IS_BUNDLING_SCRIPT_LOADED: Mutex<BundleSciptLoadingState> =
+        Mutex::new(BundleSciptLoadingState::new());
+}
 static BUILD_SCRIPT: &str = include_str!("./scripts/bundle.js");
 const BUNDLING_FUNC: &str = "web_bundling";
 
@@ -54,8 +58,11 @@ impl<'a> WebBundler<'a> {
 impl<'a> Exec for WebBundler<'a> {
     type Output = ();
     fn exec(&self) -> Result<Self::Output> {
+        if !IS_BUNDLING_SCRIPT_LOADED.lock().unwrap().is_loaded() {
             if let Err(e) = loaders::from_memory("node", BUILD_SCRIPT) {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
+            }
+            IS_BUNDLING_SCRIPT_LOADED.lock().unwrap().loaded();
             }
 
         if let Err(e) = metacall::<MetacallNull>(
