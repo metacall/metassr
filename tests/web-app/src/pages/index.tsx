@@ -1,5 +1,5 @@
 import React, { useState, ReactNode } from 'react';
-import { renderToString } from 'react-dom/server';
+
 export default function Index() {
 	return (
 		<div>
