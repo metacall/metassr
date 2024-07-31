@@ -3,9 +3,11 @@ export function Header() {
     const [counter, setCounter] = useState(0)
     return (
         <div>
-            <div>This is a header</div>
-            <p>Hello from header!</p>
-            <button onClick={() => setCounter(counter + 1)}>this is a counter from header {counter}</button>
+            <ul>
+                <li><a href="/">index</a></li>
+                <li><a href="/home">home</a></li>
+                <li><a href="/blog">blog</a></li>
+            </ul>
         </div>
     )
 

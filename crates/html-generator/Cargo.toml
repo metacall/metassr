@@ -6,3 +6,4 @@ description = "A simple library to generate html content with a simple way."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = { version = "*" }

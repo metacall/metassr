@@ -1,12 +1,11 @@
+use crate::{
+    shared::{APP_PATH_TAG, PAGE_PATH_TAG, ROOT_ID_TAG},
+    traits::Generate,
+};
+use anyhow::Result;
 use std::{ffi::OsStr, path::PathBuf};
 
-use anyhow::Result;
-
-const HYDRATED_FILE_TEMPLATE: &str = include_str!("./scripts/hydrate.js.template");
-
-const APP_PATH_TAG: &str = "%APP_PATH%";
-const PAGE_PATH_TAG: &str = "%PAGE_PATH%";
-const ROOT_ID_TAG: &str = "%ROOT_ID%";
+const HYDRATED_FILE_TEMPLATE: &str = include_str!("../scripts/hydrate.js.template");
 
 #[derive(Debug, Clone)]
 pub struct Hydrator {
@@ -26,8 +25,11 @@ impl Hydrator {
             root_id: root_id.to_string(),
         }
     }
+}
 
-    pub fn generate(&self) -> Result<String> {
+impl Generate for Hydrator {
+    type Output = String;
+    fn generate(&self) -> Result<Self::Output> {
         Ok(HYDRATED_FILE_TEMPLATE
             .replace(
                 APP_PATH_TAG,
@@ -40,7 +42,6 @@ impl Hydrator {
             .replace(ROOT_ID_TAG, &self.root_id))
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

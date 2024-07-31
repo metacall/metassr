@@ -12,16 +12,17 @@ function safelyParseJSON(json) {
     return parsed // Could be undefined!
 }
 
-const config = {
+let config = {
 
     output: {
-        filename: "[name].bundle.js"
+        filename: "[name].js",
+        publicPath: ""
     },
     resolve: {
         extensions: ['.js', '.jsx', '.tsx', '.ts']
     },
     optimization: {
-        minimize: true,
+        minimize: false,
     },
     module: {
         rules: [
@@ -88,7 +89,12 @@ const config = {
 
 
 
-function bundling_client(entry, dist) {
+function web_bundling(entry, type, dist) {
+    if (type === "library") {
+        config.output.library = {
+            type: "commonjs2",
+        }
+    }
     const compiler = rspack(
         {
             ...config,
@@ -97,6 +103,7 @@ function bundling_client(entry, dist) {
                 ...config.output,
                 path: process.cwd() + "/" + dist
             } : config.output,
+
             name: 'Client',
             mode: 'development',
             devtool: 'source-map',
@@ -122,5 +129,5 @@ function bundling_client(entry, dist) {
 }
 
 module.exports = {
-    bundling_client
+    web_bundling
 };

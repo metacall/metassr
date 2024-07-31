@@ -1,10 +1,8 @@
+use crate::bundler::{BundlingType, WebBundler};
+use crate::traits::{Build, Exec, Generate};
 use anyhow::{anyhow, Result};
-use bundler::ClientBundler;
 use hydrator::Hydrator;
-use metassr_utils::{
-    cache_dir::CacheDir,
-    src_analyzer::{AnalyzeDir, SourceDir},
-};
+use metassr_utils::{cache_dir::CacheDir, src_analyzer::SourceDir, traits::AnalyzeDir};
 use std::{
     collections::HashMap,
     ffi::OsStr,
@@ -12,7 +10,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub mod bundler;
 pub mod hydrator;
 
 pub struct ClientBuilder {
@@ -40,9 +37,12 @@ impl ClientBuilder {
             dist_path,
         })
     }
+}
 
-    pub fn build(&self) -> Result<()> {
-        let mut cache_dir = CacheDir::new(&format!("{}/.cache-metassr", self.dist_path.display()))?;
+impl Build for ClientBuilder {
+    type Output = ();
+    fn build(&self) -> Result<Self::Output> {
+        let mut cache_dir = CacheDir::new(&format!("{}/cache", self.dist_path.display()))?;
 
         let src = SourceDir::new(&self.src_path).analyze()?;
         let pages = src.clone().pages;
@@ -61,10 +61,16 @@ impl ClientBuilder {
                 path if path.file_stem() != Some(OsStr::new("index")) => {
                     let mut path = path.to_path_buf();
                     path.set_extension("");
-                    path.join("index.js")
+                    let mut path = path.join("index.js");
+                    path.set_extension("js");
+                    path
                 }
 
-                path => path.to_path_buf(),
+                path => {
+                    let mut path = path.to_path_buf();
+                    path.set_extension("js");
+                    path
+                }
             };
 
             cache_dir.insert(&format!("pages/{}", page.display()), hydrator.as_bytes())?;
@@ -80,11 +86,9 @@ impl ClientBuilder {
             })
             .collect::<HashMap<String, String>>();
 
-        let bundler = ClientBundler::new(&targets, &self.dist_path);
+        let bundler = WebBundler::new(&targets, &self.dist_path, BundlingType::Web);
 
-        println!("{targets:#?}");
-
-        if let Err(e) = bundler.bundling() {
+        if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }
 

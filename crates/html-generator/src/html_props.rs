@@ -1,31 +1,35 @@
-use std::{ffi::OsStr, marker::Sized, path::Path};
+use std::{
+    ffi::OsStr,
+    marker::Sized,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, Clone)]
-pub struct HtmlProps<'a> {
+pub struct HtmlProps {
     // TODO: getting html language from a config file stored in web application root.
     pub lang: String,
     pub head: String,
     pub body: String,
-    pub scripts: Vec<&'a Path>,
-    pub styles: Vec<&'a Path>,
+    pub scripts: Vec<PathBuf>,
+    pub styles: Vec<PathBuf>,
 }
 
-impl<'a> HtmlProps<'a> {
-    pub fn new<R: AsRef<OsStr> + ?Sized>() -> HtmlPropsBuilder<'a, R> {
+impl HtmlProps {
+    pub fn new() -> HtmlPropsBuilder {
         HtmlPropsBuilder::new()
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct HtmlPropsBuilder<'a, R: AsRef<OsStr> + ?Sized> {
+pub struct HtmlPropsBuilder {
     lang: Option<String>,
     head: Option<String>,
     body: Option<String>,
-    scripts: Option<Vec<&'a R>>,
-    styles: Option<Vec<&'a R>>,
+    scripts: Option<Vec<String>>,
+    styles: Option<Vec<String>>,
 }
 
-impl<'a, R: AsRef<OsStr> + ?Sized> HtmlPropsBuilder<'a, R> {
+impl HtmlPropsBuilder {
     pub fn new() -> Self {
         Self {
             lang: None,
@@ -47,32 +51,32 @@ impl<'a, R: AsRef<OsStr> + ?Sized> HtmlPropsBuilder<'a, R> {
         self.body = Some(body.to_string());
         self
     }
-    pub fn scripts(mut self, scripts: Vec<&'a R>) -> Self {
+    pub fn scripts(mut self, scripts: Vec<String>) -> Self {
         self.scripts = Some(scripts);
         self
     }
-    pub fn styles(mut self, styles: Vec<&'a R>) -> Self {
+    pub fn styles(mut self, styles: Vec<String>) -> Self {
         self.styles = Some(styles);
         self
     }
     pub fn build(&self) -> HtmlProps {
         HtmlProps {
-            lang: self.lang.as_ref().unwrap().to_owned(),
-            head: self.head.as_ref().unwrap().to_owned(),
-            body: self.body.as_ref().unwrap().to_owned(),
+            lang: self.lang.as_ref().unwrap_or(&String::new()).to_owned(),
+            head: self.head.as_ref().unwrap_or(&String::new()).to_owned(),
+            body: self.body.as_ref().unwrap_or(&String::new()).to_owned(),
             scripts: self
                 .scripts
                 .as_ref()
                 .unwrap()
                 .iter()
-                .map(|p| Path::new(p))
+                .map(|p| Path::new(p).to_path_buf())
                 .collect(),
             styles: self
                 .styles
                 .as_ref()
                 .unwrap()
                 .iter()
-                .map(|p| Path::new(p))
+                .map(|p| Path::new(p).to_path_buf())
                 .collect(),
         }
     }

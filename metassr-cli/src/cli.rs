@@ -1,4 +1,4 @@
-use clap::{command, Parser};
+use clap::{command, Parser, Subcommand, ValueEnum};
 #[derive(Parser, Debug)]
 #[command(
     author,
@@ -12,12 +12,9 @@ pub struct Args {
     /// The path of project root
     #[arg(long, default_value_t = String::from("."))]
     pub root: String,
-    /// the port where HTTP server running
-    #[arg(long, default_value_t = 8080)]
-    pub port: u16,
     /// Run with debug mode (add more information with logs)
     #[arg(long)]
-    pub debug_mode: bool,
+    pub debug_mode: Option<DebugMode>,
 
     /// The path where your logs want be saved
     #[arg[long]]
@@ -25,4 +22,27 @@ pub struct Args {
     /// Show HTTP logs (requests & responses)
     #[arg(long)]
     pub enable_http_logging: bool,
+
+    #[command(subcommand)]
+    pub commands: Option<Commands>,
+}
+
+#[derive(Debug, ValueEnum, PartialEq, Eq, Clone)]
+pub enum DebugMode {
+    All,
+    Metacall,
+    Http,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Commands {
+    Build {
+        #[arg(long, default_value_t = String::from("dist"))]
+        out_dir: String,
+    },
+    Run {
+        /// the port where HTTP server running
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
+    },
 }
