@@ -27,6 +27,12 @@ impl BundleSciptLoadingState {
     }
 }
 
+impl Default for BundleSciptLoadingState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 pub enum BundlingType {
     Web,

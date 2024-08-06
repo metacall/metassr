@@ -32,9 +32,11 @@ async fn main() -> Result<()> {
         .init();
 
     let project_root = Path::new(&args.root);
-    set_current_dir(&project_root)
+
+    set_current_dir(project_root)
         .map_err(|err| eprintln!("Cannot chdir: {err}"))
         .unwrap();
+
     if allow_metacall_debug {
         set_var("METACALL_DEBUG", "1");
     }
@@ -43,6 +45,7 @@ async fn main() -> Result<()> {
         Some(Commands::Build { out_dir }) => {
             let instant = Instant::now();
             let _metacall = switch::initialize().unwrap();
+
             if let Err(e) = ClientBuilder::new("", &out_dir)?.build() {
                 error!(
                     target = "builder",
@@ -72,10 +75,10 @@ async fn main() -> Result<()> {
             let server_configs = ServerConfigs {
                 port,
                 _enable_http_logging: allow_http_debug,
-                root_path: &current_dir()?,
+                root_path: current_dir()?,
             };
 
-            Server::new(&server_configs).run().await?;
+            Server::new(server_configs).run().await?;
         }
         _ => {}
     };

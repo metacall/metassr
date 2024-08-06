@@ -18,7 +18,7 @@ pub struct ClientBuilder {
 }
 
 impl ClientBuilder {
-    pub fn new<'a, S>(root: &'a S, dist_dir: &str) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {

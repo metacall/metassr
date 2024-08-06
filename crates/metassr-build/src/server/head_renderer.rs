@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use metacall::{loaders, metacall_no_arg};
 use metassr_utils::cache_dir::CacheDir;
-use std::{ffi::OsStr, fmt::format, path::PathBuf};
+use std::{ffi::OsStr, path::PathBuf};
 pub struct HeadRenderer {
     path: PathBuf,
     cache_dir: CacheDir,
@@ -32,8 +32,8 @@ impl HeadRenderer {
             self.path.canonicalize()?.display()
         );
 
-        self.cache_dir.insert("head.tsx", script.as_bytes());
-        dbg!(&script);
+        let _ = self.cache_dir.insert("head.tsx", script.as_bytes())?;
+        // dbg!(&script);
         if let Err(e) = loaders::from_single_file(
             "ts",
             format!("{}/head.tsx", self.cache_dir.dir_path().display()),

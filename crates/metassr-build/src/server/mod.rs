@@ -20,7 +20,7 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fs,
-    path::{self, Path, PathBuf},
+    path::{Path, PathBuf},
     thread::sleep,
     time::Duration,
 };
@@ -33,7 +33,7 @@ pub struct ServerSideBuilder {
 }
 
 impl ServerSideBuilder {
-    pub fn new<'a, S>(root: &'a S, dist_dir: &str) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -99,7 +99,6 @@ impl Build for ServerSideBuilder {
 
             // TODO: refactor this part
             let cached_pages = cache_dir.dir_path().join("pages");
-            let bundled_cached_pages = cache_dir.dir_path().join("bundled").join("pages");
 
             let pathname = cache_dir.insert(
                 PathBuf::from("pages").join(&page).to_str().unwrap(),

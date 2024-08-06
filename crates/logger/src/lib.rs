@@ -37,8 +37,8 @@ where
 
         let mut logfmt = LogFormat {
             timestamp: Local::now(),
-            message: message.clone(),
-            target: target.clone(),
+            message,
+            target,
             level: event.metadata().level(),
             fields: fields.clone(),
         };
@@ -50,7 +50,6 @@ where
             }
             let mut file = OpenOptions::new()
                 .append(true)
-                .write(true)
                 .open(path)
                 .map_err(|err| error!("Cannot open log file: {err}"))
                 .unwrap();
@@ -113,12 +112,12 @@ impl<'a> LogFormat<'a> {
     pub fn format_level(&self) -> String {
         format!(
             " {} ",
-            match self.level {
-                &Level::TRACE => Color::Purple,
-                &Level::DEBUG => Color::Blue,
-                &Level::INFO => Color::Green,
-                &Level::WARN => Color::Yellow,
-                &Level::ERROR => Color::Red,
+            match *self.level {
+                Level::TRACE => Color::Purple,
+                Level::DEBUG => Color::Blue,
+                Level::INFO => Color::Green,
+                Level::WARN => Color::Yellow,
+                Level::ERROR => Color::Red,
             }
             .paint(self.level.as_str())
         )

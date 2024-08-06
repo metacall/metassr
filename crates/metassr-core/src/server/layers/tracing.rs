@@ -25,7 +25,6 @@ pub struct TracingLayer;
 impl LayerSetup for TracingLayer {
     type LayerOptions = TracingLayerOptions;
     fn setup(options: Self::LayerOptions, app: &mut Router) {
-        println!("{options:?}");
         let trace_layer = TraceLayer::new_for_http().on_failure(
             |err: ServerErrorsFailureClass, latency: Duration, _span: &Span| {
                 error!(
@@ -36,7 +35,7 @@ impl LayerSetup for TracingLayer {
             },
         )
         .on_request(move |req: &Request<_>, _span: &Span| {
-            if options.enable_http_logging.clone() {
+            if options.enable_http_logging {
                 debug!(
                     target = "http",
                     user_agent=?  req.headers().get("user-agent").unwrap_or(&HeaderValue::from_str("Unknown").unwrap()),
@@ -47,7 +46,7 @@ impl LayerSetup for TracingLayer {
             }
         })
         .on_response(move |res: &Response<_>, latency: Duration, _span: &Span| {
-            if options.enable_http_logging.clone() {
+            if options.enable_http_logging {
                 debug!(
                     target = "http",
                     "[{}]: generated in {:?}",

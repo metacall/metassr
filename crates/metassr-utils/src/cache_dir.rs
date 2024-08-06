@@ -17,7 +17,7 @@ pub struct CacheDir {
 
 impl CacheDir {
     pub fn new(dir_name: &str) -> Result<Self> {
-        let dir_path = PathBuf::from(&format!("{dir_name}",));
+        let dir_path = PathBuf::from(dir_name);
 
         if !dir_path.exists() {
             fs::create_dir(dir_path.clone())?;
@@ -39,7 +39,7 @@ impl CacheDir {
             let parent = path.parent().unwrap();
             fs::create_dir_all(parent)?;
 
-            let mut file = File::create(&path)?;
+            let mut file = File::create(path)?;
             file.write_all(buf)?;
         } else {
             let mut file = File::options().read(true).write(true).open(path)?;
