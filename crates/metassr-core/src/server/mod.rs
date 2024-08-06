@@ -1,9 +1,10 @@
+mod fallback;
 mod layers;
+use fallback::Fallback;
 use layers::tracing::{LayerSetup, TracingLayer, TracingLayerOptions};
 
 use anyhow::Result;
-use axum::{response::Html, routing::get, Router};
-use std::path::Path;
+use axum::{http::StatusCode, Router};
 use tower_http::services::ServeDir;
 use tracing::info;
 
@@ -30,11 +31,21 @@ impl<'a> Server<'a> {
         let listener =
             tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.configs.port)).await?;
 
-        let static_dir = [&self.configs.root_path.to_str().unwrap(), "/static"].concat();
+        let notfound_page = Box::new(format!(
+            "{}/dist/pages/_notfound/index.html",
+            self.configs.root_path.to_str().unwrap()
+        ));
 
-        let mut app = self
-            .app
-            .clone()
+        let fallback = move || async {
+            (
+                StatusCode::NOT_FOUND,
+                match Path::new(&*notfound_page).exists() {
+                    true => Fallback::from_file(PathBuf::from(*notfound_page)).unwrap(),
+                    false => Fallback::default(),
+                }
+                .to_html(),
+            )
+        };
             .nest_service("/static", ServeDir::new(&static_dir))
             .fallback_service(get(default_not_found));
 
