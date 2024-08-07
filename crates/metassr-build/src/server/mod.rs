@@ -10,7 +10,10 @@ use crate::{
 };
 use html_generator::{builder::HtmlBuilder, html_props::HtmlProps, template::HtmlTemplate};
 use metassr_utils::{
-    cache_dir::CacheDir, dist_analyzer::DistDir, src_analyzer::SourceDir, traits::AnalyzeDir,
+    cache_dir::CacheDir,
+    dist_analyzer::DistDir,
+    src_analyzer::{special_entries, SourceDir},
+    traits::AnalyzeDir,
 };
 
 use head_renderer::HeadRenderer;
@@ -61,26 +64,14 @@ impl Build for ServerSideBuilder {
 
         let src = SourceDir::new(&self.src_path).analyze()?;
         let pages = src.clone().pages;
-        let app_path = src
-            .specials
-            .get("_app")
-            .expect("Error: Cannot detect '_app' in src directory")
-            .as_ref()
-            .unwrap();
-        let head_path = src
-            .specials
-            .get("_head")
-            .expect("Error: Cannot detect '_app' in src directory")
-            .as_ref()
-            .unwrap();
-
+        let (special_entries::App(app_path), special_entries::Head(head_path)) = src.specials()?;
         dbg!(&src);
 
         let mut targets = HashMap::<i64, String>::new();
         let mut bundling_targets = HashMap::<String, String>::new();
 
         for (page, page_path) in pages.iter() {
-            let (func_id, render_script) = ServerRender::new(&app_path, &page_path).generate()?;
+            let (func_id, render_script) = ServerRender::new(&app_path, page_path).generate()?;
 
             // Page details
             let mut page = match Path::new(page) {
@@ -134,7 +125,7 @@ impl Build for ServerSideBuilder {
 
         // dbg!(&dist_analyst);
 
-        let mut head_renderer = HeadRenderer::new(head_path, cache_dir.clone());
+        let mut head_renderer = HeadRenderer::new(&head_path, cache_dir.clone());
         let head_content = head_renderer.render()?;
 
         let cached_pages = cache_dir.dir_path().join("pages");

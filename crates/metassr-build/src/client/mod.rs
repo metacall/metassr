@@ -2,6 +2,7 @@ use crate::bundler::{BundlingType, WebBundler};
 use crate::traits::{Build, Exec, Generate};
 use anyhow::{anyhow, Result};
 use hydrator::Hydrator;
+use metassr_utils::src_analyzer::special_entries;
 use metassr_utils::{cache_dir::CacheDir, src_analyzer::SourceDir, traits::AnalyzeDir};
 use std::{
     collections::HashMap,
@@ -43,18 +44,13 @@ impl Build for ClientBuilder {
     type Output = ();
     fn build(&self) -> Result<Self::Output> {
         let mut cache_dir = CacheDir::new(&format!("{}/cache", self.dist_path.display()))?;
-
         let src = SourceDir::new(&self.src_path).analyze()?;
-        let pages = src.clone().pages;
-        let app_path = src
-            .specials
-            .get("_app")
-            .expect("Error: Cannot detect '_app' in src directory")
-            .as_ref()
-            .unwrap();
+
+        let pages = src.pages();
+        let (special_entries::App(app_path), _) = src.specials()?;
 
         for (page, page_path) in pages.iter() {
-            let hydrator = Hydrator::new(&app_path, &page_path, "root").generate()?;
+            let hydrator = Hydrator::new(&app_path, page_path, "root").generate()?;
 
             // Page details
             let page = match Path::new(page) {

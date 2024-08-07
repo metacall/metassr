@@ -1,5 +1,5 @@
 use crate::traits::AnalyzeDir;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::{
     collections::HashMap,
     ffi::OsStr,
@@ -8,10 +8,46 @@ use std::{
 };
 use walkdir::WalkDir;
 
+pub mod special_entries {
+    use std::path::PathBuf;
+
+    #[derive(Debug, Clone)]
+    pub struct Head(pub PathBuf);
+    #[derive(Debug, Clone)]
+    pub struct App(pub PathBuf);
+}
+
+type PagesEntriesType = HashMap<String, PathBuf>;
+type SpecialEntriesType = (Option<special_entries::App>, Option<special_entries::Head>);
 #[derive(Debug, Clone)]
+
 pub struct SourceDirContainer {
-    pub pages: HashMap<String, PathBuf>,
-    pub specials: HashMap<String, Option<PathBuf>>,
+    pub pages: PagesEntriesType,
+    pub specials: SpecialEntriesType,
+}
+
+impl SourceDirContainer {
+    pub fn specials(&self) -> Result<(special_entries::App, special_entries::Head)> {
+        let (app, head) = self.specials.clone();
+        if let (Some(app), Some(head)) = (app.clone(), head.clone()) {
+            return Ok((app, head));
+        }
+        let mut not_found = vec![];
+        if app.is_none() {
+            not_found.push("_app.[js,jsx,ts,tsx]")
+        }
+        if head.is_none() {
+            not_found.push("_head.[js,jsx,ts,tsx]")
+        }
+        Err(anyhow!(
+            "Couldn't found: {}. Create the files that have not been found.",
+            not_found.join(", ")
+        ))
+    }
+
+    pub fn pages(&self) -> PagesEntriesType {
+        self.pages.clone()
+    }
 }
 
 #[derive(Debug)]
@@ -31,9 +67,9 @@ impl<'a> AnalyzeDir for SourceDir<'a> {
     fn analyze(&self) -> Result<Self::Output> {
         let src = self.0.to_str().unwrap();
 
+        let list_of_specials = ["_app", "_head"];
         let mut pages: HashMap<String, PathBuf> = HashMap::new();
-        let mut specials: HashMap<String, Option<PathBuf>> =
-            HashMap::from([("_app".to_owned(), None), ("_head".to_owned(), None)]);
+        let mut specials: SpecialEntriesType = (None, None);
 
         for entry in WalkDir::new(src)
             .into_iter()
@@ -52,8 +88,13 @@ impl<'a> AnalyzeDir for SourceDir<'a> {
             let stripped = path.strip_prefix(src)?;
 
             match stripped.iter().next() {
-                Some(_) if specials.contains_key(stem) => {
-                    specials.insert(stem.to_owned(), Some(path.to_path_buf()));
+                Some(_) if list_of_specials.contains(&stem) => {
+                    dbg!(&stem);
+                    match stem {
+                        "_app" => specials.0 = Some(special_entries::App(path.to_path_buf())),
+                        "_head" => specials.1 = Some(special_entries::Head(path.to_path_buf())),
+                        _ => (),
+                    }
                 }
 
                 Some(p) if p == OsStr::new("pages") => {
