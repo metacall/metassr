@@ -1,5 +1,6 @@
 use crate::bundler::{BundlingType, WebBundler};
 use crate::traits::{Build, Exec, Generate};
+use crate::utils::setup_page_path;
 use anyhow::{anyhow, Result};
 use hydrator::Hydrator;
 use metassr_utils::src_analyzer::special_entries;
@@ -51,23 +52,7 @@ impl Build for ClientBuilder {
 
         for (page, page_path) in pages.iter() {
             let hydrator = Hydrator::new(&app_path, page_path, "root").generate()?;
-
-            // Page details
-            let page = match Path::new(page) {
-                path if path.file_stem() != Some(OsStr::new("index")) => {
-                    let mut path = path.to_path_buf();
-                    path.set_extension("");
-                    let mut path = path.join("index.js");
-                    path.set_extension("js");
-                    path
-                }
-
-                path => {
-                    let mut path = path.to_path_buf();
-                    path.set_extension("js");
-                    path
-                }
-            };
+            let page = setup_page_path(page, "js");
 
             cache_dir.insert(&format!("pages/{}", page.display()), hydrator.as_bytes())?;
         }
@@ -83,7 +68,6 @@ impl Build for ClientBuilder {
             .collect::<HashMap<String, String>>();
 
         let bundler = WebBundler::new(&targets, &self.dist_path, BundlingType::Web);
-
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }

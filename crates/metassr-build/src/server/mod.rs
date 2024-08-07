@@ -4,10 +4,12 @@ mod head_renderer;
 mod html_renderer;
 mod render;
 mod render_exec;
+mod targets;
 
 use crate::{
     bundler::{BundlingType, WebBundler},
     traits::{Build, Exec, Generate},
+    utils::setup_page_path,
 };
 use metassr_utils::{
     cache_dir::CacheDir,
@@ -16,18 +18,18 @@ use metassr_utils::{
     traits::AnalyzeDir,
 };
 
-use html_renderer::HtmlRenderer;
 use head_renderer::HeadRenderer;
+use html_renderer::HtmlRenderer;
 use render::ServerRender;
 use render_exec::MultiRenderExec;
 use std::{
-    collections::HashMap,
     ffi::OsStr,
     fs,
     path::{Path, PathBuf},
     thread::sleep,
     time::Duration,
 };
+use targets::Targets;
 
 use anyhow::{anyhow, Result};
 
@@ -66,62 +68,34 @@ impl Build for ServerSideBuilder {
         let src = SourceDir::new(&self.src_path).analyze()?;
         let pages = src.clone().pages;
         let (special_entries::App(app_path), special_entries::Head(head_path)) = src.specials()?;
-        dbg!(&src);
 
-        let mut targets = HashMap::<i64, String>::new();
-        let mut bundling_targets = HashMap::<String, String>::new();
+        let mut targets = Targets::new();
 
         for (page, page_path) in pages.iter() {
             let (func_id, render_script) = ServerRender::new(&app_path, page_path).generate()?;
 
-            // Page details
-            let mut page = match Path::new(page) {
-                path if path.file_stem() != Some(OsStr::new("index")) => {
-                    let mut path = path.to_path_buf();
-                    path.set_extension("");
-                    path.join("index.server.js")
-                }
-
-                path => {
-                    let mut path = path.to_path_buf();
-                    path.set_extension("server.js");
-                    path
-                }
-            };
-
-            // TODO: refactor this part
-            let cached_pages = cache_dir.dir_path().join("pages");
-
-            let pathname = cache_dir.insert(
+            let page = setup_page_path(page, "server.js");
+            let path = cache_dir.insert(
                 PathBuf::from("pages").join(&page).to_str().unwrap(),
                 render_script.as_bytes(),
             )?;
-            page.set_extension("");
 
-            targets.insert(func_id, pathname.clone());
-            bundling_targets.insert(
-                cached_pages
-                    .strip_prefix("dist")?
-                    .join(&page)
-                    .to_str()
-                    .unwrap()
-                    .to_owned(),
-                PathBuf::from(&pathname)
-                    .canonicalize()?
-                    .to_str()
-                    .unwrap()
-                    .to_owned(),
-            );
+            targets.insert(func_id, &path);
         }
 
-        let bundler = WebBundler::new(&bundling_targets, &self.dist_path, BundlingType::Library);
-        // dbg!(&bundler, &targets);
-        if let Err(e) = bundler.exec() {
+        if let Err(e) = WebBundler::new(
+            &targets.ready_for_bundling(),
+            &self.dist_path,
+            BundlingType::Library,
+        )
+        .exec()
+        {
             return Err(anyhow!("Bundling failed: {e}"));
         }
+        // TODO: remove this
         sleep(Duration::from_secs(3));
 
-        let output = MultiRenderExec::new(targets)?.exec()?;
+        let output = MultiRenderExec::new(targets.ready_for_exec())?.exec()?;
         let dist_analyst = DistDir::new(&self.dist_path)?.analyze()?;
 
         // dbg!(&dist_analyst);
