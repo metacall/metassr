@@ -15,7 +15,7 @@ pub struct DistDirContainer {
 }
 
 /// The page entry, where each pages details stored.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PageEntry {
     pub scripts: Vec<PathBuf>,
     pub styles: Vec<PathBuf>,

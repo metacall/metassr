@@ -1,14 +1,14 @@
 // TODO: Refactoring `ServerSideBuilder.build()`. It's very ugly!
 
-pub mod head_renderer;
-pub mod render;
-pub mod render_exec;
+mod head_renderer;
+mod html_renderer;
+mod render;
+mod render_exec;
 
 use crate::{
     bundler::{BundlingType, WebBundler},
     traits::{Build, Exec, Generate},
 };
-use html_generator::{builder::HtmlBuilder, html_props::HtmlProps, template::HtmlTemplate};
 use metassr_utils::{
     cache_dir::CacheDir,
     dist_analyzer::DistDir,
@@ -16,6 +16,7 @@ use metassr_utils::{
     traits::AnalyzeDir,
 };
 
+use html_renderer::HtmlRenderer;
 use head_renderer::HeadRenderer;
 use render::ServerRender;
 use render_exec::MultiRenderExec;
@@ -125,8 +126,7 @@ impl Build for ServerSideBuilder {
 
         // dbg!(&dist_analyst);
 
-        let mut head_renderer = HeadRenderer::new(&head_path, cache_dir.clone());
-        let head_content = head_renderer.render()?;
+        let head_content = HeadRenderer::new(&head_path, cache_dir.clone()).render()?;
 
         let cached_pages = cache_dir.dir_path().join("pages");
         for (path, html_body) in output {
@@ -139,32 +139,11 @@ impl Build for ServerSideBuilder {
                 "" => "root",
                 p => p,
             };
+
             let page_entry = dist_analyst.pages.get(path_str);
             match page_entry {
-                Some(p) => {
-                    let scripts: Vec<String> = p
-                        .scripts
-                        .iter()
-                        .map(|p| Path::new("/").join(p).to_str().unwrap().to_owned())
-                        .collect();
-
-                    let styles: Vec<String> = p
-                        .styles
-                        .iter()
-                        .map(|p| Path::new("/").join(p).to_str().unwrap().to_owned())
-                        .collect();
-
-                    let html_props = HtmlProps::new()
-                        // TODO:  Get head content from `_head.tsx`
-                        .head(&head_content)
-                        .body(&format!("<div id='root'>{html_body}</div>"))
-                        .lang("en")
-                        .scripts(scripts)
-                        .styles(styles);
-
-                    let builder = HtmlBuilder::new(HtmlTemplate::default(), html_props.build());
-
-                    builder.generate().write(p.path.join("index.html"))?;
+                Some(page_entry) => {
+                    HtmlRenderer::new(&head_content, &html_body, page_entry).render()?;
                 }
                 None => return Err(anyhow!("No Entries founded for this page: {:#?}", path)),
             }
