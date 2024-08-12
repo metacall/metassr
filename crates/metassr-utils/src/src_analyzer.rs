@@ -27,6 +27,10 @@ pub struct SourceDirContainer {
 }
 
 impl SourceDirContainer {
+    pub fn new() -> Self {
+        Self { pages: HashMap::new(), specials:(None,None) }
+    }
+
     pub fn specials(&self) -> Result<(special_entries::App, special_entries::Head)> {
         let (app, head) = self.specials.clone();
         if let (Some(app), Some(head)) = (app.clone(), head.clone()) {
@@ -51,18 +55,18 @@ impl SourceDirContainer {
 }
 
 #[derive(Debug)]
-pub struct SourceDir<'a>(&'a Path);
+pub struct SourceDir(PathBuf);
 
-impl<'a> SourceDir<'a> {
-    pub fn new<S>(path: &'a S) -> Self
+impl SourceDir {
+    pub fn new<S>(path: &S) -> Self
     where
         S: AsRef<OsStr> + ?Sized,
     {
-        Self(Path::new(path))
+        Self(PathBuf::from(path))
     }
 }
 
-impl<'a> AnalyzeDir for SourceDir<'a> {
+impl AnalyzeDir for SourceDir {
     type Output = SourceDirContainer;
     fn analyze(&self) -> Result<Self::Output> {
         let src = self.0.to_str().unwrap();
