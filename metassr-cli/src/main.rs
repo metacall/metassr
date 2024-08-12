@@ -36,9 +36,6 @@ async fn main() -> Result<()> {
     set_current_dir(project_root)
         .map_err(|err| eprintln!("Cannot chdir: {err}"))
         .unwrap();
-    if allow_metacall_debug {
-        set_var("METACALL_DEBUG", "1");
-    }
 
     if allow_metacall_debug {
         set_var("METACALL_DEBUG", "1");
@@ -55,8 +52,7 @@ async fn main() -> Result<()> {
                     message = format!("Couldn't build for the client side:  {e}"),
                 );
                 return Err(anyhow!("Couldn't continue building process."));
-            };
-
+            }
             if let Err(e) = ServerSideBuilder::new("", &out_dir)?.build() {
                 error!(
                     target = "builder",
