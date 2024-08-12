@@ -1,5 +1,5 @@
 [package]
-name = "metassr-core"
+name = "metassr-server"
 version = "0.0.1-alpha"
 edition = "2021"
 

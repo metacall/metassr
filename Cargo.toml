@@ -23,7 +23,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
 
 logger = { path = "crates/logger" }
-metassr-core = { path = "crates/metassr-core" }
+metassr-server = { path = "crates/metassr-server" }
 metassr-build = { path = "crates/metassr-build" }
 metassr-utils = { path = "crates/metassr-utils" }
 html-generator = { path = "crates/html-generator" }
@@ -32,7 +32,7 @@ html-generator = { path = "crates/html-generator" }
 members = [
     "crates/logger",
     "crates/metassr-build",
-    "crates/metassr-core",
+    "crates/metassr-server",
     "crates/metassr-utils",
     "crates/html-generator",
     "metassr-cli",

@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use metacall::switch;
 
 use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
-use metassr_core::server::{Server, ServerConfigs};
+use metassr_server::{Server, ServerConfigs};
 
 use std::{
     env::{current_dir, set_current_dir, set_var},
