@@ -36,6 +36,9 @@ async fn main() -> Result<()> {
     set_current_dir(project_root)
         .map_err(|err| eprintln!("Cannot chdir: {err}"))
         .unwrap();
+    if allow_metacall_debug {
+        set_var("METACALL_DEBUG", "1");
+    }
 
     if allow_metacall_debug {
         set_var("METACALL_DEBUG", "1");
