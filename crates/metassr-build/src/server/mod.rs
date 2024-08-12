@@ -2,6 +2,7 @@
 
 mod head_renderer;
 mod html_renderer;
+mod pages_generator;
 mod render;
 mod render_exec;
 mod targets;
@@ -13,15 +14,12 @@ use crate::{
 };
 use metassr_utils::{
     cache_dir::CacheDir,
-    dist_analyzer::DistDir,
     src_analyzer::{special_entries, SourceDir},
     traits::AnalyzeDir,
 };
 
-use head_renderer::HeadRenderer;
-use html_renderer::HtmlRenderer;
+use pages_generator::PagesGenerator;
 use render::ServerRender;
-use render_exec::MultiRenderExec;
 use std::{
     ffi::OsStr,
     fs,
@@ -92,37 +90,11 @@ impl Build for ServerSideBuilder {
         {
             return Err(anyhow!("Bundling failed: {e}"));
         }
+
         // TODO: remove this
         sleep(Duration::from_secs(3));
 
-        let output = MultiRenderExec::new(targets.ready_for_exec())?.exec()?;
-        let dist_analyst = DistDir::new(&self.dist_path)?.analyze()?;
-
-        // dbg!(&dist_analyst);
-
-        let head_content = HeadRenderer::new(&head_path, cache_dir.clone()).render()?;
-
-        let cached_pages = cache_dir.dir_path().join("pages");
-        for (path, html_body) in output {
-            let path = Path::new(&path).parent().unwrap();
-            let path_str = match path
-                .strip_prefix(cached_pages.to_str().unwrap())?
-                .to_str()
-                .unwrap()
-            {
-                "" => "root",
-                p => p,
-            };
-
-            let page_entry = dist_analyst.pages.get(path_str);
-            match page_entry {
-                Some(page_entry) => {
-                    HtmlRenderer::new(&head_content, &html_body, page_entry).render()?;
-                }
-                None => return Err(anyhow!("No Entries founded for this page: {:#?}", path)),
-            }
-        }
-
+        PagesGenerator::new(targets, &head_path, &self.dist_path, cache_dir)?.generate()?;
         Ok(())
     }
 }

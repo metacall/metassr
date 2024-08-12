@@ -1,11 +1,6 @@
 use crate::traits::AnalyzeDir;
 use anyhow::{anyhow, Result};
-use std::{
-    collections::HashMap,
-    ffi::OsStr,
-    marker::Sized,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::PathBuf};
 use walkdir::WalkDir;
 
 pub mod special_entries {
@@ -28,7 +23,10 @@ pub struct SourceDirContainer {
 
 impl SourceDirContainer {
     pub fn new() -> Self {
-        Self { pages: HashMap::new(), specials:(None,None) }
+        Self {
+            pages: HashMap::new(),
+            specials: (None, None),
+        }
     }
 
     pub fn specials(&self) -> Result<(special_entries::App, special_entries::Head)> {
