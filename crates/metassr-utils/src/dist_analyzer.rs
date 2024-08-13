@@ -15,7 +15,7 @@ pub struct DistDirContainer {
 }
 
 /// The page entry, where each pages details stored.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PageEntry {
     pub scripts: Vec<PathBuf>,
     pub styles: Vec<PathBuf>,
@@ -65,7 +65,7 @@ impl<'a> AnalyzeDir for DistDir<'a> {
         for entry in WalkDir::new(pages_path.clone())
             .into_iter()
             .filter_map(|e| {
-                let exts = vec!["js", "css"];
+                let exts = ["js", "css"];
                 match e.ok() {
                     Some(e)
                         if e.path().is_file()

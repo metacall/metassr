@@ -17,7 +17,7 @@ pub struct CacheDir {
 
 impl CacheDir {
     pub fn new(dir_name: &str) -> Result<Self> {
-        let dir_path = PathBuf::from(&format!("{dir_name}",));
+        let dir_path = PathBuf::from(dir_name);
 
         if !dir_path.exists() {
             fs::create_dir(dir_path.clone())?;
@@ -29,7 +29,7 @@ impl CacheDir {
         })
     }
 
-    pub fn insert(&mut self, pathname: &str, buf: &[u8]) -> Result<String> {
+    pub fn insert(&mut self, pathname: &str, buf: &[u8]) -> Result<PathBuf> {
         let id = pathname;
         let pathname = format!("{}/{}", self.dir_path.to_str().unwrap(), pathname);
         let path = Path::new(&pathname);
@@ -39,7 +39,7 @@ impl CacheDir {
             let parent = path.parent().unwrap();
             fs::create_dir_all(parent)?;
 
-            let mut file = File::create(&path)?;
+            let mut file = File::create(path)?;
             file.write_all(buf)?;
         } else {
             let mut file = File::options().read(true).write(true).open(path)?;
@@ -57,7 +57,7 @@ impl CacheDir {
         // Adding the new filepath
         self.entries_in_scope
             .insert(id.to_string(), path.canonicalize()?.as_path().into());
-        Ok(pathname)
+        Ok(path.to_path_buf())
     }
 
     pub fn dir_path(&self) -> PathBuf {

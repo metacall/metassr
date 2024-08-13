@@ -1,7 +1,9 @@
 use crate::bundler::{BundlingType, WebBundler};
 use crate::traits::{Build, Exec, Generate};
+use crate::utils::setup_page_path;
 use anyhow::{anyhow, Result};
 use hydrator::Hydrator;
+use metassr_utils::src_analyzer::special_entries;
 use metassr_utils::{cache_dir::CacheDir, src_analyzer::SourceDir, traits::AnalyzeDir};
 use std::{
     collections::HashMap,
@@ -18,7 +20,7 @@ pub struct ClientBuilder {
 }
 
 impl ClientBuilder {
-    pub fn new<'a, S>(root: &'a S, dist_dir: &str) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -43,35 +45,14 @@ impl Build for ClientBuilder {
     type Output = ();
     fn build(&self) -> Result<Self::Output> {
         let mut cache_dir = CacheDir::new(&format!("{}/cache", self.dist_path.display()))?;
-
         let src = SourceDir::new(&self.src_path).analyze()?;
-        let pages = src.clone().pages;
-        let app_path = src
-            .specials
-            .get("_app")
-            .expect("Error: Cannot detect '_app' in src directory")
-            .as_ref()
-            .unwrap();
+
+        let pages = src.pages();
+        let (special_entries::App(app_path), _) = src.specials()?;
 
         for (page, page_path) in pages.iter() {
-            let hydrator = Hydrator::new(&app_path, &page_path, "root").generate()?;
-
-            // Page details
-            let page = match Path::new(page) {
-                path if path.file_stem() != Some(OsStr::new("index")) => {
-                    let mut path = path.to_path_buf();
-                    path.set_extension("");
-                    let mut path = path.join("index.js");
-                    path.set_extension("js");
-                    path
-                }
-
-                path => {
-                    let mut path = path.to_path_buf();
-                    path.set_extension("js");
-                    path
-                }
-            };
+            let hydrator = Hydrator::new(&app_path, page_path, "root").generate()?;
+            let page = setup_page_path(page, "js");
 
             cache_dir.insert(&format!("pages/{}", page.display()), hydrator.as_bytes())?;
         }
@@ -87,7 +68,6 @@ impl Build for ClientBuilder {
             .collect::<HashMap<String, String>>();
 
         let bundler = WebBundler::new(&targets, &self.dist_path, BundlingType::Web);
-
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }

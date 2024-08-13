@@ -1,4 +1,5 @@
-const { rspack } = require('@rspack/core')
+const { rspack } = require('@rspack/core');
+const path = require("path");
 
 function safelyParseJSON(json) {
     let parsed
@@ -101,7 +102,7 @@ function web_bundling(entry, type, dist) {
             entry: safelyParseJSON(entry) ?? entry,
             output: dist ? {
                 ...config.output,
-                path: process.cwd() + "/" + dist
+                path: path.join(process.cwd(), dist)
             } : config.output,
 
             name: 'Client',

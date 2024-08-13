@@ -17,5 +17,5 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
 
 logger = { path = "../crates/logger" }
-metassr-core = { path = "../crates/metassr-core" }
+metassr-server = { path = "../crates/metassr-server" }
 metassr-build = { path = "../crates/metassr-build" }

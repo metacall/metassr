@@ -1,5 +1,4 @@
 use std::{
-    ffi::OsStr,
     marker::Sized,
     path::{Path, PathBuf},
 };
@@ -79,5 +78,11 @@ impl HtmlPropsBuilder {
                 .map(|p| Path::new(p).to_path_buf())
                 .collect(),
         }
+    }
+}
+
+impl Default for HtmlPropsBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }

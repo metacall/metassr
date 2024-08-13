@@ -580,7 +580,7 @@ dependencies = [
  "logger",
  "metacall",
  "metassr-build",
- "metassr-core",
+ "metassr-server",
  "metassr-utils",
  "nu-ansi-term 0.50.0",
  "serde_json",
@@ -613,7 +613,7 @@ dependencies = [
  "logger",
  "metacall",
  "metassr-build",
- "metassr-core",
+ "metassr-server",
  "tokio",
  "tower-http",
  "tracing",
@@ -621,12 +621,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "metassr-core"
+name = "metassr-server"
 version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "metassr-utils",
+ "serde_json",
  "tokio",
  "tower-http",
  "tracing",
@@ -922,11 +924,12 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.120"
+version = "1.0.122"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
+checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
 dependencies = [
  "itoa",
+ "memchr",
  "ryu",
  "serde",
 ]
