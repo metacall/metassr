@@ -1,16 +1,20 @@
 use std::path::Path;
 
 use anyhow::Result;
-use html_generator::{builder::HtmlBuilder, html_props::HtmlProps, template::HtmlTemplate};
+use html_generator::{
+    builder::{HtmlBuilder, HtmlOutput},
+    html_props::HtmlProps,
+    template::HtmlTemplate,
+};
 use metassr_utils::dist_analyzer::PageEntry;
 
-pub struct HtmlRenderer <'a>{
+pub struct HtmlRenderer<'a> {
     head: String,
     body: String,
     page_entry: &'a PageEntry,
 }
 
-impl <'a>HtmlRenderer <'a>{
+impl<'a> HtmlRenderer<'a> {
     pub fn new(head: &str, body: &str, page_entry: &'a PageEntry) -> Self {
         Self {
             head: head.to_string(),
@@ -19,7 +23,7 @@ impl <'a>HtmlRenderer <'a>{
         }
     }
 
-    pub fn render(&self) -> Result<()> {
+    pub fn render(&self) -> Result<HtmlOutput> {
         let scripts: Vec<String> = self
             .page_entry
             .scripts
@@ -44,9 +48,6 @@ impl <'a>HtmlRenderer <'a>{
 
         let builder = HtmlBuilder::new(HtmlTemplate::default(), html_props.build());
 
-        builder
-            .generate()
-            .write(self.page_entry.path.join("index.html"))?;
-        Ok(())
+        Ok(builder.generate())
     }
 }

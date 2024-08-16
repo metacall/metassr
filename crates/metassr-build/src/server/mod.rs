@@ -1,7 +1,7 @@
 // TODO: Refactoring `ServerSideBuilder.build()`. It's very ugly!
 
-mod head_renderer;
-mod html_renderer;
+pub mod renderer;
+
 mod pages_generator;
 mod render;
 mod render_exec;

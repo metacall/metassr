@@ -14,7 +14,7 @@ use metassr_utils::{
 use crate::traits::Exec;
 
 use super::{
-    head_renderer::HeadRenderer, html_renderer::HtmlRenderer, render_exec::MultiRenderExec,
+    render_exec::MultiRenderExec, renderer::head::HeadRenderer, renderer::html::HtmlRenderer,
     targets::Targets,
 };
 

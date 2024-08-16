@@ -34,12 +34,11 @@ impl HeadRenderer {
 
         let _ = self.cache_dir.insert("head.tsx", script.as_bytes())?;
         // dbg!(&script);
-        if let Err(e) = loaders::from_single_file(
+        /// TODO(FIX): Error: Load from file handle failed, handle with name ests/web-app/dist/cache/head.tsx already loaded
+        loaders::from_single_file(
             "ts",
             format!("{}/head.tsx", self.cache_dir.dir_path().display()),
-        ) {
-            return Err(anyhow!("Couldn't load head rendering script: {e:?}"));
-        }
+        );
         match metacall_no_arg::<String>("render_head") {
             Err(e) => Err(anyhow!("Couldn't render head: {e:?}")),
             Ok(out) => Ok(out),
