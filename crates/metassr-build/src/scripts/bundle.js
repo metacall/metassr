@@ -17,6 +17,9 @@ let config = {
 
     output: {
         filename: "[name].js",
+        library: {
+            type: "commonjs2",
+        },
         publicPath: ""
     },
     resolve: {
@@ -90,12 +93,8 @@ let config = {
 
 
 
-function web_bundling(entry, type, dist) {
-    if (type === "library") {
-        config.output.library = {
-            type: "commonjs2",
-        }
-    }
+function web_bundling(entry, dist) {
+
     const compiler = rspack(
         {
             ...config,
