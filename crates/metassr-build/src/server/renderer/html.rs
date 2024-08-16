@@ -39,7 +39,6 @@ impl<'a> HtmlRenderer<'a> {
             .collect();
 
         let html_props = HtmlProps::new()
-            // TODO:  Get head content from `_head.tsx`
             .head(&self.head)
             .body(&format!("<div id='root'>{}</div>", self.body))
             .lang("en")

@@ -82,8 +82,6 @@ let config = {
             },
             {
                 test: /\.(png|svg|jpg)$/,
-                // TODO: asset/resource will render different URL in server and client (with host), need fix
-                // type: 'asset/resource',
                 type: 'asset/inline',
             },
         ],

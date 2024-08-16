@@ -1,5 +1,3 @@
-// TODO: Refactoring `ServerSideBuilder.build()`. It's very ugly!
-
 pub mod renderer;
 
 pub mod manifest;
