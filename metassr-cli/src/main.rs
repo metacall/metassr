@@ -12,10 +12,11 @@ use metassr_server::{Server, ServerConfigs};
 use std::{
     env::{current_dir, set_current_dir, set_var},
     path::Path,
-    time::Instant,
+    thread::sleep,
+    time::{Duration, Instant},
 };
 
-use tracing::{error, info};
+use tracing::{debug, error, info};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -41,11 +42,11 @@ async fn main() -> Result<()> {
         set_var("METACALL_DEBUG", "1");
     }
 
+    let _metacall = switch::initialize().unwrap();
+
     match args.commands {
         Some(Commands::Build { out_dir }) => {
             let instant = Instant::now();
-            let _metacall = switch::initialize().unwrap();
-
             if let Err(e) = ClientBuilder::new("", &out_dir)?.build() {
                 error!(
                     target = "builder",
@@ -53,6 +54,10 @@ async fn main() -> Result<()> {
                 );
                 return Err(anyhow!("Couldn't continue building process."));
             }
+
+            // TODO: find a solution to remove this
+            sleep(Duration::from_secs(1));
+
             if let Err(e) = ServerSideBuilder::new("", &out_dir)?.build() {
                 error!(
                     target = "builder",
@@ -61,9 +66,8 @@ async fn main() -> Result<()> {
                 return Err(anyhow!("Couldn't continue building process."));
             }
 
-            // Waiting till metacall destroyed
             if (_metacall.0)() == 0 {
-                info!(
+                debug!(
                     target = "builder",
                     message = "Building is completed",
                     time = format!("{}ms", instant.elapsed().as_millis())
