@@ -53,18 +53,18 @@ impl Exec for RenderExec {
 }
 
 #[derive(Debug, Clone)]
-pub struct MultiRenderExec(HashMap<i64, PathBuf>);
+pub struct MultiRenderExec(HashMap<PathBuf, i64>);
 
 impl MultiRenderExec {
-    pub fn new(files: HashMap<i64, String>) -> Result<Self> {
+    pub fn new(files: HashMap<String, i64>) -> Result<Self> {
         let mut self_ = Self(HashMap::new());
 
-        for (id, path) in files {
+        for (path, id) in files {
             let path = Path::new(&path);
             if !path.exists() {
                 return Err(anyhow!("Path not found: {path:#?}"));
             }
-            self_.0.insert(id, path.to_path_buf());
+            self_.0.insert(path.to_path_buf(), id);
         }
         Ok(self_)
     }
@@ -75,7 +75,7 @@ impl Exec for MultiRenderExec {
     fn exec(&self) -> Result<Self::Output> {
         let mut result: Self::Output = HashMap::new();
 
-        for (id, path) in self.0.iter() {
+        for (path, id) in self.0.iter() {
             let path = path.to_str().unwrap();
             let out = RenderExec::new(*id, &path)?.exec()?;
             result.insert(path.to_owned(), out);
