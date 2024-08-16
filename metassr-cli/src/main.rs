@@ -16,7 +16,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]

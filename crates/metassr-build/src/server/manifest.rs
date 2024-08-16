@@ -84,7 +84,7 @@ impl Manifest {
     pub fn write<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Result<PathBuf> {
         let manifest_filename = "manifest.json";
         let path = PathBuf::from(path);
-        let mut file = File::create(&path.join(manifest_filename))?;
+        let mut file = File::create(path.join(manifest_filename))?;
 
         file.write_all(self.to_json()?.as_bytes())?;
         Ok(path)
@@ -99,8 +99,8 @@ impl<S: AsRef<OsStr> + ?Sized> From<&S> for Manifest {
         let manifest_filename = "manifest.json";
         let path = PathBuf::from(path).join(manifest_filename);
         let content = read_to_string(path).unwrap();
-        let manifest = serde_json::from_str(&content).unwrap();
-        manifest
+
+        serde_json::from_str(&content).unwrap()
     }
 }
 

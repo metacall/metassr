@@ -48,6 +48,12 @@ impl Targets {
     }
 }
 
+impl Default for Targets {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct TargetsGenerator<'a> {
     app: PathBuf,
     pages: PagesEntriesType,

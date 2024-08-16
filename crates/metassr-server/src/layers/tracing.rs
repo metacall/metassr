@@ -2,7 +2,6 @@
 use axum::{
     http::{HeaderValue, Request},
     response::Response,
-    Router,
 };
 
 use tokio::time::Duration;

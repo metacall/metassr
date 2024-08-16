@@ -22,11 +22,8 @@ pub struct SourceDirContainer {
 }
 
 impl SourceDirContainer {
-    pub fn new() -> Self {
-        Self {
-            pages: HashMap::new(),
-            specials: (None, None),
-        }
+    pub fn new(pages: PagesEntriesType, specials: SpecialEntriesType) -> Self {
+        Self { pages, specials }
     }
 
     pub fn specials(&self) -> Result<(special_entries::App, special_entries::Head)> {
@@ -111,7 +108,7 @@ impl AnalyzeDir for SourceDir {
             }
         }
 
-        Ok(Self::Output { pages, specials })
+        Ok(SourceDirContainer::new(pages, specials))
     }
 }
 

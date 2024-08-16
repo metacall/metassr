@@ -33,9 +33,9 @@ impl HeadRenderer {
         );
 
         let _ = self.cache_dir.insert("head.tsx", script.as_bytes())?;
-        // dbg!(&script);
-        /// TODO(FIX): Error: Load from file handle failed, handle with name ests/web-app/dist/cache/head.tsx already loaded
-        loaders::from_single_file(
+        
+        // TODO(FIX): Error: Load from file handle failed, handle with name ests/web-app/dist/cache/head.tsx already loaded
+        let _ = loaders::from_single_file(
             "ts",
             format!("{}/head.tsx", self.cache_dir.dir_path().display()),
         );
