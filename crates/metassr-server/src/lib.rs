@@ -66,7 +66,7 @@ impl Server {
             TracingLayerOptions {
                 enable_http_logging: self.configs._enable_http_logging,
             },
-            &mut app.app(),
+            &mut app,
         );
 
         info!("listening on http://{}", listener.local_addr()?);

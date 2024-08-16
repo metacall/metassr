@@ -28,6 +28,8 @@ metassr-build = { path = "crates/metassr-build" }
 metassr-utils = { path = "crates/metassr-utils" }
 html-generator = { path = "crates/html-generator" }
 serde = "1.0.207"
+tower-layer = "0.3.3"
+tower-service = "0.3.3"
 
 [workspace]
 members = [

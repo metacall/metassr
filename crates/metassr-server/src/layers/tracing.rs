@@ -9,9 +9,11 @@ use tokio::time::Duration;
 use tower_http::{classify::ServerErrorsFailureClass, trace::TraceLayer};
 use tracing::{debug, error, Span};
 
+use crate::router::RouterMut;
+
 pub trait LayerSetup {
     type LayerOptions;
-    fn setup(options: Self::LayerOptions, app: &mut Router);
+    fn setup(options: Self::LayerOptions, app: &mut RouterMut);
 }
 
 #[derive(Debug)]
@@ -24,7 +26,7 @@ pub struct TracingLayer;
 
 impl LayerSetup for TracingLayer {
     type LayerOptions = TracingLayerOptions;
-    fn setup(options: Self::LayerOptions, app: &mut Router) {
+    fn setup(options: Self::LayerOptions, app: &mut RouterMut) {
         let trace_layer = TraceLayer::new_for_http().on_failure(
             |err: ServerErrorsFailureClass, latency: Duration, _span: &Span| {
                 error!(
@@ -56,6 +58,6 @@ impl LayerSetup for TracingLayer {
             }
         });
 
-        *app = app.clone().layer(trace_layer);
+        app.layer(trace_layer);
     }
 }
