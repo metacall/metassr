@@ -27,6 +27,7 @@ metassr-server = { path = "crates/metassr-server" }
 metassr-build = { path = "crates/metassr-build" }
 metassr-utils = { path = "crates/metassr-utils" }
 html-generator = { path = "crates/html-generator" }
+serde = "1.0.207"
 
 [workspace]
 members = [

@@ -2,30 +2,28 @@
 
 pub mod renderer;
 
+pub mod manifest;
 mod pages_generator;
 mod render;
 mod render_exec;
 mod targets;
 
 use crate::{
-    bundler::{BundlingType, WebBundler},
-    traits::{Build, Exec, Generate},
-    utils::setup_page_path,
+    bundler::WebBundler,
+    traits::{Build, Exec},
 };
+use manifest::ManifestGenerator;
 use metassr_utils::{
     cache_dir::CacheDir,
+    dist_analyzer::DistDir,
     src_analyzer::{special_entries, SourceDir},
     traits::AnalyzeDir,
 };
 
-use pages_generator::PagesGenerator;
-use render::ServerRender;
 use std::{
     ffi::OsStr,
     fs,
     path::{Path, PathBuf},
-    thread::sleep,
-    time::Duration,
 };
 use targets::TargetsGenerator;
 
@@ -65,7 +63,7 @@ impl Build for ServerSideBuilder {
 
         let src = SourceDir::new(&self.src_path).analyze()?;
         let pages = src.clone().pages;
-        let (special_entries::App(app_path), special_entries::Head(head_path)) = src.specials()?;
+        let (special_entries::App(app), special_entries::Head(head)) = src.specials()?;
 
         let targets = TargetsGenerator::new(app, pages, &mut cache_dir).generate()?;
 
@@ -73,10 +71,12 @@ impl Build for ServerSideBuilder {
             return Err(anyhow!("Bundling failed: {e}"));
         }
 
-        // TODO: remove this
-        sleep(Duration::from_secs(3));
+        let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
-        PagesGenerator::new(targets, &head_path, &self.dist_path, cache_dir)?.generate()?;
+        ManifestGenerator::new(targets, cache_dir.clone(), dist)
+            .generate(&head)?
+            .write(&self.dist_path)?;
+
         Ok(())
     }
 }

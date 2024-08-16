@@ -1,5 +1,6 @@
 use crate::traits::AnalyzeDir;
 use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     ffi::OsStr,
@@ -7,7 +8,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
-
 /// A container contains analyzing result for `dist/` directory.
 #[derive(Debug)]
 pub struct DistDirContainer {
@@ -15,7 +15,7 @@ pub struct DistDirContainer {
 }
 
 /// The page entry, where each pages details stored.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PageEntry {
     pub scripts: Vec<PathBuf>,
     pub styles: Vec<PathBuf>,
@@ -40,14 +40,14 @@ impl PageEntry {
 
 /// A simple analyzer for `dist/` directory to extract script files and style files, a bundled files generated using `rspack`.
 #[derive(Debug)]
-pub struct DistDir<'a>(&'a Path);
+pub struct DistDir(PathBuf);
 
-impl<'a> DistDir<'a> {
-    pub fn new<S>(path: &'a S) -> Result<Self>
+impl DistDir {
+    pub fn new<S>(path: &S) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
-        let path = Path::new(path);
+        let path = PathBuf::from(path);
         if !path.exists() {
             return Err(anyhow!("Dist directory not found: {path:#?}"));
         }
@@ -56,7 +56,7 @@ impl<'a> DistDir<'a> {
     }
 }
 
-impl<'a> AnalyzeDir for DistDir<'a> {
+impl AnalyzeDir for DistDir {
     type Output = DistDirContainer;
     fn analyze(&self) -> Result<Self::Output> {
         let pages_path = self.0.join("pages");
@@ -81,7 +81,7 @@ impl<'a> AnalyzeDir for DistDir<'a> {
             let parent = path.parent().unwrap();
 
             let parent_stripped = match parent.strip_prefix(pages_path.clone()).unwrap() {
-                p if p == Path::new("") => "root",
+                p if p == Path::new("") => "#root",
                 p => p.to_str().unwrap(),
             };
             let ext = path.extension().unwrap().to_str().unwrap();
