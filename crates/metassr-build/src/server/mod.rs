@@ -27,7 +27,7 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use targets::Targets;
+use targets::TargetsGenerator;
 
 use anyhow::{anyhow, Result};
 
@@ -67,27 +67,9 @@ impl Build for ServerSideBuilder {
         let pages = src.clone().pages;
         let (special_entries::App(app_path), special_entries::Head(head_path)) = src.specials()?;
 
-        let mut targets = Targets::new();
+        let targets = TargetsGenerator::new(app, pages, &mut cache_dir).generate()?;
 
-        for (page, page_path) in pages.iter() {
-            let (func_id, render_script) = ServerRender::new(&app_path, page_path).generate()?;
-
-            let page = setup_page_path(page, "server.js");
-            let path = cache_dir.insert(
-                PathBuf::from("pages").join(&page).to_str().unwrap(),
-                render_script.as_bytes(),
-            )?;
-
-            targets.insert(func_id, &path);
-        }
-
-        if let Err(e) = WebBundler::new(
-            &targets.ready_for_bundling(),
-            &self.dist_path,
-            BundlingType::Library,
-        )
-        .exec()
-        {
+        if let Err(e) = WebBundler::new(&targets.ready_for_bundling(), &self.dist_path).exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }
 

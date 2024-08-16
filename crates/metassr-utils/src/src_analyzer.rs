@@ -12,8 +12,8 @@ pub mod special_entries {
     pub struct App(pub PathBuf);
 }
 
-type PagesEntriesType = HashMap<String, PathBuf>;
-type SpecialEntriesType = (Option<special_entries::App>, Option<special_entries::Head>);
+pub type PagesEntriesType = HashMap<String, PathBuf>;
+pub type SpecialEntriesType = (Option<special_entries::App>, Option<special_entries::Head>);
 #[derive(Debug, Clone)]
 
 pub struct SourceDirContainer {
