@@ -1,9 +1,6 @@
 use anyhow::Result;
 use std::{
-    collections::HashMap,
-    fs::{self, File},
-    io::{Read, Write},
-    path::{Path, PathBuf},
+    collections::HashMap, ffi::OsStr, fs::{self, File}, io::{Read, Write}, path::{Path, PathBuf}
 };
 use walkdir::WalkDir;
 
@@ -16,8 +13,8 @@ pub struct CacheDir {
 }
 
 impl CacheDir {
-    pub fn new(dir_name: &str) -> Result<Self> {
-        let dir_path = PathBuf::from(dir_name);
+    pub fn new<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Self> {
+        let dir_path = PathBuf::from(path);
 
         if !dir_path.exists() {
             fs::create_dir(dir_path.clone())?;

@@ -17,6 +17,9 @@ let config = {
 
     output: {
         filename: "[name].js",
+        library: {
+            type: "commonjs2",
+        },
         publicPath: ""
     },
     resolve: {
@@ -79,8 +82,6 @@ let config = {
             },
             {
                 test: /\.(png|svg|jpg)$/,
-                // TODO: asset/resource will render different URL in server and client (with host), need fix
-                // type: 'asset/resource',
                 type: 'asset/inline',
             },
         ],
@@ -90,12 +91,8 @@ let config = {
 
 
 
-function web_bundling(entry, type, dist) {
-    if (type === "library") {
-        config.output.library = {
-            type: "commonjs2",
-        }
-    }
+function web_bundling(entry, dist) {
+
     const compiler = rspack(
         {
             ...config,

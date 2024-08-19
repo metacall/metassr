@@ -1,4 +1,4 @@
-use crate::bundler::{BundlingType, WebBundler};
+use crate::bundler::WebBundler;
 use crate::traits::{Build, Exec, Generate};
 use crate::utils::setup_page_path;
 use anyhow::{anyhow, Result};
@@ -60,14 +60,14 @@ impl Build for ClientBuilder {
         let targets = cache_dir
             .entries_in_scope()
             .iter()
-            .map(|(id, path)| {
+            .map(|(entry_name, path)| {
                 let fullpath = path.canonicalize().unwrap();
 
-                (id.to_owned(), format!("{}", fullpath.display()))
+                (entry_name.to_owned(), format!("{}", fullpath.display()))
             })
             .collect::<HashMap<String, String>>();
-
-        let bundler = WebBundler::new(&targets, &self.dist_path, BundlingType::Web);
+       
+        let bundler = WebBundler::new(&targets, &self.dist_path);
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }

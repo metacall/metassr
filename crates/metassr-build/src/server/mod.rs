@@ -1,25 +1,24 @@
-// TODO: Refactoring `ServerSideBuilder.build()`. It's very ugly!
+pub mod renderer;
 
-mod head_renderer;
-mod html_renderer;
+pub mod manifest;
 mod pages_generator;
 mod render;
 mod render_exec;
 mod targets;
 
 use crate::{
-    bundler::{BundlingType, WebBundler},
-    traits::{Build, Exec, Generate},
-    utils::setup_page_path,
+    bundler::WebBundler,
+    traits::{Build, Exec},
 };
+use manifest::ManifestGenerator;
 use metassr_utils::{
     cache_dir::CacheDir,
+    dist_analyzer::DistDir,
     src_analyzer::{special_entries, SourceDir},
     traits::AnalyzeDir,
 };
-
 use pages_generator::PagesGenerator;
-use render::ServerRender;
+
 use std::{
     ffi::OsStr,
     fs,
@@ -27,17 +26,24 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use targets::Targets;
+use targets::TargetsGenerator;
 
 use anyhow::{anyhow, Result};
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum BuildingType {
+    ServerSideRendering,
+    StaticSiteGeneration,
+}
 
 pub struct ServerSideBuilder {
     src_path: PathBuf,
     dist_path: PathBuf,
+    building_type: BuildingType,
 }
 
 impl ServerSideBuilder {
-    pub fn new<S>(root: &S, dist_dir: &str) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str, building_type: BuildingType) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -54,6 +60,7 @@ impl ServerSideBuilder {
         Ok(Self {
             src_path,
             dist_path,
+            building_type,
         })
     }
 }
@@ -65,36 +72,39 @@ impl Build for ServerSideBuilder {
 
         let src = SourceDir::new(&self.src_path).analyze()?;
         let pages = src.clone().pages;
-        let (special_entries::App(app_path), special_entries::Head(head_path)) = src.specials()?;
+        let (special_entries::App(app), special_entries::Head(head)) = src.specials()?;
 
-        let mut targets = Targets::new();
-
-        for (page, page_path) in pages.iter() {
-            let (func_id, render_script) = ServerRender::new(&app_path, page_path).generate()?;
-
-            let page = setup_page_path(page, "server.js");
-            let path = cache_dir.insert(
-                PathBuf::from("pages").join(&page).to_str().unwrap(),
-                render_script.as_bytes(),
-            )?;
-
-            targets.insert(func_id, &path);
-        }
+        let targets = match TargetsGenerator::new(app, pages, &mut cache_dir).generate() {
+            Ok(t) => t,
+            Err(e) => return Err(anyhow!("Couldn't generate targets: {e}")),
+        };
+        dbg!(&targets.ready_for_bundling(&self.dist_path));
 
         if let Err(e) = WebBundler::new(
-            &targets.ready_for_bundling(),
+            &targets.ready_for_bundling(&self.dist_path),
             &self.dist_path,
-            BundlingType::Library,
         )
         .exec()
         {
             return Err(anyhow!("Bundling failed: {e}"));
         }
 
-        // TODO: remove this
-        sleep(Duration::from_secs(3));
+        // TODO: find a solution to remove this line
+        sleep(Duration::from_secs(1));
+        let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
-        PagesGenerator::new(targets, &head_path, &self.dist_path, cache_dir)?.generate()?;
+        dbg!(&dist, &self.dist_path, &self.src_path);
+        ManifestGenerator::new(targets.clone(), cache_dir.clone(), dist)
+            .generate(&head)?
+            .write(&self.dist_path)?;
+
+        if self.building_type == BuildingType::StaticSiteGeneration {
+            if let Err(e) =
+                PagesGenerator::new(targets, &head, &self.dist_path, cache_dir)?.generate()
+            {
+                return Err(anyhow!("Couldn't generate pages: {e}"));
+            }
+        }
         Ok(())
     }
 }

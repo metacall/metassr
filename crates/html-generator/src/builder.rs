@@ -23,6 +23,12 @@ impl HtmlOutput {
     }
 }
 
+impl ToString for HtmlOutput {
+    fn to_string(&self) -> String {
+        self.0.clone()
+    }
+}
+
 pub struct HtmlBuilder {
     template: HtmlTemplate,
     props: HtmlProps,

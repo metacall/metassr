@@ -12,8 +12,8 @@ pub mod special_entries {
     pub struct App(pub PathBuf);
 }
 
-type PagesEntriesType = HashMap<String, PathBuf>;
-type SpecialEntriesType = (Option<special_entries::App>, Option<special_entries::Head>);
+pub type PagesEntriesType = HashMap<String, PathBuf>;
+pub type SpecialEntriesType = (Option<special_entries::App>, Option<special_entries::Head>);
 #[derive(Debug, Clone)]
 
 pub struct SourceDirContainer {
@@ -22,11 +22,8 @@ pub struct SourceDirContainer {
 }
 
 impl SourceDirContainer {
-    pub fn new() -> Self {
-        Self {
-            pages: HashMap::new(),
-            specials: (None, None),
-        }
+    pub fn new(pages: PagesEntriesType, specials: SpecialEntriesType) -> Self {
+        Self { pages, specials }
     }
 
     pub fn specials(&self) -> Result<(special_entries::App, special_entries::Head)> {
@@ -111,7 +108,7 @@ impl AnalyzeDir for SourceDir {
             }
         }
 
-        Ok(Self::Output { pages, specials })
+        Ok(SourceDirContainer::new(pages, specials))
     }
 }
 

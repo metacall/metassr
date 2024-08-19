@@ -583,9 +583,12 @@ dependencies = [
  "metassr-server",
  "metassr-utils",
  "nu-ansi-term 0.50.0",
+ "serde",
  "serde_json",
  "tokio",
  "tower-http",
+ "tower-layer",
+ "tower-service",
  "tracing",
  "tracing-subscriber",
  "walkdir",
@@ -600,6 +603,7 @@ dependencies = [
  "lazy_static",
  "metacall",
  "metassr-utils",
+ "serde",
  "serde_json",
 ]
 
@@ -627,10 +631,13 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "metassr-build",
  "metassr-utils",
  "serde_json",
  "tokio",
  "tower-http",
+ "tower-layer",
+ "tower-service",
  "tracing",
 ]
 
@@ -639,6 +646,7 @@ name = "metassr-utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "serde",
  "walkdir",
 ]
 
@@ -904,18 +912,18 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "serde"
-version = "1.0.204"
+version = "1.0.207"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc76f558e0cbb2a839d37354c575f1dc3fdc6546b5be373ba43d95f231bf7c12"
+checksum = "5665e14a49a4ea1b91029ba7d3bca9f299e1f7cfa194388ccc20f14743e784f2"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.204"
+version = "1.0.207"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0cd7e117be63d3c3678776753929474f3b04a43a080c744d6b0ae2a8c28e222"
+checksum = "6aea2634c86b0e8ef2cfdc0c340baede54ec27b1e46febd7f80dffb2aa44a00e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1115,15 +1123,15 @@ dependencies = [
 
 [[package]]
 name = "tower-layer"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c20c8dbed6283a09604c3e69b4b7eeb54e298b8a600d4d5ecb5ad39de609f1d0"
+checksum = "121c2a6cda46980bb0fcd1647ffaf6cd3fc79a013de288782836f6df9c48780e"
 
 [[package]]
 name = "tower-service"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
+checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "tracing"
