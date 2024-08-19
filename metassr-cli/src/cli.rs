@@ -76,13 +76,10 @@ impl Into<server::BuildingType> for BuildingType {
 
 impl Display for BuildingType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!(
-            "{}",
-            match *self {
-                Self::SSG => "ssg",
-                Self::SSR => "ssr",
-            }
-        ))
+        f.write_str(match *self {
+            Self::SSG => "ssg",
+            Self::SSR => "ssr",
+        })
     }
 }
 
