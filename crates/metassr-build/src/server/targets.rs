@@ -10,7 +10,7 @@ use crate::{traits::Generate, utils::setup_page_path};
 
 use super::render::ServerRender;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Targets(HashMap<PathBuf, i64>);
 
 impl Targets {
@@ -22,11 +22,19 @@ impl Targets {
         self.0.insert(path.to_path_buf(), func_id);
     }
 
-    pub fn ready_for_bundling(&self) -> HashMap<String, String> {
+    pub fn ready_for_bundling(&self, dist_path: &PathBuf) -> HashMap<String, String> {
         self.0
             .keys()
             .map(|path| {
-                let mut name = path.strip_prefix("dist").unwrap().to_path_buf();
+                let mut name = match path.strip_prefix(dist_path) {
+                    Ok(p) => p,
+                    Err(e) => panic!(
+                        "Couldn't \"{}\".strip_prefix(\"{}\"): {e}",
+                        dist_path.display(),
+                        path.display()
+                    ),
+                }
+                .to_path_buf();
                 name.set_extension("");
                 (
                     name.to_str().unwrap().to_string(),
