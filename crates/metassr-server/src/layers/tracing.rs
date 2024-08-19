@@ -12,7 +12,7 @@ use crate::router::RouterMut;
 
 pub trait LayerSetup {
     type LayerOptions;
-    fn setup(options: Self::LayerOptions, app: &mut RouterMut);
+    fn setup<S: Clone + Send + Sync + 'static>(options: Self::LayerOptions, app: &mut RouterMut<S>);
 }
 
 #[derive(Debug)]
@@ -25,7 +25,10 @@ pub struct TracingLayer;
 
 impl LayerSetup for TracingLayer {
     type LayerOptions = TracingLayerOptions;
-    fn setup(options: Self::LayerOptions, app: &mut RouterMut) {
+    fn setup<S: Clone + Send + Sync + 'static>(
+        options: Self::LayerOptions,
+        app: &mut RouterMut<S>,
+    ) {
         let trace_layer = TraceLayer::new_for_http().on_failure(
             |err: ServerErrorsFailureClass, latency: Duration, _span: &Span| {
                 error!(

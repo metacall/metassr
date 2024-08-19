@@ -2,6 +2,7 @@ use std::convert::Infallible;
 
 use axum::{
     extract::Request,
+    handler::Handler,
     response::IntoResponse,
     routing::{MethodRouter, Route},
     Router,
@@ -9,15 +10,16 @@ use axum::{
 use tower_layer::Layer;
 use tower_service::Service;
 
-pub struct RouterMut(Router);
+#[derive(Debug, Clone)]
+pub struct RouterMut<S: Clone + Send + Sync + 'static>(Router<S>);
 
-impl RouterMut {
-    pub fn route(&mut self, path: &str, method_router: MethodRouter<()>) {
+impl<S: Clone + Send + Sync + 'static> RouterMut<S> {
+    pub fn route(&mut self, path: &str, method_router: MethodRouter<S>) {
         let app = self.0.clone();
         self.0 = app.route(path, method_router);
     }
 
-    pub fn app(&self) -> Router {
+    pub fn app(&self) -> Router<S> {
         self.0.clone()
     }
 
@@ -31,10 +33,18 @@ impl RouterMut {
     {
         self.0 = self.0.clone().layer(layer)
     }
+
+    pub fn fallback<H, T>(&mut self, handler: H)
+    where
+        H: Handler<T, S>,
+        T: 'static,
+    {
+        self.0 = self.0.clone().fallback(handler);
+    }
 }
 
-impl From<Router> for RouterMut {
-    fn from(router: Router) -> Self {
+impl<S: Clone + Send + Sync + 'static> From<Router<S>> for RouterMut<S> {
+    fn from(router: Router<S>) -> Self {
         Self(router)
     }
 }
