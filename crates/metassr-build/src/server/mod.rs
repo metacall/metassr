@@ -78,7 +78,7 @@ impl Build for ServerSideBuilder {
             Ok(t) => t,
             Err(e) => return Err(anyhow!("Couldn't generate targets: {e}")),
         };
-        dbg!(&targets.ready_for_bundling(&self.dist_path));
+
 
         if let Err(e) = WebBundler::new(
             &targets.ready_for_bundling(&self.dist_path),
@@ -93,7 +93,6 @@ impl Build for ServerSideBuilder {
         sleep(Duration::from_secs(1));
         let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
-        dbg!(&dist, &self.dist_path, &self.src_path);
         ManifestGenerator::new(targets.clone(), cache_dir.clone(), dist)
             .generate(&head)?
             .write(&self.dist_path)?;

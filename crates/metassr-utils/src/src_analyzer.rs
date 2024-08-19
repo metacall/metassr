@@ -88,7 +88,6 @@ impl AnalyzeDir for SourceDir {
 
             match stripped.iter().next() {
                 Some(_) if list_of_specials.contains(&stem) => {
-                    dbg!(&stem);
                     match stem {
                         "_app" => specials.0 = Some(special_entries::App(path.to_path_buf())),
                         "_head" => specials.1 = Some(special_entries::Head(path.to_path_buf())),

@@ -10,5 +10,3 @@ hydrateRoot(
         <App Component={Page}/>
     </React.StrictMode>
 );
-
-console.log(renderToString(<App Component={Page} />))
