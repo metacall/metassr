@@ -17,23 +17,33 @@ use metassr_utils::{
     src_analyzer::{special_entries, SourceDir},
     traits::AnalyzeDir,
 };
+use pages_generator::PagesGenerator;
 
 use std::{
     ffi::OsStr,
     fs,
     path::{Path, PathBuf},
+    thread::sleep,
+    time::Duration,
 };
 use targets::TargetsGenerator;
 
 use anyhow::{anyhow, Result};
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum BuildingType {
+    ServerSideRendering,
+    StaticSiteGeneration,
+}
+
 pub struct ServerSideBuilder {
     src_path: PathBuf,
     dist_path: PathBuf,
+    building_type: BuildingType,
 }
 
 impl ServerSideBuilder {
-    pub fn new<S>(root: &S, dist_dir: &str) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str, building_type: BuildingType) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -50,6 +60,7 @@ impl ServerSideBuilder {
         Ok(Self {
             src_path,
             dist_path,
+            building_type,
         })
     }
 }
@@ -63,18 +74,37 @@ impl Build for ServerSideBuilder {
         let pages = src.clone().pages;
         let (special_entries::App(app), special_entries::Head(head)) = src.specials()?;
 
-        let targets = TargetsGenerator::new(app, pages, &mut cache_dir).generate()?;
+        let targets = match TargetsGenerator::new(app, pages, &mut cache_dir).generate() {
+            Ok(t) => t,
+            Err(e) => return Err(anyhow!("Couldn't generate targets: {e}")),
+        };
+        dbg!(&targets.ready_for_bundling(&self.dist_path));
 
-        if let Err(e) = WebBundler::new(&targets.ready_for_bundling(), &self.dist_path).exec() {
+        if let Err(e) = WebBundler::new(
+            &targets.ready_for_bundling(&self.dist_path),
+            &self.dist_path,
+        )
+        .exec()
+        {
             return Err(anyhow!("Bundling failed: {e}"));
         }
 
+        // TODO: find a solution to remove this line
+        sleep(Duration::from_secs(1));
         let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
-        ManifestGenerator::new(targets, cache_dir.clone(), dist)
+        dbg!(&dist, &self.dist_path, &self.src_path);
+        ManifestGenerator::new(targets.clone(), cache_dir.clone(), dist)
             .generate(&head)?
             .write(&self.dist_path)?;
 
+        if self.building_type == BuildingType::StaticSiteGeneration {
+            if let Err(e) =
+                PagesGenerator::new(targets, &head, &self.dist_path, cache_dir)?.generate()
+            {
+                return Err(anyhow!("Couldn't generate pages: {e}"));
+            }
+        }
         Ok(())
     }
 }

@@ -121,7 +121,7 @@ impl ManifestGenerator {
     pub fn generate<H: AsRef<OsStr> + ?Sized>(&self, head: &H) -> Result<Manifest> {
         let global = GlobalEntry::new(head, &self.cache.dir_path())?;
         let mut manifest = Manifest::new(global);
-
+       
         for (path, &id) in self.targets.iter() {
             let route = match path
                 .strip_prefix(self.cache.dir_path().join("pages"))?
@@ -135,7 +135,7 @@ impl ManifestGenerator {
             let page_entry = match self.dist.pages.get(route) {
                 Some(e) => e,
                 None => {
-                    return Err(anyhow!("No Entries founded for: {:#?}", route));
+                    return Err(anyhow!("manifest: No Entries founded for: {:#?}", route));
                 }
             };
             manifest.insert(route, id, page_entry, path.canonicalize()?);

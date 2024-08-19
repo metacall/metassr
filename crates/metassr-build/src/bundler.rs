@@ -33,8 +33,6 @@ impl Default for BundleSciptLoadingState {
     }
 }
 
-
-
 #[derive(Debug)]
 
 pub struct WebBundler<'a> {
@@ -43,10 +41,7 @@ pub struct WebBundler<'a> {
 }
 
 impl<'a> WebBundler<'a> {
-    pub fn new<S>(
-        targets: &'a HashMap<String, String>,
-        dist_path: &'a S,
-    ) -> Self
+    pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S) -> Self
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -54,6 +49,7 @@ impl<'a> WebBundler<'a> {
             .iter()
             .map(|(k, v)| (k.into(), Path::new(v)))
             .collect();
+
         Self {
             targets,
             dist_path: Path::new(dist_path),

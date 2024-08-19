@@ -19,7 +19,7 @@ use super::{
 };
 
 pub struct PagesGenerator {
-    cached_pages: PathBuf,
+    cache: PathBuf,
     dist: DistDirContainer,
     head: String,
     output: HashMap<String, String>,
@@ -34,14 +34,14 @@ impl PagesGenerator {
     ) -> Result<Self> {
         let dist = DistDir::new(dist_path)?.analyze()?;
         let head = HeadRenderer::new(&head_path, cache_dir.clone()).render()?;
-        let cached_pages = cache_dir.dir_path().join("pages");
+        let cache = cache_dir.dir_path();
 
         let output = MultiRenderExec::new(targets.ready_for_exec())?.exec()?;
 
         Ok(Self {
             dist,
             head,
-            cached_pages,
+            cache,
             output,
         })
     }
@@ -49,21 +49,25 @@ impl PagesGenerator {
     pub fn generate(&self) -> Result<()> {
         for (path, html_body) in &self.output {
             let path = Path::new(&path).parent().unwrap();
-            let path_str = match path
-                .strip_prefix(self.cached_pages.to_str().unwrap())?
-                .to_str()
-                .unwrap()
-            {
-                "" => "root",
-                p => p,
+            // dbg!(&path, &self.cache.join(""));
+            let route = match path.strip_prefix(self.cache.join("pages"))? {
+                p if p == Path::new("") => "#root",
+                p => p.to_str().unwrap(),
             };
 
-            let page_entry = self.dist.pages.get(path_str);
+            let page_entry = self.dist.pages.get(route);
             match page_entry {
                 Some(page_entry) => {
-                    HtmlRenderer::new(&self.head, html_body, page_entry).render()?;
+                    // dbg!(&path.join("index.html"));
+                    HtmlRenderer::new(&self.head, html_body, page_entry)
+                        .render()?
+                        .write(page_entry.path.join("index.html"))?;
                 }
-                None => return Err(anyhow!("No Entries founded for this page: {:#?}", path)),
+                None => {
+                    return Err(anyhow!(
+                    "ssg: No Entries founded for this page: route = {route:#?}, path = {path:#?}",
+                ))
+                }
             }
         }
         Ok(())
