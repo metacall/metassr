@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use metacall::switch;
 
 use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
-use metassr_server::{Server, ServerConfigs};
+use metassr_server::{RunningType, Server, ServerConfigs};
 
 use std::{
     env::{current_dir, set_current_dir, set_var},
@@ -16,7 +16,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -45,7 +45,10 @@ async fn main() -> Result<()> {
     let _metacall = switch::initialize().unwrap();
 
     match args.commands {
-        Some(Commands::Build { out_dir }) => {
+        Some(Commands::Build {
+            out_dir,
+            build_type,
+        }) => {
             let instant = Instant::now();
             if let Err(e) = ClientBuilder::new("", &out_dir)?.build() {
                 error!(
@@ -58,7 +61,7 @@ async fn main() -> Result<()> {
             // TODO: find a solution to remove this
             sleep(Duration::from_secs(1));
 
-            if let Err(e) = ServerSideBuilder::new("", &out_dir)?.build() {
+            if let Err(e) = ServerSideBuilder::new("", &out_dir, build_type.into())?.build() {
                 error!(
                     target = "builder",
                     message = format!("Couldn't build for the server side: {e}"),
@@ -74,12 +77,20 @@ async fn main() -> Result<()> {
                 );
             }
         }
-        Some(Commands::Run { port }) => {
+        Some(Commands::Run { port, serve }) => {
+            let running_type = match serve {
+                true => RunningType::SSG,
+                false => RunningType::SSR,
+            };
+
             let server_configs = ServerConfigs {
                 port,
                 _enable_http_logging: allow_http_debug,
                 root_path: current_dir()?,
+                running_type,
             };
+
+            info!("Running your web application on {:?} mode", running_type);
 
             Server::new(server_configs).run().await?;
         }
