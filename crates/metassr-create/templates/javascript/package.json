@@ -1,0 +1,25 @@
+{
+  "name": "NAME",
+  "version": "%VER%",
+  "description": "%DESC%",
+  "scripts": {
+    "run": "metassr-cli --debug-mode=http run",
+    "build:ssr": "metassr-cli --debug-mode=metacall build -t ssr",
+    "serve:ssg": "metassr-cli --debug-mode=http run --serve",
+    "build:ssg": "metassr-cli --debug-mode=metacall build -t ssg",
+    "dev": "rspack --watch"
+  },
+  "devDependencies": {
+    "@rspack/cli": "^0.7.5",
+    "@rspack/core": "^0.7.5",
+    "@swc/cli": "^0.3.12",
+    "@swc/core": "^1.4.16",
+    "@swc/helpers": "^0.5.11",
+    "@types/react": "^18.0.24",
+    "@types/react-dom": "^18.0.8"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
