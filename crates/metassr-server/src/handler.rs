@@ -9,27 +9,40 @@ use metassr_utils::{
     dist_analyzer::{DistDir, PageEntry},
     traits::AnalyzeDir,
 };
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
+
+use crate::RunningType;
 
 use super::router::RouterMut;
 
-pub struct PagesHandler<'a> {
-    pub app: &'a mut RouterMut,
+pub struct PagesHandler<'a, S: Clone + Send + Sync + 'static> {
+    pub app: &'a mut RouterMut<S>,
     pub pages: HashMap<String, PageEntry>,
     pub dist_dir: PathBuf,
+    pub running_type: RunningType,
 }
 
-impl<'a> PagesHandler<'a> {
-    pub fn new(app: &'a mut RouterMut, dist_dir: &str) -> Result<Self> {
+impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
+    pub fn new(
+        app: &'a mut RouterMut<S>,
+        dist_dir: &str,
+        running_type: RunningType,
+    ) -> Result<Self> {
         Ok(Self {
             app,
             pages: DistDir::new(&dist_dir)?.analyze()?.pages,
             dist_dir: PathBuf::from(dist_dir),
+            running_type,
         })
     }
     pub fn build(&mut self) -> Result<()> {
-        for (route, _) in self.pages.iter() {
-            let html = Box::new(PageRenderer::from_manifest(&self.dist_dir, route)?.render()?);
+        for (route, entries) in self.pages.iter() {
+            let html = match self.running_type {
+                RunningType::SSG => Box::new(read_to_string(entries.path.join("index.html"))?),
+                RunningType::SSR => {
+                    Box::new(PageRenderer::from_manifest(&self.dist_dir, route)?.render()?)
+                }
+            };
 
             let handler =
                 move |Query(params): Query<HashMap<String, String>>,
