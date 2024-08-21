@@ -625,6 +625,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "metassr-create"
+version = "0.1.0"
+dependencies = [
+ "walkdir",
+]
+
+[[package]]
 name = "metassr-server"
 version = "0.0.1-alpha"
 dependencies = [

@@ -39,6 +39,7 @@ members = [
     "crates/metassr-utils",
     "crates/html-generator",
     "metassr-cli",
+    "crates/metassr-create",
 ]
 
 [[bin]]
