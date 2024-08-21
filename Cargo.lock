@@ -628,6 +628,7 @@ dependencies = [
 name = "metassr-create"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "walkdir",
 ]
 
