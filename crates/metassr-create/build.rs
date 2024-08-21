@@ -12,7 +12,7 @@ fn main() {
 
     generated_code.push_str("use std::collections::HashMap;\n\n");
     generated_code
-        .push_str("pub fn load_templates() -> HashMap<String, HashMap<String, String>> {\n");
+        .push_str("pub fn load_templates() -> HashMap<String, HashMap<String, Vec<u8>>> {\n");
     generated_code.push_str("    let mut templates = HashMap::new();\n");
 
     for entry in WalkDir::new(templates_dir)
@@ -30,10 +30,10 @@ fn main() {
             .join("/");
 
         generated_code.push_str(&format!(
-            "    templates.entry(\"{}\".to_string()).or_insert_with(HashMap::new).insert(\"{}\".to_string(), include_str!(r#\"{}\"#).to_string());\n",
+            "    templates.entry(\"{}\".to_string()).or_insert_with(HashMap::new).insert(\"{}\".to_string(), include_bytes!(r#\"{}\"#).to_vec());\n",
             template_name,
             file_name,
-            path.display()
+            path.canonicalize().unwrap().display()
         ));
     }
 
