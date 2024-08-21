@@ -30,6 +30,7 @@ html-generator = { path = "crates/html-generator" }
 serde = "1.0.207"
 tower-layer = "0.3.3"
 tower-service = "0.3.3"
+metassr-create = { version = "0.1.0", path = "crates/metassr-create" }
 
 [workspace]
 members = [

@@ -580,6 +580,7 @@ dependencies = [
  "logger",
  "metacall",
  "metassr-build",
+ "metassr-create",
  "metassr-server",
  "metassr-utils",
  "nu-ansi-term 0.50.0",
@@ -617,6 +618,7 @@ dependencies = [
  "logger",
  "metacall",
  "metassr-build",
+ "metassr-create",
  "metassr-server",
  "tokio",
  "tower-http",
@@ -628,6 +630,7 @@ dependencies = [
 name = "metassr-create"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "walkdir",
 ]
 

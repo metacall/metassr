@@ -19,3 +19,4 @@ tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
 logger = { path = "../crates/logger" }
 metassr-server = { path = "../crates/metassr-server" }
 metassr-build = { path = "../crates/metassr-build" }
+metassr-create = { version = "0.1.0", path = "../crates/metassr-create" }

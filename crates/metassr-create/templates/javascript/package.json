@@ -1,5 +1,5 @@
 {
-  "name": "NAME",
+  "name": "%NAME%",
   "version": "%VER%",
   "description": "%DESC%",
   "scripts": {

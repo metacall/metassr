@@ -1,7 +1,14 @@
-use std::{fmt::Display, str::FromStr};
+mod builder;
+mod creator;
+mod runner;
+pub mod traits;
+
+pub use builder::*;
+pub use creator::*;
+pub use runner::*;
 
 use clap::{command, Parser, Subcommand, ValueEnum};
-use metassr_build::server;
+
 #[derive(Parser, Debug)]
 #[command(
     author,
@@ -37,7 +44,7 @@ pub enum DebugMode {
     Http,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Subcommand, PartialEq, Eq)]
 pub enum Commands {
     /// Building your web application.
     Build {
@@ -55,43 +62,23 @@ pub enum Commands {
         #[arg(long)]
         serve: bool,
     },
-}
 
-#[derive(Debug, ValueEnum, PartialEq, Eq, Clone)]
-pub enum BuildingType {
-    /// Static-Site Generation.
-    SSG,
-    /// Server-Side Rendering.
-    SSR,
-}
+    /// Create a new metassr project.
+    Create {
+        /// The name of project
+        #[arg(index = 1)]
+        project_name: String,
 
-impl Into<server::BuildingType> for BuildingType {
-    fn into(self) -> server::BuildingType {
-        match self {
-            Self::SSG => server::BuildingType::StaticSiteGeneration,
-            Self::SSR => server::BuildingType::ServerSideRendering,
-        }
-    }
-}
+        /// The version of your web application
+        #[arg(long, short, default_value_t = String::from("1.0.0"))]
+        version: String,
 
-impl Display for BuildingType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match *self {
-            Self::SSG => "ssg",
-            Self::SSR => "ssr",
-        })
-    }
-}
+        /// The description of your web application
+        #[arg(long, short, default_value_t = String::from("A web application built with MetaSSR framework."))]
+        description: String,
 
-impl FromStr for BuildingType {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "ssr" => Ok(BuildingType::SSR),
-            "server-side rendering" => Ok(BuildingType::SSR),
-            "ssg" => Ok(BuildingType::SSG),
-            "static-site generation" => Ok(BuildingType::SSG),
-            _ => Err("unsupported option.".to_string()),
-        }
-    }
+        /// Template of your new project
+        #[arg(long, short, default_value_t = Template::Javascript)]
+        template: Template,
+    },
 }

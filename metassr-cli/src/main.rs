@@ -1,98 +1,70 @@
 mod cli;
 use clap::Parser;
-use cli::{Args, Commands, DebugMode};
+use cli::{
+    traits::{AsyncExec, Exec},
+    Args, Commands, DebugMode,
+};
 use logger::LoggingLayer;
 
-use anyhow::{anyhow, Result};
-use metacall::switch;
-
-use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
-use metassr_server::{RunningType, Server, ServerConfigs};
+use anyhow::Result;
 
 use std::{
-    env::{current_dir, set_current_dir, set_var},
+    env::{set_current_dir, set_var},
     path::Path,
-    thread::sleep,
-    time::{Duration, Instant},
 };
 
-use tracing::{debug, error, info};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+
     let allow_metacall_debug =
         [Some(DebugMode::All), Some(DebugMode::Metacall)].contains(&args.debug_mode);
     let allow_http_debug = [Some(DebugMode::All), Some(DebugMode::Http)].contains(&args.debug_mode);
 
-    tracing_subscriber::registry()
-        .with(LoggingLayer {
-            logfile: args.log_file,
-        })
-        .init();
+    if let Some(Commands::Create { .. }) = args.commands {
+        tracing_subscriber::fmt()
+            .with_target(false)
+            .without_time()
+            .compact()
+            .init();
+    } else {
+        tracing_subscriber::registry()
+            .with(LoggingLayer {
+                logfile: args.log_file,
+            })
+            .init();
+        let project_root = Path::new(&args.root);
 
-    let project_root = Path::new(&args.root);
+        set_current_dir(project_root)
+            .map_err(|err| eprintln!("Cannot chdir: {err}"))
+            .unwrap();
 
-    set_current_dir(project_root)
-        .map_err(|err| eprintln!("Cannot chdir: {err}"))
-        .unwrap();
-
-    if allow_metacall_debug {
-        set_var("METACALL_DEBUG", "1");
+        if allow_metacall_debug {
+            set_var("METACALL_DEBUG", "1");
+        }
     }
-
-    let _metacall = switch::initialize().unwrap();
 
     match args.commands {
         Some(Commands::Build {
             out_dir,
             build_type,
         }) => {
-            let instant = Instant::now();
-            if let Err(e) = ClientBuilder::new("", &out_dir)?.build() {
-                error!(
-                    target = "builder",
-                    message = format!("Couldn't build for the client side:  {e}"),
-                );
-                return Err(anyhow!("Couldn't continue building process."));
-            }
-
-            // TODO: find a solution to remove this
-            sleep(Duration::from_secs(1));
-
-            if let Err(e) = ServerSideBuilder::new("", &out_dir, build_type.into())?.build() {
-                error!(
-                    target = "builder",
-                    message = format!("Couldn't build for the server side: {e}"),
-                );
-                return Err(anyhow!("Couldn't continue building process."));
-            }
-
-            if (_metacall.0)() == 0 {
-                debug!(
-                    target = "builder",
-                    message = "Building is completed",
-                    time = format!("{}ms", instant.elapsed().as_millis())
-                );
-            }
+            cli::Builder::new(build_type, out_dir).exec()?;
         }
         Some(Commands::Run { port, serve }) => {
-            let running_type = match serve {
-                true => RunningType::SSG,
-                false => RunningType::SSR,
-            };
-
-            let server_configs = ServerConfigs {
-                port,
-                _enable_http_logging: allow_http_debug,
-                root_path: current_dir()?,
-                running_type,
-            };
-
-            info!("Running your web application on {:?} mode", running_type);
-
-            Server::new(server_configs).run().await?;
+            cli::Runner::new(port, serve, allow_http_debug)
+                .exec()
+                .await?;
+        }
+        Some(Commands::Create {
+            project_name,
+            version,
+            description,
+            template,
+        }) => {
+            cli::Creator::new(project_name, version, description, template).exec()?;
         }
         _ => {}
     };
