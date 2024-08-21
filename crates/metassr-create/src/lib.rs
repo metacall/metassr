@@ -43,7 +43,7 @@ impl Creator {
             let path = root.join(&file);
             create_dir_all(path.parent().unwrap())?;
 
-            File::create(path)?.write(&buf)?;
+            let _ = File::create(path)?.write(&buf)?;
         }
 
         Ok(())

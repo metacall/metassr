@@ -1,7 +1,7 @@
-use std::env::current_dir;
-
 use anyhow::Result;
+use metacall::switch;
 use metassr_server::{RunningType, Server, ServerConfigs};
+use std::env::current_dir;
 use tracing::info;
 
 use super::traits::AsyncExec;
@@ -23,6 +23,7 @@ impl Runner {
 }
 impl AsyncExec for Runner {
     async fn exec(&self) -> Result<()> {
+        let _metacall = switch::initialize().unwrap();
         let running_type = match self.is_served {
             true => RunningType::SSG,
             false => RunningType::SSR,

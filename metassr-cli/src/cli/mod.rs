@@ -4,6 +4,7 @@ mod runner;
 pub mod traits;
 
 pub use builder::*;
+pub use creator::*;
 pub use runner::*;
 
 use clap::{command, Parser, Subcommand, ValueEnum};
@@ -43,7 +44,7 @@ pub enum DebugMode {
     Http,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Subcommand, PartialEq, Eq)]
 pub enum Commands {
     /// Building your web application.
     Build {
@@ -60,5 +61,24 @@ pub enum Commands {
         /// Serve your generated static-site
         #[arg(long)]
         serve: bool,
+    },
+
+    /// Create a new metassr project.
+    Create {
+        /// The name of project
+        #[arg(index = 1)]
+        project_name: String,
+
+        /// The version of your web application
+        #[arg(long, short, default_value_t = String::from("1.0.0"))]
+        version: String,
+
+        /// The description of your web application
+        #[arg(long, short, default_value_t = String::from("A web application built with MetaSSR framework."))]
+        description: String,
+
+        /// Template of your new project
+        #[arg(long, short, default_value_t = Template::Javascript)]
+        template: Template,
     },
 }
