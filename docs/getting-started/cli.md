@@ -4,14 +4,16 @@ The MetaSSR CLI is a powerful tool designed to streamline the development, build
 
 ## Table of Contents
 
-- [Global Options](#global-options)
-- [Commands Overview](#commands-overview)
-- [Detailed Command Descriptions](#detailed-command-descriptions)
-  - [`build`](#build)
-  - [`run`](#run)
-  - [`create`](#create)
-- [Examples](#examples)
-- [Conclusion](#conclusion)
+- [MetaSSR CLI Documentation](#metassr-cli-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Global Options](#global-options)
+  - [Commands Overview](#commands-overview)
+  - [Detailed Command Descriptions](#detailed-command-descriptions)
+    - [`build`](#build)
+    - [`run`](#run)
+    - [`create`](#create)
+  - [Examples](#examples)
+  - [Conclusion](#conclusion)
 
 ---
 
@@ -165,7 +167,7 @@ Here are some practical examples of how to use the MetaSSR CLI:
 4. **Build the project and output to a custom directory with debug mode enabled:**
 
    ```bash
-   metassr build --out-dir custom-build --debug-mode all
+   metassr --debug-mode=all build --out-dir custom-build
    ```
 
 ---

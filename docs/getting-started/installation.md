@@ -6,13 +6,15 @@ Welcome to _**MetaSSR**_! This guide will walk you through the installation proc
 ## Table of Contents
 
 
-- [Manual Installation Steps from Source](#manual-installation-steps-from-source)
-  - [Prerequisites](#prerequisites)
-  - [1. Clone Git Repository](#1-clone-git-repository)
-  - [2. Compiling](#2-compiling)
-  - [3. Add the CLI Binary to PATH (Linux)](#3-add-the-cli-binary-to-path-linux)
-  - [4. Create Your First Project](#4-create-your-first-project)
-- [Conclusion](#conclusion)
+- [Installation Guide](#installation-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Manual Installation Steps from Source](#manual-installation-steps-from-source)
+    - [Prerequisites](#prerequisites)
+    - [1. Clone Git Repository](#1-clone-git-repository)
+    - [2. Compiling](#2-compiling)
+    - [3. Add the CLI Binary to PATH (Linux)](#3-add-the-cli-binary-to-path-linux)
+    - [4. Create Your First Project](#4-create-your-first-project)
+  - [Conclusion](#conclusion)
 
 ## Manual Installation Steps from Source
 
@@ -53,7 +55,7 @@ $ cargo build --release
 Now, you'll want to make the binary of `metassr-cli` globally accessible. To do this on Linux, add the binary to your PATH:
 
 ```bash
-sudo ln -s $(pwd)/target/release/metassr-cli /usr/local/bin/metassr-cli
+sudo ln -s $(pwd)/target/release/metassr-cli /usr/local/bin/metassr
 ```
 
 ### 4. Create Your First Project
@@ -61,7 +63,7 @@ sudo ln -s $(pwd)/target/release/metassr-cli /usr/local/bin/metassr-cli
 After completing the above steps, you'll be able to create your first web application with ***MetaSSR***!
 
 ```bash
-$ metassr-cli create <project-name>
+$ metassr create <project-name>
 ```
 
 ## Conclusion
