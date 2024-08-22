@@ -8,7 +8,7 @@ Thank you for your interest in contributing to MetaSSR! We welcome contributions
 
 If you encounter a bug or have a suggestion for a new feature, please report it using the following steps:
 
-1. **Check Existing Issues**: Before creating a new issue, search the [issue tracker](https://github.com/metacall/rust-http-ssr/issues) to see if your issue or feature request has already been reported.
+1. **Check Existing Issues**: Before creating a new issue, search the [issue tracker](https://github.com/metacall/metassr/issues) to see if your issue or feature request has already been reported.
 2. **Create a New Issue**: If your issue is not listed, create a new issue with a clear and descriptive title. Provide as much detail as possible about the problem or feature request.
 
 ### 2. Submitting Code Contributions
@@ -45,7 +45,7 @@ To contribute code, follow these steps:
    git push origin feature/your-feature-name
    ```
 
-8. **Create a Pull Request**: Go to the [pull requests page](https://github.com/metacall/rust-http-ssr/pulls) of the original repository and create a new pull request. Provide a detailed description of your changes and any relevant information.
+8. **Create a Pull Request**: Go to the [pull requests page](https://github.com/metacall/metassr/pulls) of the original repository and create a new pull request. Provide a detailed description of your changes and any relevant information.
 
 ### 3. Code Review and Merge
 
@@ -93,7 +93,7 @@ Please adhere to our [Code of Conduct](code-of-conduct.md) while participating i
 
 ## Getting Help
 
-If you have any questions or need assistance, feel free to reach out to us through the project's [discussion forum](https://github.com/metacall/rust-http-ssr/discussions) or open an issue.
+If you have any questions or need assistance, feel free to reach out to us through the project's [discussion forum](https://github.com/metacall/metassr/discussions) or open an issue.
 
 Thank you for contributing to MetaSSR!
 

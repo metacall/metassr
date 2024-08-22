@@ -26,7 +26,7 @@ Examples of unacceptable behavior include:
 
 ## Enforcement
 
-If you witness or experience any behavior that violates this Code of Conduct, please report it to the community maintainers. Reports can be submitted through our issue tracker on [GitHub](https://github.com/metacall/rust-http-ssr/issues).
+If you witness or experience any behavior that violates this Code of Conduct, please report it to the community maintainers. Reports can be submitted through our issue tracker on [GitHub](https://github.com/metacall/metassr/issues).
 
 We will review and address all reports promptly. Depending on the severity of the violation, actions may include:
 

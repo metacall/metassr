@@ -38,7 +38,7 @@ git --version
 At first, you need to clone this repository:
 
 ```bash
-$ git clone https://github.com/metacall/rust-http-ssr.git metassr
+$ git clone https://github.com/metacall/metassr.git metassr
 $ cd metassr
 ```
 
@@ -70,6 +70,6 @@ $ metassr create <project-name>
 
 You have successfully installed and set up your first SSR framework project! Explore the [docs](../README.md) for more advanced features and customization options.
 
-If you encounter any issues during installation, please reach out to our community on [GitHub](https://github.com/metacall/rust-http-ssr) and open a new issue!
+If you encounter any issues during installation, please reach out to our community on [GitHub](https://github.com/metacall/metassr) and open a new issue!
 
 Happy coding!

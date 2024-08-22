@@ -41,8 +41,8 @@ To ensure a positive and inclusive environment, please review our [Code of Condu
 
 Stay connected and updated with MetaSSR:
 
-- **GitHub**: [MetaSSR Repository](https://github.com/metacall/rust-http-ssr)
-- **Discussion Forum**: [Join the Conversation](https://github.com/metacall/rust-http-ssr/discussions)
+- **GitHub**: [MetaSSR Repository](https://github.com/metacall/metassr)
+- **Discussion Forum**: [Join the Conversation](https://github.com/metacall/metassr/discussions)
 - **Twitter**: [Follow US](https://twitter.com/metacallio)
 - **Metacall Community**: 
   - [Discord](https://discord.gg/upwP4mwJWa)
