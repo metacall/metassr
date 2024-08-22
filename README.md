@@ -51,7 +51,7 @@ Stay connected and updated with MetaSSR:
 
 ## License
 
-MetaSSR is licensed under the [MIT License](LICENSE.md). See the LICENSE file for more details.
+MetaSSR is licensed under the [MIT License](LICENSE). See the LICENSE file for more details.
 
 ## Acknowledgments
 
