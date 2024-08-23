@@ -15,7 +15,7 @@ If you're new to the SSR Framework, start here! The [Getting Started](./getting-
 
 - [Installation](./getting-started/installation.md)
 - [Command line interface](./getting-started/cli.md)
-
+- [Folder Structure](./getting-started/folder-structure.md)
 
 
 
