@@ -25,40 +25,40 @@
 
 - [ ] Server handler
   
-A function executes in the server side when the client sends an http request.
+    A function executes in the server side when the client sends an http request.
 
 
-**Example**
-```javascript
-import React, { useState, ReactNode } from 'react';
-import { useHandlerResult, usePageProps } from "metassr"
-export default function Article() {
-    let [counter, setCounter] = useState(0);
-    let { title } = usePageProps();
-    let { data } = useHandlerResult();
+    **Example**
+    ```javascript
+    import React, { useState, ReactNode } from 'react';
+    import { useHandlerResult, usePageProps } from "metassr"
+    export default function Article() {
+        let [counter, setCounter] = useState(0);
+        let { title } = usePageProps();
+        let { data } = useHandlerResult();
 
-    return (
-        <div>
-            <div className="text-4xl font-bold">This is a cool article</div>
-            <div>Article's title: {title}</div>
-        </div>
-    )
+        return (
+            <div>
+                <div className="text-4xl font-bold">This is a cool article</div>
+                <div>Article's title: {title}</div>
+            </div>
+        )
 
-}
-
-
-export function serverHandler(req: Request): HandlerResult {
-    let articles = read_article_content_from_db();
-    // ... Stuff
-
-    return {
-        data: articles,
-        statusCode: 200
-        // ...
     }
-}
-```
+
+
+    export function serverHandler(req: Request): HandlerResult {
+        let articles = read_article_content_from_db();
+        // ... Stuff
+
+        return {
+            data: articles,
+            statusCode: 200
+            // ...
+        }
+    }
+    ```
 
 - [ ] ``api`` route.
 
-- [ ] `create` command for `metassr-cli`.
+- [x] `create` command for `metassr-cli`.

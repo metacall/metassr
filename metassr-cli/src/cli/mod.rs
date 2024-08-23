@@ -14,24 +14,21 @@ use clap::{command, Parser, Subcommand, ValueEnum};
     author,
     version,
     about = "
-Command line interface application for MetaSSR framework
+Command line interface application for MetaSSR framework. This CLI tool helps you manage and deploy your MetaSSR projects.
 "
 )]
-
 pub struct Args {
-    /// The path of project root
-    #[arg(long, default_value_t = String::from("."))]
+    /// The path of the project root directory.
+    #[arg(long)]
     pub root: String,
-    /// Run with debug mode (add more information with logs)
+
+    /// Enable debug mode to provide more detailed logs.
     #[arg(long)]
     pub debug_mode: Option<DebugMode>,
 
-    /// The path where your logs want be saved
-    #[arg[long]]
-    pub log_file: Option<String>,
-    /// Show HTTP logs (requests & responses)
+    /// Specify the file path where logs will be saved. If not provided, logs will be shown in the console only.
     #[arg(long)]
-    pub enable_http_logging: bool,
+    pub log_file: Option<String>,
 
     #[command(subcommand)]
     pub commands: Option<Commands>,
@@ -39,46 +36,54 @@ pub struct Args {
 
 #[derive(Debug, ValueEnum, PartialEq, Eq, Clone)]
 pub enum DebugMode {
+    /// Enables all available debug logs.
     All,
+    /// Logs related specifically to MetaCall operations.
     Metacall,
+    /// Logs HTTP request and response details.
     Http,
 }
 
 #[derive(Debug, Subcommand, PartialEq, Eq)]
 pub enum Commands {
-    /// Building your web application.
+    /// Builds your web application into a deployable format.
     Build {
-        #[arg(long, default_value_t = String::from("dist"))]
+        /// The output directory where build files will be saved.
+        #[arg(long)]
         out_dir: String,
-        #[arg(short = 't', long = "type", default_value_t = BuildingType::SSR)]
+
+        /// The type of build to perform. Choose between SSR (Server-Side Rendering) and SSG (Static Site Generation).
+        #[arg(short = 't', long = "type")]
         build_type: BuildingType,
     },
-    /// Run your Server-side rendered web application.
+
+    /// Runs the Server-Side Rendered (SSR) application.
     Run {
-        /// the port where HTTP server running.
-        #[arg(long, default_value_t = 8080)]
+        /// The port number on which the HTTP server will run.
+        #[arg(long)]
         port: u16,
-        /// Serve your generated static-site
+
+        /// Serve the generated static site directly.
         #[arg(long)]
         serve: bool,
     },
 
-    /// Create a new metassr project.
+    /// Creates a new MetaSSR project with the specified template.
     Create {
-        /// The name of project
+        /// The name of the new project. This is a required argument.
         #[arg(index = 1)]
         project_name: String,
 
-        /// The version of your web application
-        #[arg(long, short, default_value_t = String::from("1.0.0"))]
+        /// The version of your web application.
+        #[arg(long, short)]
         version: String,
 
-        /// The description of your web application
-        #[arg(long, short, default_value_t = String::from("A web application built with MetaSSR framework."))]
+        /// A brief description of your web application.
+        #[arg(long, short)]
         description: String,
 
-        /// Template of your new project
-        #[arg(long, short, default_value_t = Template::Javascript)]
+        /// The template to use for creating the new project.
+        #[arg(long, short)]
         template: Template,
     },
 }
