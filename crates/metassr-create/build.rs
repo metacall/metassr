@@ -19,6 +19,11 @@ fn main() {
         .into_iter()
         .filter_map(Result::ok)
         .filter(|e| e.file_type().is_file())
+        .filter(|e| {
+            !e.path().components().any(|component| {
+                component.as_os_str() == "node_modules" || component.as_os_str() == "dist"
+            })
+        })
     {
         let path = entry.path();
         let relative_path = path.strip_prefix(templates_dir).unwrap().to_str().unwrap();
