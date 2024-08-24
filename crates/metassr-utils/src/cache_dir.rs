@@ -1,6 +1,10 @@
 use anyhow::Result;
 use std::{
-    collections::HashMap, ffi::OsStr, fs::{self, File}, io::{Read, Write}, path::{Path, PathBuf}
+    collections::HashMap,
+    ffi::OsStr,
+    fs::{self, File},
+    io::{Read, Write},
+    path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
 
