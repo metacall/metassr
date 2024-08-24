@@ -31,7 +31,7 @@ pub struct Args {
     pub log_file: Option<String>,
 
     #[command(subcommand)]
-    pub commands: Option<Commands>,
+    pub commands: Commands,
 }
 
 #[derive(Debug, ValueEnum, PartialEq, Eq, Clone)]

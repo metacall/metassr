@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
         [Some(DebugMode::All), Some(DebugMode::Metacall)].contains(&args.debug_mode);
     let allow_http_debug = [Some(DebugMode::All), Some(DebugMode::Http)].contains(&args.debug_mode);
 
-    if let Some(Commands::Create { .. }) = args.commands {
+    if let Commands::Create { .. } = args.commands {
         tracing_subscriber::fmt()
             .with_target(false)
             .without_time()
@@ -45,28 +45,26 @@ async fn main() -> Result<()> {
             set_var("METACALL_DEBUG", "1");
         }
     }
-
     match args.commands {
-        Some(Commands::Build {
+        Commands::Build {
             out_dir,
             build_type,
-        }) => {
+        } => {
             cli::Builder::new(build_type, out_dir).exec()?;
         }
-        Some(Commands::Run { port, serve }) => {
+        Commands::Run { port, serve } => {
             cli::Runner::new(port, serve, allow_http_debug)
                 .exec()
                 .await?;
         }
-        Some(Commands::Create {
+        Commands::Create {
             project_name,
             version,
             description,
             template,
-        }) => {
+        } => {
             cli::Creator::new(project_name, version, description, template).exec()?;
         }
-        _ => {}
     };
 
     Ok(())
