@@ -54,36 +54,7 @@ impl HeadRenderer {
     pub fn render(&mut self, bundler: bool) -> Result<String> {
         if !IS_HEAD_SCRIPT_LOADED.lock().unwrap().is_loaded() {
             if bundler {
-                let script = format!(
-                    r#"
-import Head from "{}"
-import {{ renderToString }} from "react-dom/server"
-import React from "react"
-
-export function render_head() {{
-    return renderToString(<Head />);
-}}            
-                
-                "#,
-                    self.path.canonicalize()?.display()
-                );
-
-                let path = self.cache_dir.insert("head.js", script.as_bytes())?;
-
-                let name = PathBuf::from(path.clone().file_name().unwrap())
-                    .with_extension("")
-                    .to_str()
-                    .unwrap()
-                    .to_string();
-
-                let fullpath = path.canonicalize()?.to_str().unwrap().to_string();
-
-                let target = HashMap::from([(name, fullpath)]);
-
-                if let Err(e) = WebBundler::new(&target, &self.cache_dir.dir_path()).exec() {
-                    return Err(anyhow!("Cannot bundling head: {e}"));
-                }
-
+                self.bundle()?;
                 // TODO: remove this line
                 sleep(Duration::from_millis(500));
             }
@@ -98,5 +69,43 @@ export function render_head() {{
             Err(e) => Err(anyhow!("Couldn't render head: {e:?}")),
             Ok(out) => Ok(out),
         }
+    }
+
+    fn bundle(&mut self) -> Result<()> {
+        if let Err(e) = WebBundler::new(&self.bundling_target()?, &self.cache_dir.dir_path()).exec()
+        {
+            return Err(anyhow!("Cannot bundling head: {e}"));
+        }
+        Ok(())
+    }
+    fn script(&self) -> Result<String> {
+        let script = format!(
+            r#"
+import Head from "{}"
+import {{ renderToString }} from "react-dom/server"
+import React from "react"
+
+export function render_head() {{
+    return renderToString(<Head />);
+}}            
+                
+                "#,
+            self.path.canonicalize()?.display()
+        );
+        Ok(script)
+    }
+
+    fn bundling_target(&mut self) -> Result<HashMap<String, String>> {
+        let path = self
+            .cache_dir
+            .insert("head.js", self.script()?.as_bytes())?;
+        let name = PathBuf::from(path.clone().file_name().unwrap())
+            .with_extension("")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let fullpath = path.canonicalize()?.to_str().unwrap().to_string();
+
+        Ok(HashMap::from([(name, fullpath)]))
     }
 }
