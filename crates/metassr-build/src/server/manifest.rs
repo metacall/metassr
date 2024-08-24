@@ -46,7 +46,7 @@ impl GlobalEntry {
     {
         Ok(Self {
             head: PathBuf::from(head).canonicalize()?,
-            cache: PathBuf::from(cache).canonicalize()?,
+            cache: PathBuf::from(cache),
         })
     }
 }

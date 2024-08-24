@@ -18,6 +18,7 @@ use metassr_utils::{
     traits::AnalyzeDir,
 };
 use pages_generator::PagesGenerator;
+use renderer::head::HeadRenderer;
 
 use std::{
     ffi::OsStr,
@@ -79,7 +80,6 @@ impl Build for ServerSideBuilder {
             Err(e) => return Err(anyhow!("Couldn't generate targets: {e}")),
         };
 
-
         if let Err(e) = WebBundler::new(
             &targets.ready_for_bundling(&self.dist_path),
             &self.dist_path,
@@ -93,9 +93,13 @@ impl Build for ServerSideBuilder {
         sleep(Duration::from_secs(1));
         let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
-        ManifestGenerator::new(targets.clone(), cache_dir.clone(), dist)
-            .generate(&head)?
-            .write(&self.dist_path)?;
+        let manifest =
+            ManifestGenerator::new(targets.clone(), cache_dir.clone(), dist).generate(&head)?;
+        manifest.write(&self.dist_path.clone())?;
+
+        if let Err(e) = HeadRenderer::new(&manifest.global.head, cache_dir.clone()).render(true) {
+            return Err(anyhow!("Coludn't render head: {e}"));
+        }
 
         if self.building_type == BuildingType::StaticSiteGeneration {
             if let Err(e) =

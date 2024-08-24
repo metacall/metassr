@@ -28,7 +28,7 @@ impl PageRenderer {
 
         let exec = RenderExec::new(entry.id, &entry.renderer)?;
         let body = exec.exec()?;
-        let head = HeadRenderer::new(&manifest.global.head, cache).render()?;
+        let head = HeadRenderer::new(&manifest.global.head, cache).render(false)?;
 
         Ok(Self {
             head,

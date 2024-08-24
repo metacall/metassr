@@ -51,9 +51,11 @@ impl HeadRenderer {
         }
     }
 
-    pub fn render(&mut self) -> Result<String> {
-        let script = format!(
-            r#"
+    pub fn render(&mut self, bundler: bool) -> Result<String> {
+        if !IS_HEAD_SCRIPT_LOADED.lock().unwrap().is_loaded() {
+            if bundler {
+                let script = format!(
+                    r#"
 import Head from "{}"
 import {{ renderToString }} from "react-dom/server"
 import React from "react"
@@ -61,27 +63,30 @@ import React from "react"
 export function render_head() {{
     return renderToString(<Head />);
 }}            
-        "#,
-            self.path.canonicalize()?.display()
-        );
+                
+                "#,
+                    self.path.canonicalize()?.display()
+                );
 
-        let path = self.cache_dir.insert("head.js", script.as_bytes())?;
+                let path = self.cache_dir.insert("head.js", script.as_bytes())?;
 
-        if !IS_HEAD_SCRIPT_LOADED.lock().unwrap().is_loaded() {
-            let mut name = path.clone();
-            name.set_extension("");
-            let name = name.to_str().unwrap().to_string();
+                let name = PathBuf::from(path.clone().file_name().unwrap())
+                    .with_extension("")
+                    .to_str()
+                    .unwrap()
+                    .to_string();
 
-            let fullpath = path.canonicalize()?.to_str().unwrap().to_string();
+                let fullpath = path.canonicalize()?.to_str().unwrap().to_string();
 
-            let target = HashMap::from([(name, fullpath)]);
+                let target = HashMap::from([(name, fullpath)]);
 
-            if let Err(e) = WebBundler::new(&target, &self.cache_dir.dir_path()).exec() {
-                return Err(anyhow!("Cannot bundling head: {e}"));
+                if let Err(e) = WebBundler::new(&target, &self.cache_dir.dir_path()).exec() {
+                    return Err(anyhow!("Cannot bundling head: {e}"));
+                }
+
+                // TODO: remove this line
+                sleep(Duration::from_millis(500));
             }
-
-            // TODO: remove this line
-            sleep(Duration::from_millis(500));
 
             let _ = loaders::from_single_file(
                 "node",

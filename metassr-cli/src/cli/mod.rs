@@ -19,7 +19,7 @@ Command line interface application for MetaSSR framework. This CLI tool helps yo
 )]
 pub struct Args {
     /// The path of the project root directory.
-    #[arg(long)]
+    #[arg(long, default_value_t = String::from("."))]
     pub root: String,
 
     /// Enable debug mode to provide more detailed logs.
@@ -49,18 +49,18 @@ pub enum Commands {
     /// Builds your web application into a deployable format.
     Build {
         /// The output directory where build files will be saved.
-        #[arg(long)]
+        #[arg(long, default_value_t = String::from("dist"))]
         out_dir: String,
 
         /// The type of build to perform. Choose between SSR (Server-Side Rendering) and SSG (Static Site Generation).
-        #[arg(short = 't', long = "type")]
+        #[arg(short = 't', long = "type", default_value_t = BuildingType::SSR)]
         build_type: BuildingType,
     },
 
     /// Runs the Server-Side Rendered (SSR) application.
     Run {
         /// The port number on which the HTTP server will run.
-        #[arg(long)]
+        #[arg(long, default_value_t = 8080)]
         port: u16,
 
         /// Serve the generated static site directly.
@@ -75,15 +75,15 @@ pub enum Commands {
         project_name: String,
 
         /// The version of your web application.
-        #[arg(long, short)]
+        #[arg(long, short, default_value_t = String::from("1.0.0"))]
         version: String,
 
         /// A brief description of your web application.
-        #[arg(long, short)]
+        #[arg(long, short, default_value_t = String::from("A web application built with MetaSSR framework"))]
         description: String,
 
         /// The template to use for creating the new project.
-        #[arg(long, short)]
+        #[arg(long, short, default_value_t = Template::Javascript)]
         template: Template,
     },
 }
