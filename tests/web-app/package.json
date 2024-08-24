@@ -4,19 +4,17 @@
   "description": "",
   "main": "App.tsx",
   "scripts": {
-    "build": "node scripts/build.js"
+    "build": "../../target/debug/metassr-cli --debug-mode=metacall build",
+    "build:ssg": "../../target/debug/metassr-cli --debug-mode=metacall build -t ssg",
+    "run": "../../target/debug/metassr-cli --debug-mode=metacall run ",
+    "run:ssg": "../../target/debug/metassr-cli --debug-mode=metacall run --serve"
   },
   "devDependencies": {
-    "@swc/cli": "^0.3.12",
-    "@swc/core": "^1.4.16",
-    "@swc/helpers": "^0.5.11",
     "@types/react": "^18.0.24",
     "@types/react-dom": "^18.0.8"
   },
   "dependencies": {
-    "typescript": "^4.6.4",
     "react": "^18.3.1",
-    "@rspack/core": "^0.7.5",
     "react-dom": "^18.3.1"
   }
 }
