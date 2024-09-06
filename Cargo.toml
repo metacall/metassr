@@ -10,7 +10,7 @@ description = "Another SSR framework but built with MetaCall!"
 anyhow = "1.0.82"
 chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive"] }
-metacall = "0.4.0"
+metacall = "0.4.1"
 nu-ansi-term = "0.50.0"
 walkdir = "2.5.0"
 serde_json = "1.0.120"

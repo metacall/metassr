@@ -6,7 +6,7 @@ description = "Web builder & client bundler (built on Rspack), built for MetaSSR
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-metacall = "0.4.0"
+metacall = "0.4.1"
 anyhow = "1.0.82"
 serde_json = "1.0.120"
 metassr-utils = { version = "0.1.0", path = "../metassr-utils" }

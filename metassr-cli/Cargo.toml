@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
-metacall = "0.4.0"
+metacall = "0.4.1"
 
 axum = "0.7.5"
 tokio = "1.37.0"
