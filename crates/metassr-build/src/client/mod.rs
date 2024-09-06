@@ -1,10 +1,12 @@
-use crate::bundler::WebBundler;
-use crate::traits::{Build, Exec, Generate};
+use crate::traits::{Build, Generate};
 use crate::utils::setup_page_path;
 use anyhow::{anyhow, Result};
 use hydrator::Hydrator;
-use metassr_utils::src_analyzer::special_entries;
-use metassr_utils::{cache_dir::CacheDir, src_analyzer::SourceDir, traits::AnalyzeDir};
+
+use metassr_bundler::WebBundler;
+use metassr_utils::{
+    cache_dir::CacheDir, src_analyzer::special_entries, src_analyzer::SourceDir, traits::AnalyzeDir,
+};
 use std::{
     collections::HashMap,
     ffi::OsStr,
@@ -66,7 +68,7 @@ impl Build for ClientBuilder {
                 (entry_name.to_owned(), format!("{}", fullpath.display()))
             })
             .collect::<HashMap<String, String>>();
-       
+
         let bundler = WebBundler::new(&targets, &self.dist_path);
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));

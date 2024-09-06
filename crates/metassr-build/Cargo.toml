@@ -13,3 +13,4 @@ metassr-utils = { version = "0.1.0", path = "../metassr-utils" }
 html-generator = { path = "../html-generator" }
 lazy_static = "1.5.0"
 serde = { version = "1.0.207", features = ["derive"] }
+metassr-bundler = { version = "0.1.0", path = "../metassr-bundler" }

@@ -6,7 +6,7 @@ use std::{
     collections::HashMap, ffi::OsStr, path::PathBuf, sync::Mutex, thread::sleep, time::Duration,
 };
 
-use crate::{bundler::WebBundler, traits::Exec};
+use metassr_bundler::WebBundler;
 
 lazy_static! {
     static ref IS_HEAD_SCRIPT_LOADED: Mutex<HeadSciptLoadingState> =
@@ -52,7 +52,8 @@ impl HeadRenderer {
     }
 
     pub fn render(&mut self, bundler: bool) -> Result<String> {
-        if !IS_HEAD_SCRIPT_LOADED.lock().unwrap().is_loaded() {
+        let mut guard = IS_HEAD_SCRIPT_LOADED.lock().unwrap();
+        if !guard.is_loaded() {
             if bundler {
                 self.bundle()?;
                 // TODO: remove this line
@@ -63,8 +64,10 @@ impl HeadRenderer {
                 "node",
                 format!("{}/head.js", self.cache_dir.dir_path().display()),
             );
-            IS_HEAD_SCRIPT_LOADED.lock().unwrap().loaded()
+            guard.loaded()
         }
+        drop(guard);
+
         match metacall_no_arg::<String>("render_head") {
             Err(e) => Err(anyhow!("Couldn't render head: {e:?}")),
             Ok(out) => Ok(out),

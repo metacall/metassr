@@ -6,11 +6,10 @@ mod render;
 mod render_exec;
 mod targets;
 
-use crate::{
-    bundler::WebBundler,
-    traits::{Build, Exec},
-};
+use crate::traits::Build;
 use manifest::ManifestGenerator;
+
+use metassr_bundler::WebBundler;
 use metassr_utils::{
     cache_dir::CacheDir,
     dist_analyzer::DistDir,
