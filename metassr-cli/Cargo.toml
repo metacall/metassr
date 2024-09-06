@@ -1,6 +1,6 @@
 [package]
 name = "metassr-cli"
-version = "0.1.0-alpha"
+version = "0.0.1-alpha"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -19,4 +19,4 @@ tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
 logger = { path = "../crates/logger" }
 metassr-server = { path = "../crates/metassr-server" }
 metassr-build = { path = "../crates/metassr-build" }
-metassr-create = { version = "0.1.0", path = "../crates/metassr-create" }
+metassr-create = { path = "../crates/metassr-create" }

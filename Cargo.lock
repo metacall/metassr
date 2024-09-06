@@ -353,7 +353,7 @@ checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
 name = "html-generator"
-version = "0.1.0"
+version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
 ]
@@ -598,7 +598,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-build"
-version = "0.1.0"
+version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
  "html-generator",
@@ -612,7 +612,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-bundler"
-version = "0.1.0"
+version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
  "lazy_static",
@@ -623,7 +623,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-cli"
-version = "0.1.0-alpha"
+version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
  "axum",
@@ -641,7 +641,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-create"
-version = "0.1.0"
+version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
  "walkdir",
@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-utils"
-version = "0.1.0"
+version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
  "serde",
