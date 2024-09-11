@@ -1,4 +1,3 @@
-pub mod bundler;
 pub mod client;
 pub mod server;
 pub(crate) mod shared;
