@@ -63,7 +63,43 @@ impl<'a> WebBundler<'a> {
             guard.loaded();
         }
         drop(guard);
-    
+
+        let compilation_wait = Arc::new((Mutex::new(false), Condvar::new()));
+        let compilation_wait_clone = Arc::clone(&compilation_wait);
+
+        fn resolve(result: impl MetacallValue, data: impl MetacallValue) {
+            let (lock, cvar) = &*compilation_wait_clone;
+            let mut started = lock.lock().unwrap();
+            println!("Result of the compilation: {result}");
+            *started = true;
+            // We notify the condvar that the value has changed
+            cvar.notify_one();
+        }
+
+        fn reject(result: impl MetacallValue, data: impl MetacallValue) {
+            let (lock, cvar) = &*compilation_wait_clone;
+            let mut started = lock.lock().unwrap();
+            println!("Error with compilation: {result}");
+            *started = true;
+            // We notify the condvar that the value has changed
+            cvar.notify_one();
+        }
+
+        let future = metacall::<MetacallFuture>(BUNDLING_FUNC, [
+            serde_json::to_string(&self.targets)?,
+            self.dist_path.to_str().unwrap().to_owned(),
+        ]).unwrap();
+
+        future.then(resolve).catch(reject).await_fut();
+
+        // Wait for the thread to start up.
+        let (lock, cvar) = &*compilation_wait;
+        let mut started = lock.lock().unwrap();
+        while !*started {
+            started = cvar.wait(started).unwrap();
+        }
+
+        /*
         if let Err(e) = metacall::<MetacallNull>(
             BUNDLING_FUNC,
             [
@@ -73,6 +109,7 @@ impl<'a> WebBundler<'a> {
         ) {
             return Err(anyhow!("Cannot running {BUNDLING_FUNC}(): {e:?}"));
         }
+        */
     
         Ok(())
     }
