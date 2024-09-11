@@ -64,25 +64,34 @@ impl<'a> WebBundler<'a> {
         }
         drop(guard);
 
-        let compilation_wait = Arc::new((Mutex::new(false), Condvar::new()));
-        let compilation_wait_clone = Arc::clone(&compilation_wait);
+        struct CompilationWait {
+            mutex: Mutex<bool>,
+            cond: Condvar
+        }
+
+        let mut compilation_wait: CompilationWait = CompilationWait {
+            mutex: Mutex::new(false),
+            cond: Condvar::new()
+        };
+
+        let compilation_wait_ptr = MetacallPointer::new(&compilation_wait);
 
         fn resolve(result: impl MetacallValue, data: impl MetacallValue) {
-            let (lock, cvar) = &*compilation_wait_clone;
-            let mut started = lock.lock().unwrap();
-            println!("Result of the compilation: {result}");
+            let mut compilation_wait: CompilationWait = data.get_value::<CompilationWait>().unwrap();
+            let mut started = compilation_wait.mutex.lock().unwrap();
+            println!("Result of the compilation: {result:?}");
             *started = true;
             // We notify the condvar that the value has changed
-            cvar.notify_one();
+            compilation_wait.cond.notify_one();
         }
 
         fn reject(result: impl MetacallValue, data: impl MetacallValue) {
-            let (lock, cvar) = &*compilation_wait_clone;
-            let mut started = lock.lock().unwrap();
-            println!("Error with compilation: {result}");
+            let mut compilation_wait: CompilationWait = data.get_value::<CompilationWait>().unwrap();
+            let mut started = compilation_wait.mutex.lock().unwrap();
+            println!("Error with compilation: {result:?}");
             *started = true;
             // We notify the condvar that the value has changed
-            cvar.notify_one();
+            compilation_wait.cond.notify_one();
         }
 
         let future = metacall::<MetacallFuture>(BUNDLING_FUNC, [
@@ -90,13 +99,12 @@ impl<'a> WebBundler<'a> {
             self.dist_path.to_str().unwrap().to_owned(),
         ]).unwrap();
 
-        future.then(resolve).catch(reject).await_fut();
+        future.then(resolve).catch(reject).data(compilation_wait_ptr).await_fut();
 
         // Wait for the thread to start up.
-        let (lock, cvar) = &*compilation_wait;
-        let mut started = lock.lock().unwrap();
+        let mut started = compilation_wait.mutex.lock().unwrap();
         while !*started {
-            started = cvar.wait(started).unwrap();
+            started = compilation_wait.cond.wait(started).unwrap();
         }
 
         /*
