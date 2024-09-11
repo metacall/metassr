@@ -77,6 +77,7 @@ impl<'a> WebBundler<'a> {
         }
 
         fn reject(_: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
+            // TODO: find a way to return the error of bundling.
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
