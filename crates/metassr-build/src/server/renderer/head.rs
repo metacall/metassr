@@ -1,38 +1,13 @@
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use metacall::{loaders, metacall_no_arg};
-use metassr_utils::cache_dir::CacheDir;
-use std::{
-    collections::HashMap, ffi::OsStr, path::PathBuf, sync::Mutex, thread::sleep, time::Duration,
-};
+use metassr_utils::{cache_dir::CacheDir, checker::CheckerState};
+use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Mutex};
 
 use metassr_bundler::WebBundler;
 
 lazy_static! {
-    static ref IS_HEAD_SCRIPT_LOADED: Mutex<HeadSciptLoadingState> =
-        Mutex::new(HeadSciptLoadingState::default());
-}
-
-/// A detector for if the head is loaded or not.
-#[derive(Debug)]
-pub struct HeadSciptLoadingState(bool);
-
-impl HeadSciptLoadingState {
-    pub fn new() -> Self {
-        Self(false)
-    }
-    pub fn loaded(&mut self) {
-        self.0 = true
-    }
-    pub fn is_loaded(&self) -> bool {
-        self.0
-    }
-}
-
-impl Default for HeadSciptLoadingState {
-    fn default() -> Self {
-        Self::new()
-    }
+    static ref IS_HEAD_SCRIPT_LOADED: Mutex<CheckerState> = Mutex::new(CheckerState::default());
 }
 
 pub struct HeadRenderer {
@@ -53,7 +28,7 @@ impl HeadRenderer {
 
     pub fn render(&mut self, bundler: bool) -> Result<String> {
         let mut guard = IS_HEAD_SCRIPT_LOADED.lock().unwrap();
-        if !guard.is_loaded() {
+        if !guard.is_true() {
             if bundler {
                 self.bundle()?;
                 // TODO: remove this line
@@ -64,7 +39,7 @@ impl HeadRenderer {
                 "node",
                 format!("{}/head.js", self.cache_dir.dir_path().display()),
             );
-            guard.loaded()
+            guard.make_true()
         }
         drop(guard);
 
