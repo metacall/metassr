@@ -1,34 +1,37 @@
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
-use metacall::{loaders, metacall, MetacallNull};
-use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::Path, sync::Mutex};
+use metacall::{loaders, metacall, MetacallFuture, MetacallValue};
+use metassr_utils::checker::CheckerState;
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    marker::Sized,
+    path::Path,
+    sync::{Arc, Condvar, Mutex},
+};
 
 lazy_static! {
-    static ref IS_BUNDLING_SCRIPT_LOADED: Mutex<BundleSciptLoadingState> =
-        Mutex::new(BundleSciptLoadingState::new());
+    /// A detector for if the bundling script `./bundle.js` is loaded or not. It is used to solve multiple loading script error in metacall.
+    static ref IS_BUNDLING_SCRIPT_LOADED: Mutex<CheckerState> = Mutex::new(CheckerState::new());
+
+    /// A simple checker to check if the bundling function is done or not. It is used to block the program until bundling done.
+    static ref IS_COMPLIATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
 }
 static BUILD_SCRIPT: &str = include_str!("./bundle.js");
 const BUNDLING_FUNC: &str = "web_bundling";
 
-/// A detector for if the bundling script `./bundle.js` is loaded or not.
-#[derive(Debug)]
-pub struct BundleSciptLoadingState(bool);
-
-impl BundleSciptLoadingState {
-    pub fn new() -> Self {
-        Self(false)
-    }
-    pub fn loaded(&mut self) {
-        self.0 = true
-    }
-    pub fn is_loaded(&self) -> bool {
-        self.0
-    }
+/// A simple struct for compilation wait of the bundling function.
+struct CompilationWait {
+    checker: Mutex<CheckerState>,
+    cond: Condvar,
 }
 
-impl Default for BundleSciptLoadingState {
+impl Default for CompilationWait {
     fn default() -> Self {
-        Self::new()
+        Self {
+            checker: Mutex::new(CheckerState::with(false)),
+            cond: Condvar::new(),
+        }
     }
 }
 
@@ -56,69 +59,54 @@ impl<'a> WebBundler<'a> {
     }
     pub fn exec(&self) -> Result<()> {
         let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
-        if !guard.is_loaded() {
+        if !guard.is_true() {
             if let Err(e) = loaders::from_memory("node", BUILD_SCRIPT) {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
             }
-            guard.loaded();
+            guard.make_true();
         }
         drop(guard);
 
-        struct CompilationWait {
-            mutex: Mutex<bool>,
-            cond: Condvar
-        }
+        fn resolve(_: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
+            let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
+            let mut started = compilation_wait.checker.lock().unwrap();
 
-        let mut compilation_wait: CompilationWait = CompilationWait {
-            mutex: Mutex::new(false),
-            cond: Condvar::new()
-        };
-
-        let compilation_wait_ptr = MetacallPointer::new(&compilation_wait);
-
-        fn resolve(result: impl MetacallValue, data: impl MetacallValue) {
-            let mut compilation_wait: CompilationWait = data.get_value::<CompilationWait>().unwrap();
-            let mut started = compilation_wait.mutex.lock().unwrap();
-            println!("Result of the compilation: {result:?}");
-            *started = true;
+            started.make_true();
             // We notify the condvar that the value has changed
             compilation_wait.cond.notify_one();
         }
 
-        fn reject(result: impl MetacallValue, data: impl MetacallValue) {
-            let mut compilation_wait: CompilationWait = data.get_value::<CompilationWait>().unwrap();
-            let mut started = compilation_wait.mutex.lock().unwrap();
-            println!("Error with compilation: {result:?}");
-            *started = true;
+        fn reject(_: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
+            let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
+            let mut started = compilation_wait.checker.lock().unwrap();
+
+            started.make_true();
             // We notify the condvar that the value has changed
             compilation_wait.cond.notify_one();
         }
 
-        let future = metacall::<MetacallFuture>(BUNDLING_FUNC, [
-            serde_json::to_string(&self.targets)?,
-            self.dist_path.to_str().unwrap().to_owned(),
-        ]).unwrap();
-
-        future.then(resolve).catch(reject).data(compilation_wait_ptr).await_fut();
-
-        // Wait for the thread to start up.
-        let mut started = compilation_wait.mutex.lock().unwrap();
-        while !*started {
-            started = compilation_wait.cond.wait(started).unwrap();
-        }
-
-        /*
-        if let Err(e) = metacall::<MetacallNull>(
+        let future = metacall::<MetacallFuture>(
             BUNDLING_FUNC,
             [
                 serde_json::to_string(&self.targets)?,
                 self.dist_path.to_str().unwrap().to_owned(),
             ],
-        ) {
-            return Err(anyhow!("Cannot running {BUNDLING_FUNC}(): {e:?}"));
+        )
+        .unwrap();
+
+        future.then(resolve).catch(reject).await_fut();
+
+        // Wait for the thread to start up.
+        let compilation_wait = Arc::clone(&IS_COMPLIATION_WAIT);
+
+        let mut started = compilation_wait.checker.lock().unwrap();
+
+        // Waiting till future done
+        while !started.is_true() {
+            started = Arc::clone(&IS_COMPLIATION_WAIT).cond.wait(started).unwrap();
         }
-        */
-    
+        // Reset checker
+        started.make_false();
         Ok(())
     }
 }

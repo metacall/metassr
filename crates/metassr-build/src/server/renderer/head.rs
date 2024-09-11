@@ -31,8 +31,6 @@ impl HeadRenderer {
         if !guard.is_true() {
             if bundler {
                 self.bundle()?;
-                // TODO: remove this line
-                sleep(Duration::from_millis(500));
             }
 
             let _ = loaders::from_single_file(

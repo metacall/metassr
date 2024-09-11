@@ -8,10 +8,7 @@ use metassr_build::server;
 
 use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
 
-use std::{
-    thread::sleep,
-    time::{Duration, Instant},
-};
+use std::time::Instant;
 
 use tracing::{debug, error};
 
@@ -38,8 +35,6 @@ impl Exec for Builder {
             return Err(anyhow!("Couldn't continue building process."));
         }
 
-        // TODO: find a solution to remove this
-        sleep(Duration::from_secs(1));
 
         if let Err(e) = ServerSideBuilder::new("", &self.out_dir, self._type.into())?.build() {
             error!(
