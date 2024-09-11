@@ -9,6 +9,7 @@ use std::{
     path::Path,
     sync::{Arc, Condvar, Mutex},
 };
+use tracing::error;
 
 lazy_static! {
     /// A detector for if the bundling script `./bundle.js` is loaded or not. It is used to solve multiple loading script error in metacall.
@@ -76,10 +77,11 @@ impl<'a> WebBundler<'a> {
             compilation_wait.cond.notify_one();
         }
 
-        fn reject(_: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
-            // TODO: find a way to return the error of bundling.
+        fn reject(err: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
+
+            error!("Bundling rejected: {err:?}");
 
             started.make_true();
             // We notify the condvar that the value has changed

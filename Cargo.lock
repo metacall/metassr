@@ -619,6 +619,7 @@ dependencies = [
  "metacall",
  "metassr-utils",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]

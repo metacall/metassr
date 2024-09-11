@@ -108,12 +108,11 @@ async function web_bundling(entry, dist) {
     return new Promise((resolve, reject) => {
         return compiler.run((error, stats) => {
             if (error) {
-                // TODO: find a way to return the error of bundling.
-                reject(1);
+                reject(error.message);
             }
 
-            if (stats?.hasErrors()) {
-                reject(1);
+            if (error || stats?.hasErrors()) {
+                reject(stats.toString("errors-only"));
             }
             resolve(0);
         });
