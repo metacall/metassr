@@ -1,26 +1,22 @@
 const { rspack } = require('@rspack/core');
-const path = require("path");
+const path = require('path');
 
 function safelyParseJSON(json) {
-    let parsed
-
     try {
-        parsed = JSON.parse(json)
+        return JSON.parse(json)
     } catch (_) {
-        parsed = undefined
+        return undefined
     }
-
-    return parsed // Could be undefined!
 }
 
 let config = {
 
     output: {
-        filename: "[name].js",
+        filename: '[name].js',
         library: {
-            type: "commonjs2",
+            type: 'commonjs2',
         },
-        publicPath: ""
+        publicPath: ''
     },
     resolve: {
         extensions: ['.js', '.jsx', '.tsx', '.ts']
@@ -46,7 +42,7 @@ let config = {
                             preserveAllComments: false,
                             transform: {
                                 react: {
-                                    runtime: "automatic",
+                                    runtime: 'automatic',
                                     throwIfNamespace: true,
                                     useBuiltins: false,
                                 },
@@ -70,7 +66,7 @@ let config = {
                             },
                             transform: {
                                 react: {
-                                    runtime: "automatic",
+                                    runtime: 'automatic',
                                     throwIfNamespace: true,
                                     useBuiltins: false,
                                 },
@@ -89,9 +85,7 @@ let config = {
     }
 }
 
-
-
-function web_bundling(entry, dist) {
+async function web_bundling(entry, dist) {
 
     const compiler = rspack(
         {
@@ -111,19 +105,18 @@ function web_bundling(entry, dist) {
 
     );
 
-    compiler.run((error, stats) => {
-        if (error) {
-            console.error(error);
-            process.exit(2);
-        }
-        if (stats && stats.hasErrors()) {
-            process.exitCode = 1;
-        }
-        if (!compiler || !stats) {
-            return;
-        }
-    });
+    return new Promise((resolve, reject) => {
+        return compiler.run((error, stats) => {
+            if (error) {
+                reject(error.message);
+            }
 
+            if (error || stats?.hasErrors()) {
+                reject(stats.toString("errors-only"));
+            }
+            resolve(0);
+        });
+    });
 }
 
 module.exports = {

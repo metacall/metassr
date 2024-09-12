@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use metassr_create;
+use metassr_create::Creator as MetassrCreator;
 use std::{fmt::Display, str::FromStr};
 use tracing::{error, info};
 
@@ -30,7 +30,7 @@ impl Creator {
 
 impl Exec for Creator {
     fn exec(&self) -> anyhow::Result<()> {
-        match metassr_create::Creator::new(
+        match MetassrCreator::new(
             &self.project_name,
             &self.version,
             &self.description,

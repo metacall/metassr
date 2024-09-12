@@ -33,7 +33,7 @@ impl Creator {
         }
     }
     pub fn generate(&self) -> Result<()> {
-        let template = self.template.load(&self)?;
+        let template = self.template.load(self)?;
         let root = PathBuf::from(&self.project_name);
 
         if root.exists() {

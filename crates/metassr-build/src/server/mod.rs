@@ -23,8 +23,6 @@ use std::{
     ffi::OsStr,
     fs,
     path::{Path, PathBuf},
-    thread::sleep,
-    time::Duration,
 };
 use targets::TargetsGenerator;
 
@@ -88,8 +86,6 @@ impl Build for ServerSideBuilder {
             return Err(anyhow!("Bundling failed: {e}"));
         }
 
-        // TODO: find a solution to remove this line
-        sleep(Duration::from_secs(1));
         let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
         let manifest =
