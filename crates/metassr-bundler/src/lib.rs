@@ -13,7 +13,7 @@ use tracing::error;
 
 lazy_static! {
     /// A detector for if the bundling script `./bundle.js` is loaded or not. It is used to solve multiple loading script error in metacall.
-    static ref IS_BUNDLING_SCRIPT_LOADED: Mutex<CheckerState> = Mutex::new(CheckerState::new());
+    static ref IS_BUNDLING_SCRIPT_LOADED: Mutex<CheckerState> = Mutex::new(CheckerState::default());
 
     /// A simple checker to check if the bundling function is done or not. It is used to block the program until bundling done.
     static ref IS_COMPLIATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
@@ -30,7 +30,7 @@ struct CompilationWait {
 impl Default for CompilationWait {
     fn default() -> Self {
         Self {
-            checker: Mutex::new(CheckerState::with(false)),
+            checker: Mutex::new(CheckerState::default()),
             cond: Condvar::new(),
         }
     }
