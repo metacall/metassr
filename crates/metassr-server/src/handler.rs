@@ -5,9 +5,9 @@ use axum::{
     routing::get,
 };
 use metassr_build::server::renderer::page::PageRenderer;
-use metassr_utils::{
-    dist_analyzer::{DistDir, PageEntry},
-    traits::AnalyzeDir,
+use metassr_utils::analyzer::{
+    dist_dir::{DistDir, PageEntry},
+    DirectoryAnalyzer,
 };
 use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
 

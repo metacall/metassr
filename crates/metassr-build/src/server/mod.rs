@@ -11,10 +11,12 @@ use manifest::ManifestGenerator;
 
 use metassr_bundler::WebBundler;
 use metassr_utils::{
+    analyzer::{
+        dist_dir::DistDir,
+        src_dir::{special_entries, SourceDir},
+        DirectoryAnalyzer,
+    },
     cache_dir::CacheDir,
-    dist_analyzer::DistDir,
-    src_analyzer::{special_entries, SourceDir},
-    traits::AnalyzeDir,
 };
 use pages_generator::PagesGenerator;
 use renderer::head::HeadRenderer;

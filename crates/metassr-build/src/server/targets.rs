@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use metassr_utils::{cache_dir::CacheDir, src_analyzer::PagesEntriesType};
+use metassr_utils::{analyzer::src_dir::PagesEntriesType, cache_dir::CacheDir};
 
 use crate::{traits::Generate, utils::setup_page_path};
 

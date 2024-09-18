@@ -6,9 +6,11 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use metassr_utils::{
+    analyzer::{
+        dist_dir::{DistDir, DistDirContainer},
+        DirectoryAnalyzer,
+    },
     cache_dir::CacheDir,
-    dist_analyzer::{DistDir, DistDirContainer},
-    traits::AnalyzeDir,
 };
 
 use crate::traits::Exec;

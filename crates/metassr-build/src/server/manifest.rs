@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use metassr_utils::{
+    analyzer::dist_dir::{DistDirContainer, PageEntry},
     cache_dir::CacheDir,
-    dist_analyzer::{DistDirContainer, PageEntry},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
@@ -121,7 +121,7 @@ impl ManifestGenerator {
     pub fn generate<H: AsRef<OsStr> + ?Sized>(&self, head: &H) -> Result<Manifest> {
         let global = GlobalEntry::new(head, &self.cache.dir_path())?;
         let mut manifest = Manifest::new(global);
-       
+
         for (path, &id) in self.targets.iter() {
             let route = match path
                 .strip_prefix(self.cache.dir_path().join("pages"))?

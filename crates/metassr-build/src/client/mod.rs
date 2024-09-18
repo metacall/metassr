@@ -5,7 +5,11 @@ use hydrator::Hydrator;
 
 use metassr_bundler::WebBundler;
 use metassr_utils::{
-    cache_dir::CacheDir, src_analyzer::special_entries, src_analyzer::SourceDir, traits::AnalyzeDir,
+    analyzer::{
+        src_dir::{special_entries, SourceDir},
+        DirectoryAnalyzer,
+    },
+    cache_dir::CacheDir,
 };
 use std::{
     collections::HashMap,
