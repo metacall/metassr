@@ -128,7 +128,7 @@ impl PageEntry {
 pub struct DistDir(PathBuf); // Contains the path to the `dist/` directory
 
 impl DistDir {
-    /// Creates a new `DistDir` object given a path to the `dist/` directory.
+    /// Creates a new `DistDir` struct given a path to the `dist/` directory.
     /// Returns an error if the provided path does not exist.
     ///
     /// # Example

@@ -7,7 +7,7 @@ use std::{
 /// It uses the `RandomState` from the standard library's hash map as a source of randomness.
 /// 
 /// This is useful for situations where you need a random integer in your application.
-/// The random value is generated when the `Rand` object is instantiated.
+/// The random value is generated when the `Rand` struct is instantiated.
 ///
 /// # Example
 /// 
