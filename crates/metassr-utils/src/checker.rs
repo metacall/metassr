@@ -3,7 +3,7 @@
 ///
 /// This can be useful in situations where you need a simple flag to represent a state in an application.
 ///
-/// # Example
+/// **Example**
 ///
 /// ```rust
 /// use metassr_utils::checker::CheckerState;
@@ -23,7 +23,7 @@ pub struct CheckerState(bool); // A tuple struct that holds a boolean value
 impl CheckerState {
     /// Creates a new `CheckerState` with the specified boolean value.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```rust
     /// use metassr_utils::checker::CheckerState;
@@ -37,7 +37,7 @@ impl CheckerState {
 
     /// Sets the internal state to `true`.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```rust
     /// use metassr_utils::checker::CheckerState;
@@ -52,7 +52,7 @@ impl CheckerState {
 
     /// Sets the internal state to `false`.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```rust
     /// use metassr_utils::checker::CheckerState;
@@ -67,7 +67,7 @@ impl CheckerState {
 
     /// Returns `true` if the internal state is true, otherwise returns `false`.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```rust
     /// use metassr_utils::checker::CheckerState;
@@ -83,7 +83,7 @@ impl CheckerState {
 impl Default for CheckerState {
     /// The default implementation for `CheckerState`, which initializes the state to `false`.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```rust
     /// use metassr_utils::checker::CheckerState;

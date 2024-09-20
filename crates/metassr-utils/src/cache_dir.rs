@@ -16,7 +16,7 @@ use walkdir::WalkDir;
 /// retrieved based on a pathname, making it easier to manage multiple
 /// cached files in a structured directory.
 ///
-/// # Example
+/// **Example**
 ///
 /// ```no_run
 /// use metassr_utils::cache_dir::CacheDir;
@@ -37,15 +37,15 @@ impl CacheDir {
     ///
     /// If the directory does not exist, it will be created.
     ///
-    /// # Arguments
+    /// **Arguments**
     ///
     /// * `path` - A reference to the directory where the cache will be stored.
     ///
-    /// # Errors
+    /// **Errors**
     ///
     /// Returns an error if the directory cannot be created or accessed.
     ///
-    /// # Example
+    ///  **Example**
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
@@ -70,16 +70,16 @@ impl CacheDir {
     /// This method writes a file to the cache directory if it doesn't already exist.
     /// If the file exists and the content differs, it will be replaced with the new content.
     ///
-    /// # Arguments
+    /// **Arguments**
     ///
     /// * `pathname` - The relative path where the file should be stored.
     /// * `buf` - The content to be written to the file.
     ///
-    /// # Returns
+    /// **Returns**
     ///
     /// The `PathBuf` of the written file.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
@@ -118,7 +118,7 @@ impl CacheDir {
 
     /// Returns the path to the cache directory.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
@@ -132,7 +132,7 @@ impl CacheDir {
 
     /// Returns the current entries in scope.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
@@ -146,7 +146,7 @@ impl CacheDir {
 
     /// Returns all file entries in the cache directory.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;

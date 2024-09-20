@@ -10,7 +10,7 @@ use std::{
 /// This is useful for situations where you need a random integer in your application.
 /// The random value is generated when the `Rand` struct is instantiated.
 ///
-/// # Example
+/// **Example**
 ///
 /// ```rust
 /// use metassr_utils::rand::Rand;
@@ -25,7 +25,7 @@ impl Rand {
     ///
     /// The generated value is always non-negative.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```rust
     /// use metassr_utils::rand::Rand;
@@ -40,7 +40,7 @@ impl Rand {
 
     /// Returns the generated random value.
     ///
-    /// # Example
+    /// **Example**
     ///
     /// ```rust
     /// use metassr_utils::rand::Rand;

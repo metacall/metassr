@@ -18,7 +18,7 @@ pub trait DirectoryAnalyzer {
 
     /// Analyzes the directory and returns the result of the analysis.
     ///
-    /// # Errors
+    /// **Errors**
     /// If the directory or its contents cannot be analyzed (e.g., due to a missing directory,
     /// unreadable files, or unexpected formats), the function returns an error.
     fn analyze(&self) -> Result<Self::Output>;

@@ -31,7 +31,7 @@ pub struct SourceDirContainer {
 impl SourceDirContainer {
     /// Creates a new `SourceDirContainer` with the given pages and special entries.
     ///
-    /// # Parameters
+    /// **Parameters**
     ///
     /// - `pages`: A `HashMap` where keys are routes and values are paths to page files.
     /// - `specials`: A tuple containing optional special entries (`App` and `Head`).
@@ -41,7 +41,7 @@ impl SourceDirContainer {
 
     /// Retrieves the special entries from the container.
     ///
-    /// # Returns
+    /// **Returns**
     ///
     /// Returns a `Result` containing a tuple of `App` and `Head` if both are present,
     /// or an error if one or both are missing.
@@ -65,7 +65,7 @@ impl SourceDirContainer {
 
     /// Retrieves the pages entries from the container.
     ///
-    /// # Returns
+    /// **Returns**
     ///
     /// Returns a `HashMap` where keys are routes and values are paths to page files.
     pub fn pages(&self) -> PagesEntriesType {
@@ -82,7 +82,7 @@ pub struct SourceDir(PathBuf);
 impl SourceDir {
     /// Creates a new `SourceDir` instance.
     ///
-    /// # Parameters
+    /// **Parameters**
     ///
     /// - `path`: The path to the source directory.
     pub fn new<S>(path: &S) -> Self
@@ -98,7 +98,7 @@ impl DirectoryAnalyzer for SourceDir {
 
     /// Analyzes the source directory and extracts pages and special entries.
     ///
-    /// # Returns
+    /// **Returns**
     ///
     /// Returns a `Result` containing a `SourceDirContainer` with pages and special entries.
     fn analyze(&self) -> Result<Self::Output> {

@@ -9,7 +9,7 @@ pub mod analyzer;
 /// retrieved based on a pathname, making it easier to manage multiple
 /// cached files in a structured directory.
 ///
-/// # Example
+/// **Example**
 ///
 /// ```no_run
 /// use metassr_utils::cache_dir::CacheDir;
@@ -25,7 +25,7 @@ pub mod cache_dir;
 ///
 /// This can be useful in situations where you need a simple flag to represent a state in an application.
 ///
-/// # Example
+/// **Example**
 ///
 /// ```rust
 /// use metassr_utils::checker::CheckerState;
@@ -45,7 +45,7 @@ pub mod checker;
 /// This is useful for situations where you need a random integer in your application.
 /// The random value is generated when the `Rand` struct is instantiated.
 ///
-/// # Example
+/// **Example**
 ///
 /// ```rust
 /// use metassr_utils::rand::Rand;
