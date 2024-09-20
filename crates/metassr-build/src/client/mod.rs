@@ -4,13 +4,12 @@ use anyhow::{anyhow, Result};
 use hydrator::Hydrator;
 
 use metassr_bundler::WebBundler;
-use metassr_utils::{
-    analyzer::{
-        src_dir::{special_entries, SourceDir},
-        DirectoryAnalyzer,
-    },
-    cache_dir::CacheDir,
+use metassr_fs_analyzer::{
+    src_dir::{special_entries, SourceDir},
+    DirectoryAnalyzer,
 };
+use metassr_utils::cache_dir::CacheDir;
+
 use std::{
     collections::HashMap,
     ffi::OsStr,

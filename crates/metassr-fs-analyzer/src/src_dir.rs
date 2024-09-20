@@ -157,7 +157,7 @@ impl DirectoryAnalyzer for SourceDir {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rand::Rand;
+    use metassr_utils::rand::Rand;
     use std::fs;
     use std::path::PathBuf;
 

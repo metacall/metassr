@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
-use metassr_utils::{
-    analyzer::dist_dir::{DistDirContainer, PageEntry},
-    cache_dir::CacheDir,
-};
+
+use metassr_fs_analyzer::dist_dir::{DistDirContainer, PageEntry};
+use metassr_utils::cache_dir::CacheDir;
+
 use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::{

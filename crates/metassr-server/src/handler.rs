@@ -5,7 +5,7 @@ use axum::{
     routing::get,
 };
 use metassr_build::server::renderer::page::PageRenderer;
-use metassr_utils::analyzer::{
+use metassr_fs_analyzer::{
     dist_dir::{DistDir, PageEntry},
     DirectoryAnalyzer,
 };

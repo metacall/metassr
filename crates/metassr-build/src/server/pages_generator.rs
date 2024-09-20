@@ -5,13 +5,11 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
-use metassr_utils::{
-    analyzer::{
-        dist_dir::{DistDir, DistDirContainer},
-        DirectoryAnalyzer,
-    },
-    cache_dir::CacheDir,
+use metassr_fs_analyzer::{
+    dist_dir::{DistDir, DistDirContainer},
+    DirectoryAnalyzer,
 };
+use metassr_utils::cache_dir::CacheDir;
 
 use crate::traits::Exec;
 

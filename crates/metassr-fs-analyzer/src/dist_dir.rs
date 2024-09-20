@@ -15,7 +15,7 @@ use walkdir::WalkDir;
 /// # Example
 ///
 /// ```no_run
-/// use metassr_utils::analyzer::dist_dir::{DistDirContainer, PageEntry};
+/// use metassr_fs_analyzer::dist_dir::{DistDirContainer, PageEntry};
 /// use std::{collections::HashMap, path::PathBuf};
 ///
 /// let mut container = DistDirContainer {
@@ -38,7 +38,7 @@ pub struct DistDirContainer {
 /// # Example
 ///
 /// ```no_run
-/// use metassr_utils::analyzer::dist_dir::PageEntry;
+/// use metassr_fs_analyzer::dist_dir::PageEntry;
 /// use std::path::PathBuf;
 ///
 /// let mut page_entry = PageEntry::new(PathBuf::from("/dist/pages/home"));
@@ -61,7 +61,7 @@ impl PageEntry {
     /// # Example
     ///
     /// ```no_run
-    /// use metassr_utils::analyzer::dist_dir::PageEntry;
+    /// use metassr_fs_analyzer::dist_dir::PageEntry;
     /// use std::path::PathBuf;
     /// 
     /// let page_entry = PageEntry::new(PathBuf::from("/dist/pages/home"));
@@ -80,7 +80,7 @@ impl PageEntry {
     /// # Example
     ///
     /// ```no_run
-    /// use metassr_utils::analyzer::dist_dir::PageEntry;
+    /// use metassr_fs_analyzer::dist_dir::PageEntry;
     /// use std::path::PathBuf;
     ///
     /// let mut page_entry = PageEntry::new(PathBuf::from("/dist/pages/home"));
@@ -96,7 +96,7 @@ impl PageEntry {
     /// # Example
     ///
     /// ```no_run
-    /// use metassr_utils::analyzer::dist_dir::PageEntry;
+    /// use metassr_fs_analyzer::dist_dir::PageEntry;
     /// use std::path::PathBuf;
     ///
     /// let mut page_entry = PageEntry::new(PathBuf::from("/dist/pages/home"));
@@ -115,7 +115,7 @@ impl PageEntry {
 /// # Example
 ///
 /// ```no_run
-/// use metassr_utils::analyzer::{dist_dir::DistDir, DirectoryAnalyzer};
+/// use metassr_fs_analyzer::{dist_dir::DistDir, DirectoryAnalyzer};
 ///
 /// let dist_dir = DistDir::new("path/to/dist").unwrap();
 /// let analysis_result = dist_dir.analyze().unwrap();
@@ -134,7 +134,7 @@ impl DistDir {
     /// # Example
     ///
     /// ```no_run
-    /// use metassr_utils::analyzer::dist_dir::DistDir;
+    /// use metassr_fs_analyzer::dist_dir::DistDir;
     ///
     /// let dist_dir = DistDir::new("path/to/dist");
     /// match dist_dir {
@@ -163,7 +163,7 @@ impl DistDir {
 /// # Example
 ///
 /// ```no_run
-/// use metassr_utils::analyzer::{dist_dir::DistDir, DirectoryAnalyzer};
+/// use metassr_fs_analyzer::{dist_dir::DistDir, DirectoryAnalyzer};
 /// 
 /// let dist_dir = DistDir::new("/path/to/dist").unwrap();
 /// let result = dist_dir.analyze().unwrap();
@@ -180,7 +180,7 @@ impl DirectoryAnalyzer for DistDir {
     /// # Example
     ///
     /// ```no_run
-    /// use metassr_utils::analyzer::{dist_dir::DistDir, DirectoryAnalyzer};
+    /// use metassr_fs_analyzer::{dist_dir::DistDir, DirectoryAnalyzer};
     ///
     /// let dist_dir = DistDir::new("path/to/dist").unwrap();
     /// let analysis_result = dist_dir.analyze().unwrap();
@@ -246,7 +246,7 @@ impl DirectoryAnalyzer for DistDir {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rand::Rand;
+    use metassr_utils::rand::Rand;
     use std::fs;
     /// Helper function to create a temporary directory structure for testing
     fn setup_test_dist_dir() -> PathBuf {

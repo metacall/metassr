@@ -1,3 +1,5 @@
+//! This module provides directory analyzers for extracting useful files from directories like `src/` and `dist/`.
+
 use anyhow::Result;
 
 /// Analyzes the `dist/` directory for scripts and style files. The `dist/` directory

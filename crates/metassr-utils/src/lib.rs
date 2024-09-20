@@ -1,10 +1,7 @@
 #![doc = include_str!("../README.md")]
 
-/// This module provides directory analyzers for extracting useful files from directories like `src/` and `dist/`.
-pub mod analyzer;
-
 /// This module provides utilities for managing cache directories, creating files, and handling their contents.
-/// 
+///
 /// This is useful for caching purposes where files are written and
 /// retrieved based on a pathname, making it easier to manage multiple
 /// cached files in a structured directory.

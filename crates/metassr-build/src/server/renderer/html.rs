@@ -6,7 +6,7 @@ use html_generator::{
     html_props::HtmlProps,
     template::HtmlTemplate,
 };
-use metassr_utils::analyzer::dist_dir::PageEntry;
+use metassr_fs_analyzer::dist_dir::PageEntry;
 
 pub struct HtmlRenderer<'a> {
     head: String,
