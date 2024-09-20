@@ -37,7 +37,7 @@ impl ClientBuilder {
             return Err(anyhow!("src directory not found."));
         }
         if !dist_path.exists() {
-            fs::create_dir(dist_path.clone())?;
+            fs::create_dir(&dist_path)?;
         }
         Ok(Self {
             src_path,

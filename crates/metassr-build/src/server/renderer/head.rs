@@ -35,7 +35,7 @@ impl HeadRenderer {
 
             let _ = loaders::from_single_file(
                 "node",
-                format!("{}/head.js", self.cache_dir.dir_path().display()),
+                format!("{}/head.js", self.cache_dir.path().display()),
             );
             guard.make_true()
         }
@@ -48,7 +48,7 @@ impl HeadRenderer {
     }
 
     fn bundle(&mut self) -> Result<()> {
-        if let Err(e) = WebBundler::new(&self.bundling_target()?, &self.cache_dir.dir_path()).exec()
+        if let Err(e) = WebBundler::new(&self.bundling_target()?, &self.cache_dir.path()).exec()
         {
             return Err(anyhow!("Cannot bundling head: {e}"));
         }

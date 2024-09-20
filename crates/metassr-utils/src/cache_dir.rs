@@ -28,7 +28,7 @@ use walkdir::WalkDir;
 
 #[derive(Debug, Clone)]
 pub struct CacheDir {
-    dir_path: PathBuf,
+    path: PathBuf,
     entries_in_scope: HashMap<String, PathBuf>,
 }
 
@@ -53,14 +53,14 @@ impl CacheDir {
     /// let cache = CacheDir::new(".cache").unwrap();
     /// ```
     pub fn new<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Self> {
-        let dir_path = PathBuf::from(path);
+        let path = PathBuf::from(path);
 
-        if !dir_path.exists() {
-            fs::create_dir(dir_path.clone())?;
+        if !path.exists() {
+            fs::create_dir(path.clone())?;
         }
 
         Ok(Self {
-            dir_path,
+            path,
             entries_in_scope: HashMap::new(),
         })
     }
@@ -83,14 +83,14 @@ impl CacheDir {
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
-    /// 
+    ///
     /// let mut cache = CacheDir::new(".cache").unwrap();
     /// cache.insert("data.txt", "Some data".as_bytes()).unwrap();
     /// ```
     pub fn insert(&mut self, pathname: &str, buf: &[u8]) -> Result<PathBuf> {
 
         // Set the path
-        let path = format!("{}/{}", self.dir_path.to_str().unwrap(), pathname);
+        let path = format!("{}/{}", self.path.to_str().unwrap(), pathname);
         let path = Path::new(&path);
 
         // Create file path if it doesn't exist
@@ -125,12 +125,12 @@ impl CacheDir {
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
-    /// 
+    ///
     /// let cache = CacheDir::new(".cache").unwrap();
-    /// println!("Cache directory: {:?}", cache.dir_path());
+    /// println!("Cache directory: {:?}", cache.path());
     /// ```
-    pub fn dir_path(&self) -> PathBuf {
-        self.dir_path.clone()
+    pub fn path(&self) -> &Path {
+        self.path.as_path()
     }
 
     /// Returns the current entries in scope.
@@ -139,7 +139,7 @@ impl CacheDir {
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
-    /// 
+    ///
     /// let cache = CacheDir::new(".cache").unwrap();
     /// println!("Entries in scope: {:?}", cache.entries_in_scope());
     /// ```
@@ -153,12 +153,12 @@ impl CacheDir {
     ///
     /// ```no_run
     /// use metassr_utils::cache_dir::CacheDir;
-    /// 
+    ///
     /// let cache = CacheDir::new(".cache").unwrap();
     /// println!("All entries: {:?}", cache.all_entries());
     /// ```
     pub fn all_entries(&self) -> Vec<PathBuf> {
-        WalkDir::new(&self.dir_path)
+        WalkDir::new(&self.path)
             .into_iter()
             .filter_map(|e| {
                 // Check if the entry is a file
@@ -180,8 +180,8 @@ mod tests {
 
     /// Helper function to create a `CacheDir` with a random name
     fn create_temp_cache_dir() -> Result<CacheDir> {
-        let dir_path = PathBuf::from(format!(".cache-{}", Rand::new().val()));
-        CacheDir::new(&dir_path)
+        let path = PathBuf::from(format!(".cache-{}", Rand::new().val()));
+        CacheDir::new(&path)
     }
 
     /// Test case to verify that a new cache directory can be created and deleted.
@@ -194,7 +194,7 @@ mod tests {
 
         // Cleanup
         fs::remove_file(test_file_path).unwrap();
-        fs::remove_dir_all(cache.dir_path()).unwrap();
+        fs::remove_dir_all(cache.path()).unwrap();
     }
 
     /// Test case to verify that a new file can be inserted into the cache.
@@ -209,7 +209,7 @@ mod tests {
         // Cleanup
         // let file_path = result.unwrap();
         fs::remove_file(file_path).unwrap();
-        fs::remove_dir_all(cache.dir_path()).unwrap();
+        fs::remove_dir_all(cache.path()).unwrap();
     }
 
     /// Test case to check the scope of entries in the cache.
@@ -225,7 +225,7 @@ mod tests {
         for path in entries.values() {
             fs::remove_file(path).unwrap();
         }
-        fs::remove_dir_all(cache.dir_path()).unwrap();
+        fs::remove_dir_all(cache.path()).unwrap();
     }
 
     /// Test case to retrieve all entries in the cache.
@@ -241,7 +241,7 @@ mod tests {
         for path in entries {
             fs::remove_file(path).unwrap();
         }
-        fs::remove_dir_all(cache.dir_path()).unwrap();
+        fs::remove_dir_all(cache.path()).unwrap();
     }
 
     /// Test case to verify file replacement when content changes.
@@ -261,6 +261,6 @@ mod tests {
 
         // Cleanup
         fs::remove_file(path).unwrap();
-        fs::remove_dir_all(cache.dir_path()).unwrap();
+        fs::remove_dir_all(cache.path()).unwrap();
     }
 }
