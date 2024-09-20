@@ -88,8 +88,10 @@ impl CacheDir {
     /// cache.insert("data.txt", "Some data".as_bytes()).unwrap();
     /// ```
     pub fn insert(&mut self, pathname: &str, buf: &[u8]) -> Result<PathBuf> {
-        let pathname = format!("{}/{}", self.dir_path.to_str().unwrap(), pathname);
-        let path = Path::new(&pathname);
+
+        // Set the path
+        let path = format!("{}/{}", self.dir_path.to_str().unwrap(), pathname);
+        let path = Path::new(&path);
 
         // Create file path if it doesn't exist
         if !path.exists() {
@@ -112,7 +114,8 @@ impl CacheDir {
 
         // Add the new file path to the cache entries
         self.entries_in_scope
-            .insert(pathname.clone(), path.canonicalize()?);
+            .insert(pathname.to_string(), path.canonicalize()?);
+
         Ok(path.to_path_buf())
     }
 
