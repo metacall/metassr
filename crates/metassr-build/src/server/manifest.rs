@@ -252,3 +252,45 @@ impl ManifestGenerator {
         Ok(manifest)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env::temp_dir;
+    use std::fs;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_manifest_global_entry_creation() {
+        let global_entry = GlobalEntry::new("head.html", ".cache").unwrap();
+        assert_eq!(
+            global_entry.head,
+            PathBuf::from("head.html").canonicalize().unwrap()
+        );
+        assert_eq!(global_entry.cache, PathBuf::from(".cache"));
+    }
+
+    #[test]
+    fn test_manifest_to_json() {
+        let manifest = Manifest::new(GlobalEntry::new("head.html", ".cache").unwrap());
+        let json = manifest.to_json().unwrap();
+        assert!(json.contains("\"head\""));
+        assert!(json.contains("\"cache\""));
+    }
+
+    #[test]
+    fn test_manifest_write_and_read() {
+        // Use the system temp directory
+        let temp_path = temp_dir().join("test_manifest_dir");
+        fs::create_dir_all(&temp_path).unwrap();
+
+        let manifest = Manifest::new(GlobalEntry::new("head.html", ".cache").unwrap());
+        manifest.write(&temp_path).unwrap();
+
+        let read_manifest: Manifest = Manifest::from(&temp_path);
+        assert_eq!(read_manifest.global.cache, PathBuf::from(".cache"));
+
+        // Cleanup the temp directory
+        fs::remove_dir_all(&temp_path).unwrap();
+    }
+}
