@@ -14,3 +14,4 @@ html-generator = { path = "../html-generator" }
 lazy_static = "1.5.0"
 serde = { version = "1.0.207", features = ["derive"] }
 metassr-bundler = { path = "../metassr-bundler" }
+metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }

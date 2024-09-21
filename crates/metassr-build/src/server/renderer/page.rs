@@ -1,7 +1,9 @@
 use std::ffi::OsStr;
 
 use anyhow::Result;
-use metassr_utils::{cache_dir::CacheDir, dist_analyzer::PageEntry};
+
+use metassr_fs_analyzer::dist_dir::PageEntry;
+use metassr_utils::cache_dir::CacheDir;
 
 use crate::{
     server::{manifest::Manifest, render_exec::RenderExec},

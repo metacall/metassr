@@ -4,9 +4,12 @@ use anyhow::{anyhow, Result};
 use hydrator::Hydrator;
 
 use metassr_bundler::WebBundler;
-use metassr_utils::{
-    cache_dir::CacheDir, src_analyzer::special_entries, src_analyzer::SourceDir, traits::AnalyzeDir,
+use metassr_fs_analyzer::{
+    src_dir::{special_entries, SourceDir},
+    DirectoryAnalyzer,
 };
+use metassr_utils::cache_dir::CacheDir;
+
 use std::{
     collections::HashMap,
     ffi::OsStr,
@@ -34,7 +37,7 @@ impl ClientBuilder {
             return Err(anyhow!("src directory not found."));
         }
         if !dist_path.exists() {
-            fs::create_dir(dist_path.clone())?;
+            fs::create_dir(&dist_path)?;
         }
         Ok(Self {
             src_path,
