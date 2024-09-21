@@ -10,7 +10,7 @@ use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Bu
 
 use std::time::Instant;
 
-use tracing::{debug, error};
+use tracing::{error, info};
 
 pub struct Builder {
     out_dir: String,
@@ -27,25 +27,43 @@ impl Exec for Builder {
     fn exec(&self) -> anyhow::Result<()> {
         let _metacall = switch::initialize().unwrap();
         let instant = Instant::now();
-        if let Err(e) = ClientBuilder::new("", &self.out_dir)?.build() {
-            error!(
+        {
+            let instant = Instant::now();
+
+            if let Err(e) = ClientBuilder::new("", &self.out_dir)?.build() {
+                error!(
+                    target = "builder",
+                    message = format!("Couldn't build for the client side:  {e}"),
+                );
+                return Err(anyhow!("Couldn't continue building process."));
+            }
+            info!(
                 target = "builder",
-                message = format!("Couldn't build for the client side:  {e}"),
+                message = "Client building is completed",
+                time = format!("{}ms", instant.elapsed().as_millis())
             );
-            return Err(anyhow!("Couldn't continue building process."));
         }
 
+        {
+            let instant = Instant::now();
 
-        if let Err(e) = ServerSideBuilder::new("", &self.out_dir, self._type.into())?.build() {
-            error!(
+            if let Err(e) = ServerSideBuilder::new("", &self.out_dir, self._type.into())?.build() {
+                error!(
+                    target = "builder",
+                    message = format!("Couldn't build for the server side: {e}"),
+                );
+                return Err(anyhow!("Couldn't continue building process."));
+            }
+
+            info!(
                 target = "builder",
-                message = format!("Couldn't build for the server side: {e}"),
+                message = "Server building is completed",
+                time = format!("{}ms", instant.elapsed().as_millis())
             );
-            return Err(anyhow!("Couldn't continue building process."));
         }
 
         if (_metacall.0)() == 0 {
-            debug!(
+            info!(
                 target = "builder",
                 message = "Building is completed",
                 time = format!("{}ms", instant.elapsed().as_millis())
