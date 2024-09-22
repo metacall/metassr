@@ -10,7 +10,7 @@
     "dev": "rspack --watch"
   },
   "devDependencies": {
-    "@rspack/core": "^0.7.5",
+    "@rspack/core": "^0.7.5"
   },
   "dependencies": {
     "react": "^18.3.1",
