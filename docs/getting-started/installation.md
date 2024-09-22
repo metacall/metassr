@@ -52,10 +52,10 @@ $ cargo build --release
 
 ### 3. Add the CLI Binary to PATH (Linux)
 
-Now, you'll want to make the binary of `metassr-cli` globally accessible. To do this on Linux, add the binary to your PATH:
+Now, you'll want to make the binary of `metassr` globally accessible. To do this on Linux, add the binary to your PATH:
 
 ```bash
-sudo ln -s $(pwd)/target/release/metassr-cli /usr/local/bin/metassr
+sudo ln -s $(pwd)/target/release/metassr /usr/local/bin/metassr
 ```
 
 ### 4. Create Your First Project

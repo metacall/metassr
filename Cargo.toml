@@ -2,8 +2,14 @@
 name = "metassr"
 version = "0.0.1-alpha"
 edition = "2021"
-authors = ["Mohamed Emad (hulxxv@gmail.com)"]
 description = "Another SSR framework but built with MetaCall!"
+license = "MIT"
+license-file = "LICENSE"
+default-run = "metassr"
+
+
+[package.metadata]
+authors = ["Mohamed Emad (hulxxv@gmail.com)"]
 
 [dependencies]
 anyhow = "1.0.82"
@@ -47,5 +53,5 @@ members = [
 ]
 
 [[bin]]
-name = "metassr-cli"
+name = "metassr"
 path = "metassr-cli/src/main.rs"

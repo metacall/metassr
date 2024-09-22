@@ -3,10 +3,10 @@
   "version": "%VER%",
   "description": "%DESC%",
   "scripts": {
-    "run": "metassr-cli --debug-mode=http run",
-    "build:ssr": "metassr-cli --debug-mode=metacall build -t ssr",
-    "serve:ssg": "metassr-cli --debug-mode=http run --serve",
-    "build:ssg": "metassr-cli --debug-mode=metacall build -t ssg",
+    "run": "metassr --debug-mode=http run",
+    "serve": "metassr --debug-mode=http run --serve",
+    "build:ssr": "metassr --debug-mode=metacall build -t ssr",
+    "build:ssg": "metassr --debug-mode=metacall build -t ssg",
     "dev": "rspack --watch"
   },
   "devDependencies": {
