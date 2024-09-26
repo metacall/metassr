@@ -40,17 +40,6 @@ impl Default for CompilationWait {
 /// using MetaCall. It is designed to bundle web resources like JavaScript and TypeScript files
 /// by calling a custom `rspack` configuration.
 ///
-/// # Example Usage
-///
-/// ```rust
-/// let targets = HashMap::from([
-///     ("pages/home.tsx".to_string(), "../../tests/web-app/src/pages/home.tsx".to_string())
-/// ]);
-///
-/// let bundler = WebBundler::new(&targets, "../../tests/web-app/dist");
-/// bundler.exec().unwrap();
-/// ```
-///
 /// The `exec` function blocks the execution until the bundling process completes.
 #[derive(Debug)]
 pub struct WebBundler<'a> {
@@ -91,12 +80,6 @@ impl<'a> WebBundler<'a> {
     /// # Errors
     ///
     /// This function returns an `Err` if the bundling script cannot be loaded or if bundling fails.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// bundler.exec().unwrap();
-    /// ```
     pub fn exec(&self) -> Result<()> {
         // Lock the mutex to check if the bundling script is already loaded
         let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
