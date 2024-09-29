@@ -78,12 +78,13 @@ impl Build for ServerSideBuilder {
             Err(e) => return Err(anyhow!("Couldn't generate targets: {e}")),
         };
 
-        if let Err(e) = WebBundler::new(
-            &targets.ready_for_bundling(&self.dist_path),
+        let bundling_targets = targets.ready_for_bundling(&self.dist_path);
+        let bundler = WebBundler::new(
+            &bundling_targets,
             &self.dist_path,
-        )
-        .exec()
-        {
+        )?;
+
+        if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }
 

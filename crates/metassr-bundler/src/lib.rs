@@ -57,19 +57,33 @@ impl<'a> WebBundler<'a> {
     /// - `dist_path`: The path to the directory where the bundled output should be saved.
     ///
     /// Returns a `WebBundler` struct.
-    pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S) -> Self
+    pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
+        let mut non_found_files = vec![];
         let targets: HashMap<String, &Path> = targets
             .iter()
-            .map(|(k, v)| (k.into(), Path::new(v)))
+            .map(|(k, path)| {
+                let path = Path::new(path);
+                if !path.exists() {
+                    non_found_files.push(path.to_str().unwrap());
+                }
+                (k.into(), path)
+            })
             .collect();
 
-        Self {
+        if non_found_files.len() > 0 {
+            return Err(anyhow!(
+                "[bundler] Non Exist files found: {:?}",
+                non_found_files
+            ));
+        }
+
+        Ok(Self {
             targets,
             dist_path: Path::new(dist_path),
-        }
+        })
     }
 
     /// Executes the bundling process by invoking the `web_bundling` function from `bundle.js` via MetaCall.
@@ -147,19 +161,42 @@ impl<'a> WebBundler<'a> {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use metacall::switch;
+
+    fn clean() {
+        let dist = Path::new("test/dist");
+        if dist.exists() {
+            std::fs::remove_dir_all(dist).unwrap();
+        }
+    }
+
     #[test]
-    fn it_works() {
+    fn bundling_works() {
+        clean();
         let _metacall = switch::initialize().unwrap();
-        WebBundler::new(
-            &HashMap::from([(
-                "pages/homes.tsx".to_owned(),
-                "../../tests/web-app/src/pages/home.tsx".to_owned(),
-            )]),
-            "../../tests/web-app/dist",
-        )
-        .exec()
-        .unwrap()
+        let targets = HashMap::from([("pages/home".to_owned(), "./tests/home.js".to_owned())]);
+
+        match WebBundler::new(&targets, "tests/dist") {
+            Ok(bundler) => {
+                assert!(bundler.exec().is_ok());
+                assert!(Path::new("tests/dist/pages/home.js").exists());
+            }
+            Err(err) => {
+                panic!("BUNDLING TEST FAILED: {err:?}",)
+            }
+        }
+        clean();
+    }
+
+    #[test]
+    fn invalid_target_fails() {
+        clean();
+        let _metacall = switch::initialize().unwrap();
+        let targets = HashMap::from([("invalid_path.tsx".to_owned(), "invalid_path".to_owned())]);
+
+        let bundler = WebBundler::new(&targets, "tests/dist");
+        assert!(bundler.is_err());
     }
 }

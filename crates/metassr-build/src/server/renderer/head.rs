@@ -48,7 +48,10 @@ impl HeadRenderer {
     }
 
     fn bundle(&mut self) -> Result<()> {
-        if let Err(e) = WebBundler::new(&self.bundling_target()?, &self.cache_dir.path()).exec()
+        let bundling_targets = self.bundling_target()?;
+        let bundler = WebBundler::new(&bundling_targets, self.cache_dir.path())?;
+
+        if let Err(e) = bundler.exec()
         {
             return Err(anyhow!("Cannot bundling head: {e}"));
         }
