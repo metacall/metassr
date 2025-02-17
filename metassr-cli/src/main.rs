@@ -65,6 +65,9 @@ async fn main() -> Result<()> {
         } => {
             cli::Creator::new(project_name, version, description, template).exec()?;
         }
+        Commands::Dev { port } => {
+            cli::Dev::new(port).exec().await?;
+        }
     };
 
     Ok(())
