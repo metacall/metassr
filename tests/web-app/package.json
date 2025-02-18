@@ -7,7 +7,8 @@
         "build": "../../target/debug/metassr --debug-mode=metacall build",
         "build:ssg": "../../target/debug/metassr --debug-mode=metacall build -t ssg",
         "run": "../../target/debug/metassr --debug-mode=metacall run ",
-        "run:ssr": "../../target/debug/metassr --debug-mode=metacall run --serve"
+        "run:ssr": "../../target/debug/metassr --debug-mode=metacall run --serve",
+        "dev": "npm run build && ../../target/debug/metassr --debug-mode=metacall dev"
     },
     "devDependencies": {
         "@types/react": "^18.0.24",

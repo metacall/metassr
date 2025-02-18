@@ -1,5 +1,8 @@
-use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
-use std::{path::Path, sync::mpsc::Receiver};
+use notify::{event, Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use std::{
+    path::Path,
+    sync::mpsc::{self, Receiver},
+};
 use tokio::sync::broadcast;
 
 pub struct FileWatcher {
@@ -14,20 +17,22 @@ impl FileWatcher {
         let (sender, _) = broadcast::channel(100);
         let tx = sender.clone();
 
+        let (notify_tx, notify_rx) = mpsc::channel();
+
+        std::thread::spawn(move || {
+            while let Ok(event) = notify_rx.recv() {
+                let _ = tx.send(event);
+            }
+        });
+
         let watcher = RecommendedWatcher::new(
-            move |res: Result<Event, notify::Error>| {
-                let tx = tx.clone();
-                tokio::spawn(async move {
-                    match res {
-                        Ok(event) => {
-                            println!("Detected change: {:?}", event.paths);
-                            let _ = tx.send(event); // ignore send errors
-                        }
-                        Err(err) => {
-                            eprintln!("watchr error: {:?}", err);
-                        }
-                    }
-                });
+            move |res| match res {
+                Ok(event) => {
+                    println!("Event: {event:?}");
+                }
+                Err(errr) => {
+                    eprintln!("Error: {}", errr);
+                }
             },
             Config::default(),
         )?;
