@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 
 use metacall::switch;
+use metassr_server::rebuilder::Rebuilder;
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 
@@ -15,6 +16,7 @@ use super::traits::AsyncExec;
 pub struct Dev {
     port: u16,
     watcher: Arc<Mutex<Option<FileWatcher>>>,
+    rebuilder: Arc<Rebuilder>,
 }
 
 impl Dev {
@@ -22,6 +24,7 @@ impl Dev {
         Self {
             port,
             watcher: Arc::new(Mutex::new(None)),
+            rebuilder: Arc::new(Rebuilder::new(current_dir().unwrap())),
         }
     }
 
@@ -70,10 +73,13 @@ impl AsyncExec for Dev {
 
         if let Some(watcher) = &*self.watcher.lock().unwrap() {
             let mut rx = watcher.subscribe();
+            let rebuilder = self.rebuilder.clone();
 
             tokio::spawn(async move {
                 while let Ok(event) = rx.recv().await {
-                    // info!("Detected change: {:?}\n", event);
+                    if let Err(e) = rebuilder.handle_event(event) {
+                        eprintln!("Error: {}", e);
+                    }
                 }
             });
         }

@@ -4,8 +4,9 @@ use anyhow::Result;
 use metassr_watcher::utils::*;
 use notify::Event;
 use tokio::sync::broadcast;
+use tracing::info;
 
-#[derive(Clone, Debug,)]
+#[derive(Clone, Debug)]
 pub enum RebuildType {
     Page(PathBuf),
     Layout,
@@ -35,10 +36,26 @@ impl Rebuilder {
             return Ok(());
         }
 
+        let path = event
+            .paths
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("No path"))?;
+
+        let relative_path = path.strip_prefix(&self.root_path)?;
+
+        let rebuild_type: RebuildType = self.map_path_to_type(relative_path)?;
+
+        // Log what we're rebuilding
+        info!("Rebuilding due to changes in: {:?}", rebuild_type);
+
+        // Send rebuild notification
+        let _ = self.sender.send(rebuild_type);
+
         Ok(())
     }
 
-    fn map_path_to_type(path: &Path) -> Result<RebuildType> {
+
+    fn map_path_to_type(&self, path: &Path) -> Result<RebuildType> {
         let path_buf = path.to_path_buf();
         let path_str = path.to_string_lossy(); // make path a Cow. not all filenames are valid UTF-8
 
@@ -59,23 +76,23 @@ impl Rebuilder {
         match rebuild_type {
             RebuildType::Page(ref path) => {
                 // todo
-                println!("rebuilding {:?} in {:?}", rebuild_type, path);
+                info!("rebuilding {:?} in {:?}", rebuild_type, path);
             }
             RebuildType::Layout => {
                 // todo
-                println!("rebuilding {:?}", rebuild_type);
+                info!("rebuilding {:?}", rebuild_type);
             }
             RebuildType::Component => {
                 // todo
-                println!("rebuilding {:?}", rebuild_type);
+                info!("rebuilding {:?}", rebuild_type);
             }
             RebuildType::Style => {
                 // todo
-                println!("rebuilding {:?}", rebuild_type);
+                info!("rebuilding {:?}", rebuild_type);
             }
             RebuildType::Static => {
                 // todo
-                println!("rebuilding {:?}", rebuild_type);
+                info!("rebuilding {:?}", rebuild_type);
             }
         }
 
