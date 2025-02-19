@@ -1,4 +1,3 @@
-pub mod watcher;
 mod fallback;
 mod handler;
 mod layers;

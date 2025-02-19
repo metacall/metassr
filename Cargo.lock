@@ -663,6 +663,7 @@ dependencies = [
  "metassr-fs-analyzer",
  "metassr-server",
  "metassr-utils",
+ "metassr-watcher",
  "nu-ansi-term 0.50.0",
  "serde",
  "serde_json",
@@ -714,6 +715,7 @@ dependencies = [
  "metassr-build",
  "metassr-create",
  "metassr-server",
+ "metassr-watcher",
  "tokio",
  "tower-http",
  "tracing",
@@ -764,6 +766,16 @@ dependencies = [
  "anyhow",
  "serde",
  "walkdir",
+]
+
+[[package]]
+name = "metassr-watcher"
+version = "0.0.1-alpha"
+dependencies = [
+ "anyhow",
+ "notify",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

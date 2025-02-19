@@ -38,6 +38,7 @@ tower-service = "0.3.3"
 metassr-create = { path = "crates/metassr-create" }
 metassr-bundler = { path = "crates/metassr-bundler" }
 metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
+metassr-watcher = { path = "crates/metassr-watcher" }
 
 [workspace]
 members = [
@@ -50,6 +51,7 @@ members = [
     "crates/metassr-create",
     "crates/metassr-bundler",
     "crates/metassr-fs-analyzer",
+    "crates/metassr-watcher",
 ]
 
 [[bin]]

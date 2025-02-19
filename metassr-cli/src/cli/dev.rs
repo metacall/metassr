@@ -5,7 +5,9 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 
 use metacall::switch;
-use metassr_server::{watcher::FileWatcher, RunningType, Server, ServerConfigs};
+use metassr_server::{RunningType, Server, ServerConfigs};
+use metassr_watcher::FileWatcher;
+
 use tracing::info;
 
 use super::traits::AsyncExec;
@@ -71,7 +73,7 @@ impl AsyncExec for Dev {
 
             tokio::spawn(async move {
                 while let Ok(event) = rx.recv().await {
-                    info!("Detected change: {:?}\n", event);
+                    // info!("Detected change: {:?}\n", event);
                 }
             });
         }

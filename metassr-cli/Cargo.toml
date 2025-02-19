@@ -20,3 +20,4 @@ logger = { path = "../crates/logger" }
 metassr-server = { path = "../crates/metassr-server" }
 metassr-build = { path = "../crates/metassr-build" }
 metassr-create = { path = "../crates/metassr-create" }
+metassr-watcher = { path = "../crates/metassr-watcher" }
