@@ -1,3 +1,4 @@
+pub mod rebuilder;
 mod fallback;
 mod handler;
 mod layers;

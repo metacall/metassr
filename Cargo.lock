@@ -750,6 +750,7 @@ dependencies = [
  "metassr-build",
  "metassr-fs-analyzer",
  "metassr-utils",
+ "metassr-watcher",
  "notify",
  "serde_json",
  "tokio",

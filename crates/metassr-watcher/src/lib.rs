@@ -1,4 +1,4 @@
-mod utils;
+pub mod utils;
 
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
