@@ -32,16 +32,16 @@ pub struct Rebuilder {
 }
 
 impl Rebuilder {
-    pub fn new(root_path: PathBuf, building_type: BuildingType) -> Self {
+    pub fn new(root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
         let (sender, _) = broadcast::channel(100);
         let out_dir = root_path.join("dist");
 
-        Self {
+        Ok(Self {
             sender,
             root_path,
             out_dir,
             building_type,
-        }
+        })
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<RebuildType> {

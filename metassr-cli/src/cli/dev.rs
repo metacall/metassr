@@ -1,15 +1,18 @@
 use std::env::current_dir;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+
+use tokio::sync::broadcast;
 
 use anyhow::Result;
 
 use metacall::switch;
-use metassr_server::rebuilder::Rebuilder;
+use metassr_build::server::BuildingType;
+use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 
-use tracing::info;
+use tracing::{error, info};
 
 use super::traits::AsyncExec;
 
@@ -17,15 +20,24 @@ pub struct Dev {
     port: u16,
     watcher: Arc<Mutex<Option<FileWatcher>>>,
     rebuilder: Arc<Rebuilder>,
+    root_path: PathBuf,
+    rebuild_tx: broadcast::Sender<RebuildType>,
 }
 
 impl Dev {
-    pub fn new(port: u16) -> Self {
-        Self {
+    pub fn new(port: u16, root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
+        let rebuild_tx: broadcast::Sender<RebuildType> = broadcast::channel(100).0; //channel for rebuild notifications
+
+        let watcher: Arc<Mutex<Option<FileWatcher>>> = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
+        let rebuilder: Arc<Rebuilder> = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
+
+        Ok(Self {
             port,
-            watcher: Arc::new(Mutex::new(None)),
-            rebuilder: Arc::new(Rebuilder::new(current_dir().unwrap())),
-        }
+            watcher,
+            rebuilder,
+            root_path,
+            rebuild_tx,
+        })
     }
 
     fn setup_watcher(&self) -> Result<()> {
