@@ -54,11 +54,39 @@ impl Dev {
         *watcher_guard = Some(watcher);
         Ok(())
     }
+
+    async fn start_server(&self) -> Result<()> {
+        let configs = ServerConfigs {
+            port: self.port,
+            _enable_http_logging: true,
+            root_path: self.root_path.clone(),
+            running_type: RunningType::SSR,
+        };
+
+        let server = Server::new(configs);
+        let mut rebuild_rx: broadcast::Receiver<RebuildType> = self.rebuild_tx.subscribe();
+
+        let rebuilder = self.rebuilder.clone();
+
+        tokio::spawn(async move {
+            while let Ok(rebuild_type) = rebuild_rx.recv().await {
+                if let Err(e) = rebuilder.rebuild(rebuild_type).await {
+                    error!("Rebuild failed: {}", e);
+                }
+            }
+        });
+
+        server.run().await?;
+
+        Ok(())
+    }
 }
 
 impl AsyncExec for Dev {
     async fn exec(&self) -> Result<()> {
         let _metacall = switch::initialize().unwrap();
+
+        self.setup_watcher()?;
 
         let current = current_dir()?;
         info!("Current directory: {:?}", current);
@@ -74,32 +102,10 @@ impl AsyncExec for Dev {
             }
         }
 
+        self.start_server().await?;
+
         info!("Running your web application on dev mode",);
 
-        let server_configs = ServerConfigs {
-            port: self.port,
-            _enable_http_logging: true,
-            root_path: current_dir()?,
-            running_type: RunningType::SSR,
-        };
-
-        self.setup_watcher()?;
-
-        if let Some(watcher) = &*self.watcher.lock().unwrap() {
-            let mut rx = watcher.subscribe();
-            let rebuilder = self.rebuilder.clone();
-
-            tokio::spawn(async move {
-                while let Ok(event) = rx.recv().await {
-                    if let Err(e) = rebuilder.handle_event(event) {
-                        eprintln!("Error: {}", e);
-                    }
-                }
-            });
-        }
-
-        // info!("Starting server with config: {:?}", server_configs);
-        Server::new(server_configs).run().await?;
         Ok(())
     }
 }
