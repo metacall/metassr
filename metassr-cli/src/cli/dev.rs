@@ -44,8 +44,10 @@ impl Dev {
         let mut watcher = FileWatcher::new()?;
 
         let src_dir = current_dir()?.join("src");
+        let static_dir = current_dir()?.join("static");
 
         watcher.watch(Path::new(&src_dir))?;
+        watcher.watch(Path::new(&static_dir))?;
 
         // store the watcher in the option, by modifing it with a lock on the mutex
         let mut watcher_guard = self.watcher.lock().unwrap();
