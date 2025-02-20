@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1.0.82"
 axum = "0.7.5"
 chrono = "0.4.38"
+metacall = "0.4.1"
 metassr-build = { path = "../metassr-build" }
 metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
 metassr-utils = { path = "../metassr-utils" }
@@ -20,3 +21,4 @@ tower-layer = "0.3.3"
 tower-service = "0.3.3"
 tracing = "0.1.40"
 notify = { version = "8.0.0", features = ["serde"] }
+walkdir = "2"

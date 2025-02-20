@@ -747,6 +747,7 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "metacall",
  "metassr-build",
  "metassr-fs-analyzer",
  "metassr-utils",
@@ -758,6 +759,7 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+ "walkdir",
 ]
 
 [[package]]
