@@ -61,7 +61,7 @@ impl Rebuilder {
 
         let rebuild_type: RebuildType = match path_str {
             path if path.starts_with("src/pages") => RebuildType::Page(path_buf.clone()),
-            path0 if path.starts_with("src/layout") => RebuildType::Layout,
+            path if path.starts_with("src/layout") => RebuildType::Layout,
             path if path.starts_with("src/components") => RebuildType::Component,
             path if path.starts_with("src/styles") => RebuildType::Style,
             path if path.starts_with("static") => RebuildType::Static,
