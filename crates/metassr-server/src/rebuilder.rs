@@ -48,9 +48,9 @@ impl Rebuilder {
         self.sender.subscribe()
     }
 
-    pub fn handle_event(&self, event: Event) -> Result<()> {
+    pub fn handle_event(&self, event: Event) -> Result<RebuildType> {
         if !is_relevant_event(&event) {
-            return Ok(());
+            return anyhow::bail!("Not a relevant event");
         }
 
         let path = event
@@ -66,9 +66,9 @@ impl Rebuilder {
         info!("Rebuilding due to changes in: {:?}", rebuild_type);
 
         // Send rebuild notification
-        let _ = self.sender.send(rebuild_type);
+        let _ = self.sender.send(rebuild_type.clone()); // ?? validate the borrowing/ownership model here
 
-        Ok(())
+        Ok(rebuild_type)
     }
 
     fn map_path_to_type(&self, path: &Path) -> Result<RebuildType> {

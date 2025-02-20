@@ -55,6 +55,31 @@ impl Dev {
         Ok(())
     }
 
+    async fn handle_file_changes(&self) -> Result<()> {
+        let watcher_guard = self.watcher.lock().unwrap();
+        let watcher = watcher_guard.as_ref().unwrap();
+        let mut rx = watcher.subscribe();
+        drop(watcher_guard); // drop the lock, we don't need it anymore
+
+        let rebuilder = self.rebuilder.clone();
+        let rebuild_tx = self.rebuild_tx.clone();
+
+        tokio::spawn(async move {
+            while let Ok(event) = rx.recv().await {
+                match rebuilder.handle_event(event) {
+                    Ok(rebuild_type) => {
+                        if let Err(e) = rebuild_tx.send(rebuild_type) {
+                            error!("Error sending rebuild notification: {}", e);
+                        }
+                    }
+                    Err(e) => error!("Error handling file change: {}", e),
+                }
+            }
+        });
+
+        Ok(())
+    }
+
     async fn start_server(&self) -> Result<()> {
         let configs = ServerConfigs {
             port: self.port,
@@ -101,6 +126,8 @@ impl AsyncExec for Dev {
                 }
             }
         }
+
+        self.handle_file_changes().await?;
 
         self.start_server().await?;
 
