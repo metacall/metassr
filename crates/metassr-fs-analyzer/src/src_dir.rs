@@ -16,6 +16,55 @@ pub mod special_entries {
     pub struct Head(pub PathBuf);
 }
 
+#[derive(Debug, Clone)]
+pub struct Page {
+    pub route: String,
+    pub path: PathBuf,
+}
+
+impl Page {
+    pub fn new<S, P>(route: &S, path: &P) -> Self
+    where
+        S: ToString,
+        P: AsRef<OsStr> + ?Sized,
+    {
+        Self {
+            route: route.to_string(),
+            path: PathBuf::from(path),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Pages(pub Vec<Page>);
+
+impl Pages {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn from(pages: Vec<Page>) -> Self {
+        Self(pages)
+    }
+
+    pub fn insert<S: ToString, P: AsRef<OsStr> + ?Sized>(&mut self, route: &S, path: &P) {
+        self.0.push(Page::new(route, path));
+    }
+
+    pub fn as_map(&self) -> HashMap<String, PathBuf> {
+        HashMap::from_iter(
+            self.0
+                .iter()
+                .map(|Page { route, path }| (route.to_owned(), path.to_owned()))
+                .collect::<Vec<(String, PathBuf)>>(),
+        )
+    }
+
+    pub fn iter(self: &Self) -> std::slice::Iter<Page> {
+        self.0.iter()
+    }
+}
+
 pub type PagesEntriesType = HashMap<String, PathBuf>;
 pub type SpecialEntriesType = (Option<special_entries::App>, Option<special_entries::Head>);
 
@@ -24,8 +73,8 @@ pub type SpecialEntriesType = (Option<special_entries::App>, Option<special_entr
 /// This struct holds the pages and special entries found in the source directory.
 #[derive(Debug, Clone)]
 pub struct SourceDirContainer {
-    pub pages: PagesEntriesType,
-    pub specials: SpecialEntriesType,
+    pages: Pages,
+    specials: SpecialEntriesType,
 }
 
 impl SourceDirContainer {
@@ -35,7 +84,7 @@ impl SourceDirContainer {
     ///
     /// - `pages`: A `HashMap` where keys are routes and values are paths to page files.
     /// - `specials`: A tuple containing optional special entries (`App` and `Head`).
-    pub fn new(pages: PagesEntriesType, specials: SpecialEntriesType) -> Self {
+    pub fn new(pages: Pages, specials: SpecialEntriesType) -> Self {
         Self { pages, specials }
     }
 
@@ -68,7 +117,7 @@ impl SourceDirContainer {
     /// **Returns**
     ///
     /// Returns a `HashMap` where keys are routes and values are paths to page files.
-    pub fn pages(&self) -> PagesEntriesType {
+    pub fn pages(&self) -> Pages {
         self.pages.clone()
     }
 }
@@ -105,7 +154,7 @@ impl DirectoryAnalyzer for SourceDir {
         let src = self.0.to_str().unwrap();
 
         let list_of_specials = ["_app", "_head"];
-        let mut pages: HashMap<String, PathBuf> = HashMap::new();
+        let mut pages = Pages::new();
         let mut specials: SpecialEntriesType = (None, None);
 
         for entry in WalkDir::new(src)
@@ -136,7 +185,7 @@ impl DirectoryAnalyzer for SourceDir {
                         .strip_prefix([src, "/pages"].concat())?
                         .to_str()
                         .unwrap();
-                    pages.insert(route.to_owned(), path.to_path_buf());
+                    pages.insert(&route, path);
                 }
 
                 _ => (),
@@ -187,7 +236,7 @@ mod tests {
         }
 
         let result = source_dir.analyze().unwrap();
-        assert_eq!(result.pages().len(), pages.len());
+        assert_eq!(result.pages().0.len(), pages.len());
         assert!(result.specials().is_ok());
 
         // Cleanup

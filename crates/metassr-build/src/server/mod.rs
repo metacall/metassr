@@ -70,10 +70,10 @@ impl Build for ServerSideBuilder {
         let mut cache_dir = CacheDir::new(&format!("{}/cache", self.dist_path.display()))?;
 
         let src = SourceDir::new(&self.src_path).analyze()?;
-        let pages = src.clone().pages;
+        let pages = src.clone().pages();
         let (special_entries::App(app), special_entries::Head(head)) = src.specials()?;
 
-        let targets = match TargetsGenerator::new(app, pages, &mut cache_dir).generate() {
+        let targets = match TargetsGenerator::new(app, pages.as_map(), &mut cache_dir).generate() {
             Ok(t) => t,
             Err(e) => return Err(anyhow!("Couldn't generate targets: {e}")),
         };

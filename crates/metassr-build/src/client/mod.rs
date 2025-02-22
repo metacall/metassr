@@ -4,6 +4,7 @@ use anyhow::{anyhow, Result};
 use hydrator::Hydrator;
 
 use metassr_bundler::WebBundler;
+use metassr_fs_analyzer::src_dir::Page;
 use metassr_fs_analyzer::{
     src_dir::{special_entries, SourceDir},
     DirectoryAnalyzer,
@@ -55,9 +56,9 @@ impl Build for ClientBuilder {
         let pages = src.pages();
         let (special_entries::App(app_path), _) = src.specials()?;
 
-        for (page, page_path) in pages.iter() {
-            let hydrator = Hydrator::new(&app_path, page_path, "root").generate()?;
-            let page = setup_page_path(page, "js");
+        for Page { route, path } in pages.iter() {
+            let hydrator = Hydrator::new(&app_path, path, "root").generate()?;
+            let page = setup_page_path(route, "js");
 
             cache_dir.insert(&format!("pages/{}", page.display()), hydrator.as_bytes())?;
         }
