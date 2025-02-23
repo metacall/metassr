@@ -9,7 +9,7 @@ use logger::LoggingLayer;
 use anyhow::Result;
 
 use std::{
-    env::{set_current_dir, set_var},
+    env::{current_dir, set_current_dir, set_var},
     path::Path,
 };
 
@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
             println!("port: {:?}", port);
             cli::Dev::new(
                 port,
-                Path::new("").to_path_buf(),
+                current_dir()?,
                 metassr_build::server::BuildingType::ServerSideRendering,
             )?
             .exec()
