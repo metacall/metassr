@@ -50,6 +50,8 @@ async fn main() -> Result<()> {
             out_dir,
             build_type,
         } => {
+            println!("command build Out dir: {:?}", out_dir);
+
             cli::Builder::new(build_type, out_dir).exec()?;
         }
         Commands::Run { port, serve } => {
@@ -66,7 +68,15 @@ async fn main() -> Result<()> {
             cli::Creator::new(project_name, version, description, template).exec()?;
         }
         Commands::Dev { port } => {
-            cli::Dev::new(port).exec().await?;
+            println!("command dev");
+            println!("port: {:?}", port);
+            cli::Dev::new(
+                port,
+                Path::new("").to_path_buf(),
+                metassr_build::server::BuildingType::ServerSideRendering,
+            )?
+            .exec()
+            .await?;
         }
     };
 

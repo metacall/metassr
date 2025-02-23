@@ -68,6 +68,7 @@ impl Dev {
             while let Ok(event) = rx.recv().await {
                 match rebuilder.handle_event(event) {
                     Ok(rebuild_type) => {
+                        // Notify the server about what needs rebuilding
                         if let Err(e) = rebuild_tx.send(rebuild_type) {
                             error!("Error sending rebuild notification: {}", e);
                         }

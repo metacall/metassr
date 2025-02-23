@@ -35,6 +35,7 @@ impl Rebuilder {
     pub fn new(root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
         let (sender, _) = broadcast::channel(100);
         let out_dir = root_path.join("dist");
+        println!("Out dir: {:?}", out_dir);
 
         Ok(Self {
             sender,
