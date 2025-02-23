@@ -51,7 +51,7 @@ impl Rebuilder {
 
     pub fn handle_event(&self, event: Event) -> Result<RebuildType> {
         if !is_relevant_event(&event) {
-            return anyhow::bail!("Not a relevant event");
+            anyhow::bail!("Not a relevant event");
         }
 
         let path = event
