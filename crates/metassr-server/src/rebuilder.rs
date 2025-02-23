@@ -59,11 +59,15 @@ impl Rebuilder {
             .first()
             .ok_or_else(|| anyhow::anyhow!("No path"))?;
 
-        let rel_path = path.strip_prefix(&self.root_path)?;
+        println!("Path: {path:#?}");
+
+        let rel_path: &Path = path.strip_prefix(&self.root_path)?;
+
+        println!("Rel path: {:?}", rel_path);
 
         let rebuild_type: RebuildType = self.map_path_to_type(rel_path)?;
 
-        // Log what we're rebuilding
+        // Log what we're entered rebuilding
         info!("Rebuilding due to changes in: {:?}", rebuild_type);
 
         // Send rebuild notification
@@ -82,7 +86,7 @@ impl Rebuilder {
             path if path.starts_with("src/components") => RebuildType::Component,
             path if path.starts_with("src/styles") => RebuildType::Style,
             path if path.starts_with("static") => RebuildType::Static,
-            // rebuilding everything if we're not surue of rebuilding kind
+            // entered rebuilding everything if we're not surue of entered rebuilding kind
             _ => RebuildType::Layout,
         };
 
@@ -92,24 +96,24 @@ impl Rebuilder {
     pub async fn rebuild(&self, rebuild_type: RebuildType) -> Result<()> {
         match rebuild_type {
             RebuildType::Page(ref path) => {
-                // todo
-                info!("rebuilding {:?} in {:?}", rebuild_type, path);
+                info!("entered rebuilding {:?} in {:?}", rebuild_type, path);
+                self.rebuild_page(path.clone()).await?;
             }
             RebuildType::Layout => {
                 // todo
-                info!("rebuilding {:?}", rebuild_type);
+                info!("entered rebuilding {:?}", rebuild_type);
             }
             RebuildType::Component => {
                 // todo
-                info!("rebuilding {:?}", rebuild_type);
+                info!("entered rebuilding {:?}", rebuild_type);
             }
             RebuildType::Style => {
                 // todo
-                info!("rebuilding {:?}", rebuild_type);
+                info!("entered rebuilding {:?}", rebuild_type);
             }
             RebuildType::Static => {
                 // todo
-                info!("rebuilding {:?}", rebuild_type);
+                info!("entered rebuilding {:?}", rebuild_type);
             }
         }
 
@@ -118,18 +122,21 @@ impl Rebuilder {
 
     async fn rebuild_page(&self, path: PathBuf) -> Result<()> {
         info!("Rebuilding page {:?}", path);
-        let _metacall = switch::initialize().unwrap();
+        // let _metacall = switch::initialize().unwrap();
         let instant = Instant::now();
 
-        let rel_path = path.strip_prefix(self.root_path.join("src/pages"))?;
-
+        println!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
+        println!(
+            "{:?}",
+            path
+                .to_str()
+                .ok_or_else(|| anyhow!("couldn't find path"))?,
+        );
         // Build client-side bundle
         {
             let instant = Instant::now();
             let client_builder = ClientBuilder::new(
-                rel_path
-                    .to_str()
-                    .ok_or_else(|| anyhow!("couldn't find path"))?,
+                "",
                 self.out_dir
                     .clone()
                     .to_str()
@@ -157,7 +164,7 @@ impl Rebuilder {
             let instant = Instant::now();
 
             let server_builder = ServerSideBuilder::new(
-                rel_path.to_str().ok_or_else(|| anyhow!("Invalid path"))?,
+                "",
                 self.out_dir
                     .to_str()
                     .ok_or_else(|| anyhow!("Invalid output path"))?,
@@ -169,7 +176,7 @@ impl Rebuilder {
                     target = "rebuilder",
                     message = format!(
                         "Failed to build server-side for {}: {}",
-                        rel_path.display(),
+                        path.display(),
                         e
                     )
                 );
@@ -187,7 +194,7 @@ impl Rebuilder {
     }
 
     async fn rebuild_all_pages(&self) -> Result<()> {
-        // todo: itereate rebuilding "rebuild_page fn-" on all pages
+        // todo: itereate entered rebuilding "rebuild_page fn-" on all pages
         Ok(())
     }
 
