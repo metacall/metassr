@@ -34,7 +34,7 @@ pub struct Rebuilder {
 impl Rebuilder {
     pub fn new(root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
         let (sender, _) = broadcast::channel(100);
-        let out_dir = root_path.join("dist");
+        let out_dir = PathBuf::from("dist");
         println!("Out dir: {:?}", out_dir);
 
         Ok(Self {
@@ -128,21 +128,22 @@ impl Rebuilder {
         println!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
         println!(
             "{:?}",
-            path
-                .to_str()
-                .ok_or_else(|| anyhow!("couldn't find path"))?,
+            path.to_str().ok_or_else(|| anyhow!("couldn't find path"))?,
         );
+
+        println!("{:?}",self.out_dir);
         // Build client-side bundle
         {
             let instant = Instant::now();
             let client_builder = ClientBuilder::new(
                 "",
                 self.out_dir
-                    .clone()
                     .to_str()
                     .ok_or_else(|| anyhow!("couldn't find out dir path"))?,
             )?
             .build();
+
+            println!("{:?}", client_builder);
 
             if let Err(e) = client_builder {
                 error!(
@@ -174,11 +175,7 @@ impl Rebuilder {
             if let Err(e) = server_builder.build() {
                 error!(
                     target = "rebuilder",
-                    message = format!(
-                        "Failed to build server-side for {}: {}",
-                        path.display(),
-                        e
-                    )
+                    message = format!("Failed to build server-side for {}: {}", path.display(), e)
                 );
                 return Err(anyhow!("Server-side build failed"));
             }
@@ -195,11 +192,6 @@ impl Rebuilder {
 
     async fn rebuild_all_pages(&self) -> Result<()> {
         // todo: itereate entered rebuilding "rebuild_page fn-" on all pages
-        Ok(())
-    }
-
-    async fn update_manifest(&self) -> Result<()> {
-        // todo
         Ok(())
     }
 }

@@ -18,6 +18,7 @@ use super::traits::AsyncExec;
 
 pub struct Dev {
     port: u16,
+    // todo change this to a normal option, and edit impl asyncexec
     watcher: Arc<Mutex<Option<FileWatcher>>>,
     rebuilder: Arc<Rebuilder>,
     root_path: PathBuf,
@@ -82,13 +83,13 @@ impl Dev {
     }
 
     async fn start_server(&self) -> Result<()> {
-        let configs = ServerConfigs {
+        let configs: ServerConfigs = ServerConfigs {
             port: self.port,
             _enable_http_logging: true,
             root_path: self.root_path.clone(),
             running_type: RunningType::SSR,
         };
-
+println!("{:?}", self.root_path);
         let server = Server::new(configs);
         let mut rebuild_rx: broadcast::Receiver<RebuildType> = self.rebuild_tx.subscribe();
 
