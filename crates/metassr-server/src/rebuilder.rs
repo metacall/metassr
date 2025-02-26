@@ -17,7 +17,7 @@ use tracing::{error, info};
 
 #[derive(Clone, Debug)]
 pub enum RebuildType {
-    Page(PathBuf),
+    Page(PathBuf), // this only is done
     Layout,
     Component,
     Style,
@@ -90,7 +90,7 @@ impl Rebuilder {
             _ => RebuildType::Layout,
         };
 
-        Ok(rebuild_type)
+    Ok(rebuild_type)
     }
 
     pub async fn rebuild(&self, rebuild_type: RebuildType) -> Result<()> {
@@ -98,6 +98,7 @@ impl Rebuilder {
             RebuildType::Page(ref path) => {
                 info!("entered rebuilding {:?} in {:?}", rebuild_type, path);
                 self.rebuild_page(path.clone()).await?;
+                let _ = self.sender.send(rebuild_type.clone());
             }
             RebuildType::Layout => {
                 // todo
@@ -131,7 +132,7 @@ impl Rebuilder {
             path.to_str().ok_or_else(|| anyhow!("couldn't find path"))?,
         );
 
-        println!("{:?}",self.out_dir);
+        println!("{:?}", self.out_dir);
         // Build client-side bundle
         {
             let instant = Instant::now();
@@ -150,7 +151,7 @@ impl Rebuilder {
                     target = "rebuilder",
                     message = format!("Couldn't build for the client side:  {e}"),
                 );
-                return Err(anyhow!("Couldn't continue building process."));
+                return Err(anyhow!("Couldn't continue rebuilding process."));
             }
 
             info!(

@@ -83,28 +83,33 @@ impl Dev {
     }
 
     async fn start_server(&self) -> Result<()> {
-        let configs: ServerConfigs = ServerConfigs {
+        let server_configs: ServerConfigs = ServerConfigs {
             port: self.port,
             _enable_http_logging: true,
             root_path: self.root_path.clone(),
             running_type: RunningType::SSR,
+            mode: metassr_server::ServerMode::Development,
         };
-println!("{:?}", self.root_path);
-        let server = Server::new(configs);
+        println!("{:?}", self.root_path);
         let mut rebuild_rx: broadcast::Receiver<RebuildType> = self.rebuild_tx.subscribe();
 
-        let rebuilder = self.rebuilder.clone();
+        let rebuilder: Option<Arc<Rebuilder>> = Some(self.rebuilder.clone());
+        let rebuilder_clone: Option<Arc<Rebuilder>> = Some(self.rebuilder.clone());
 
         tokio::spawn(async move {
             while let Ok(rebuild_type) = rebuild_rx.recv().await {
-                if let Err(e) = rebuilder.rebuild(rebuild_type).await {
+                if let Err(e) = rebuilder_clone
+                    .clone()
+                    .expect("Rebuild failed")
+                    .rebuild(rebuild_type)
+                    .await
+                {
                     error!("Rebuild failed: {}", e);
                 }
             }
         });
 
-        server.run().await?;
-
+        Server::new(server_configs).run(rebuilder).await?;
         Ok(())
     }
 }
