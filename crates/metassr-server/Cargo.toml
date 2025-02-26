@@ -16,6 +16,9 @@ metassr-utils = { path = "../metassr-utils" }
 metassr-watcher = { path = "../metassr-watcher" }
 serde_json = "1.0.122"
 tokio = { version = "1.36.0", features = ["full"] }
+tokio-tungstenite = "0.26.2"
+futures-util = "0.3.31"
+serde = "1.0.218"
 tower-http = { version = "0.5.2", features = ["trace", "fs"] }
 tower-layer = "0.3.3"
 tower-service = "0.3.3"
