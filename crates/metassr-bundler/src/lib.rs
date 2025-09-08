@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
-use metacall::{loaders, metacall, MetacallFuture, MetacallValue};
+use metacall::{load, metacall, MetaCallFuture, MetaCallValue};
 use metassr_utils::checker::CheckerState;
 use std::{
     collections::HashMap,
@@ -99,7 +99,7 @@ impl<'a> WebBundler<'a> {
         let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
         if !guard.is_true() {
             // If not loaded, attempt to load the script into MetaCall
-            if let Err(e) = loaders::from_memory("node", BUILD_SCRIPT) {
+            if let Err(e) = load::from_memory("node", BUILD_SCRIPT) {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
             }
             // Mark the script as loaded
@@ -109,7 +109,7 @@ impl<'a> WebBundler<'a> {
         drop(guard);
 
         // Resolve callback when the bundling process is completed successfully
-        fn resolve(_: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
+        fn resolve(_: Box<dyn MetaCallValue>, _: Box<dyn MetaCallValue>) {
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
@@ -119,7 +119,7 @@ impl<'a> WebBundler<'a> {
         }
 
         // Reject callback for handling errors during the bundling process
-        fn reject(err: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
+        fn reject(err: Box<dyn MetaCallValue>, _: Box<dyn MetaCallValue>) {
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
@@ -130,7 +130,7 @@ impl<'a> WebBundler<'a> {
         }
 
         // Call the `web_bundling` function in the MetaCall script with targets and output path
-        let future = metacall::<MetacallFuture>(
+        let future = metacall::<MetaCallFuture>(
             BUNDLING_FUNC,
             [
                 // Serialize the targets map to a string format
@@ -142,6 +142,7 @@ impl<'a> WebBundler<'a> {
         .unwrap();
 
         // Set the resolve and reject handlers for the bundling future
+        // TODO: uncomment this code and resolve the error
         future.then(resolve).catch(reject).await_fut();
 
         // Lock the mutex and wait for the bundling process to complete
@@ -163,7 +164,7 @@ impl<'a> WebBundler<'a> {
 mod tests {
 
     use super::*;
-    use metacall::switch;
+    use metacall::initialize;
 
     fn clean() {
         let dist = Path::new("test/dist");
@@ -175,7 +176,7 @@ mod tests {
     #[test]
     fn bundling_works() {
         clean();
-        let _metacall = switch::initialize().unwrap();
+        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("pages/home".to_owned(), "./tests/home.js".to_owned())]);
 
         match WebBundler::new(&targets, "tests/dist") {
@@ -193,7 +194,7 @@ mod tests {
     #[test]
     fn invalid_target_fails() {
         clean();
-        let _metacall = switch::initialize().unwrap();
+        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("invalid_path.tsx".to_owned(), "invalid_path".to_owned())]);
 
         let bundler = WebBundler::new(&targets, "tests/dist");

@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
-use metacall::{loaders, metacall_no_arg};
+use metacall::{load, metacall_no_arg};
 use metassr_utils::{cache_dir::CacheDir, checker::CheckerState};
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Mutex};
 
@@ -33,7 +33,7 @@ impl HeadRenderer {
                 self.bundle()?;
             }
 
-            let _ = loaders::from_single_file(
+            let _ = load::from_single_file(
                 "node",
                 format!("{}/head.js", self.cache_dir.path().display()),
             );

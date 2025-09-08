@@ -3,7 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use super::traits::Exec;
 use anyhow::{anyhow, Result};
 use clap::ValueEnum;
-use metacall::switch;
+use metacall::initialize;
 use metassr_build::server;
 
 use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
@@ -25,7 +25,7 @@ impl Builder {
 
 impl Exec for Builder {
     fn exec(&self) -> anyhow::Result<()> {
-        let _metacall = switch::initialize().unwrap();
+        let _metacall = initialize().unwrap();
         let instant = Instant::now();
         {
             let instant = Instant::now();

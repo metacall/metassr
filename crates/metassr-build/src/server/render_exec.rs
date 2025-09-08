@@ -6,7 +6,7 @@ use std::{
 
 use crate::traits::Exec;
 use anyhow::{anyhow, Result};
-use metacall::{loaders, metacall_no_arg};
+use metacall::{load, metacall_no_arg};
 
 const RENDER_FUNC_PREFIX: &str = "render_";
 
@@ -35,7 +35,7 @@ impl Exec for RenderExec {
     type Output = String;
     fn exec(&self) -> Result<Self::Output> {
         // let path = self.0.strip_prefix(current_dir()?)?;
-        if let Err(e) = loaders::from_single_file("node", &self.path) {
+        if let Err(e) = load::from_single_file("node", &self.path) {
             return Err(anyhow!(
                 "Cannot load render script: {e:?} \n  path: {:#?}",
                 self.path
