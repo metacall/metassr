@@ -43,20 +43,9 @@
             export PROMPT="%F{green}[metassr-dev]%f:%F{blue}%~%f $ "
           fi
 
-          # Ensure MetaCall is installed in a local prefix
-          export METACALL_INSTALL_PREFIX=$HOME/.local/metacall
-          if [ ! -d "$METACALL_INSTALL_PREFIX" ]; then
-            echo "Installing MetaCall into $METACALL_INSTALL_PREFIX"
-            curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
-          fi
-
-          # point Nix environment to MetaCall Guix paths
-          export PATH=/gnu/bin:$PATH
-          export LD_LIBRARY_PATH=/gnu/lib:$LD_LIBRARY_PATH
-          export PKG_CONFIG_PATH=/gnu/lib/pkgconfig:$PKG_CONFIG_PATH
-
-          # optional: if metacall has a home dir for modules
-          export METACALL_PATH=/gnu/share/metacall
+          # Ensure MetaCall is installed
+          echo "Installing MetaCall into $METACALL_INSTALL_PREFIX"
+          curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
 
           echo "welcome to dev shell"
         '';
