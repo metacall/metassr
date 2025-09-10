@@ -1,5 +1,5 @@
 {
-  # USAGE: `nix develop .#metassr`
+  # USAGE: `nix develop`
 
   description = "metassr - a simple dev shell with rust and metacall";
 
@@ -16,7 +16,7 @@
     {
       devShells."x86_64-linux".default = pkgs.mkShell {
         name = "metassr-dev";
-
+        src = "./.";
         # tools for rust development
         buildInputs = with pkgs; [
           rustc
@@ -37,10 +37,10 @@
 
           # change $PS1 if user uses bash
           if [ -n "$BASH_VERSION" ]; then
-          export PS1="\[\033[1;32m\](metassr-dev)\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\] $ "
+          export PS1="\[\033[1;32m\][metassr-dev]\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\] $ "
           # change $PROMPT if user uses zsh
           elif [ -n "$ZSH_VERSION" ]; then
-            export PROMPT="%F{green}(metassr-dev)%f:%F{blue}%~%f $ "
+            export PROMPT="%F{green}[metassr-dev]%f:%F{blue}%~%f $ "
           fi
 
           echo "welcome to dev shell"
