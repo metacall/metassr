@@ -66,8 +66,8 @@ import React from "react"
 
 export function render_head() {{
     return renderToString(<Head />);
-}}            
-                
+}}
+
                 "#,
             self.path.canonicalize()?.display()
         );

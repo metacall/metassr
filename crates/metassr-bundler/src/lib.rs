@@ -95,65 +95,50 @@ impl<'a> WebBundler<'a> {
     ///
     /// This function returns an `Err` if the bundling script cannot be loaded or if bundling fails.
     pub fn exec(&self) -> Result<()> {
-        // Lock the mutex to check if the bundling script is already loaded
         let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
         if !guard.is_true() {
-            // If not loaded, attempt to load the script into MetaCall
             if let Err(e) = loaders::from_memory("node", BUILD_SCRIPT) {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
             }
-            // Mark the script as loaded
             guard.make_true();
         }
-        // Drop the lock on the mutex as it's no longer needed
         drop(guard);
 
-        // Resolve callback when the bundling process is completed successfully
         fn resolve(_: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
-            // Mark the process as completed and notify waiting threads
             started.make_true();
             compilation_wait.cond.notify_one();
         }
 
-        // Reject callback for handling errors during the bundling process
         fn reject(err: Box<dyn MetacallValue>, _: Box<dyn MetacallValue>) {
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
-            // Log the bundling error and mark the process as completed
             error!("Bundling rejected: {err:?}");
             started.make_true();
             compilation_wait.cond.notify_one();
         }
 
-        // Call the `web_bundling` function in the MetaCall script with targets and output path
         let future = metacall::<MetacallFuture>(
             BUNDLING_FUNC,
             [
-                // Serialize the targets map to a string format
-                serde_json::to_string(&self.targets)?,
-                // Get the distribution path as a string
-                self.dist_path.to_str().unwrap().to_owned(),
+                serde_json::to_string(&self.targets)?,       // entry
+                self.dist_path.to_str().unwrap().to_owned(), // dist
             ],
         )
         .unwrap();
 
-        // Set the resolve and reject handlers for the bundling future
         future.then(resolve).catch(reject).await_fut();
 
-        // Lock the mutex and wait for the bundling process to complete
         let compilation_wait = Arc::clone(&IS_COMPLIATION_WAIT);
         let mut started = compilation_wait.checker.lock().unwrap();
 
-        // Block the current thread until the bundling process signals completion
         while !started.is_true() {
             started = Arc::clone(&IS_COMPLIATION_WAIT).cond.wait(started).unwrap();
         }
 
-        // Reset the checker state to false after the process completes
         started.make_false();
         Ok(())
     }

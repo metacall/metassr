@@ -1,135 +1,138 @@
 const { rspack } = require('@rspack/core');
-const path = require('path');
+const { join } = require('path');
 
-/**
- * Safely parses a JSON string, returning undefined if parsing fails.
- * @param {string} json - The JSON string to parse.
- * @returns {Object|undefined} - Parsed object or undefined if parsing fails.
- */
 function safelyParseJSON(json) {
     try {
         return JSON.parse(json);
-    } catch (_) {
+    } catch {
         return undefined;
     }
 }
 
-// Default configuration object for rspack bundling process
-let config = {
+const defaultConfig = {
     output: {
-        filename: '[name].js', // Output filename with the entry name
+        filename: '[name].js',
         library: {
-            type: 'commonjs2', // Set library type to CommonJS2 (Node.js modules)
+            type: 'commonjs2',
         },
-        publicPath: '' // Specify the base path for all assets within the application
+        publicPath: ''
     },
     resolve: {
-        extensions: ['.js', '.jsx', '.tsx', '.ts'] // Extensions that will be resolved
+        extensions: ['.js', '.jsx', '.tsx', '.ts'],
+        mainFields: ['browser', 'module', 'main']
     },
     optimization: {
-        minimize: false, // Disable minimization for easier debugging
+        minimize: false,
     },
     module: {
         rules: [
             {
-                test: /\.(jsx|js)$/, // Rule for JavaScript and JSX files
-                exclude: /node_modules/, // Exclude node_modules directory
+                test: /\.(jsx|js)$/,
+                exclude: /node_modules/,
                 use: {
-                    loader: 'builtin:swc-loader', // Use the SWC loader to transpile ES6+ and JSX
+                    loader: 'builtin:swc-loader',
                     options: {
-                        sourceMap: true, // Enable source maps for easier debugging
+                        sourceMap: true,
                         jsc: {
                             parser: {
-                                syntax: 'ecmascript', // Set parser syntax to ECMAScript
-                                jsx: true, // Enable parsing JSX syntax
-                            },
-                            externalHelpers: false, // Disable external helpers (use inline helpers)
-                            preserveAllComments: false, // Remove comments from output
-                            transform: {
-                                react: {
-                                    runtime: 'automatic', // Use React's automatic JSX runtime
-                                    throwIfNamespace: true, // Throw error if namespace is used
-                                    useBuiltins: false, // Don't include built-in polyfills
-                                },
-                            },
-                        },
-                    },
-                },
-                type: 'javascript/auto', // Specify the type as auto (for backward compatibility)
-            },
-            {
-                test: /\.(tsx|ts)$/, // Rule for TypeScript and TSX files
-                exclude: /node_modules/, // Exclude node_modules directory
-                use: {
-                    loader: 'builtin:swc-loader', // Use the SWC loader to transpile TS and TSX
-                    options: {
-                        jsc: {
-                            parser: {
-                                syntax: 'typescript', // Set parser syntax to TypeScript
-                                tsx: true, // Enable parsing TSX syntax
+                                syntax: 'ecmascript',
+                                jsx: true,
+                                dynamicImport: true
                             },
                             transform: {
                                 react: {
-                                    runtime: 'automatic', // Use React's automatic JSX runtime
-                                    throwIfNamespace: true, // Throw error if namespace is used
-                                    useBuiltins: false, // Don't include built-in polyfills
-                                },
-                            },
-                        },
-                    },
+                                    runtime: 'automatic',
+                                    throwIfNamespace: true
+                                }
+                            }
+                        }
+                    }
                 },
-                type: 'javascript/auto', // Specify the type as auto
+                type: 'javascript/auto'
             },
             {
-                test: /\.(png|svg|jpg)$/, // Rule for image files (PNG, SVG, JPG)
-                type: 'asset/inline', // Inline assets as Base64 strings
+                test: /\.(tsx|ts)$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'builtin:swc-loader',
+                    options: {
+                        jsc: {
+                            parser: {
+                                syntax: 'typescript',
+                                tsx: true,
+                                decorators: true
+                            },
+                            transform: {
+                                react: {
+                                    runtime: 'automatic',
+                                    throwIfNamespace: true
+                                }
+                            }
+                        }
+                    }
+                },
+                type: 'javascript/auto'
             },
-        ],
-    },
+            {
+                test: /\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf)$/,
+                type: 'asset',
+                parser: {
+                    dataUrlCondition: {
+                        maxSize: 8 * 1024
+                    }
+                }
+            }
+        ]
+    }
 };
 
-/**
- * Bundles web resources using rspack.
- * @param {Object|string} entry - The entry point(s) for the bundling process (can be a string or JSON object).
- * @param {string} dist - The distribution path where bundled files will be output.
- * @returns {Promise} - Resolves when bundling is successful, rejects if there is an error.
- */
-async function web_bundling(entry, dist) {
-    // Create a bundler instance using the config and parameters
-    const compiler = rspack(
-        {
-            ...config, // Merge with the default config
-            entry: safelyParseJSON(entry) ?? entry, // Parse entry if it's JSON, otherwise use it as is
-            output: dist ? {
-                ...config.output,
-                path: path.join(process.cwd(), dist), // Use current working directory and output path
-            } : config.output,
-            // minimize: true,
-            name: 'Client', // Name of the bundle (Client)
-            mode: 'production', // Set mode to development (for non-minimized builds)
-            devtool: 'source-map', // Enable source maps for better debugging
-            stats: { preset: 'errors-warnings', timings: true, colors: true }, // Customize bundling stats output
-            target: 'web', // Set the target environment to web (for browser usage)
+function createBundlerConfig(entry, dist) {
+    return {
+        ...defaultConfig,
+        entry: safelyParseJSON(entry) ?? entry,
+        output: dist ? {
+            ...defaultConfig.output,
+            path: join(process.cwd(), dist)
+        } : defaultConfig.output,
+        name: 'Client',
+        mode: 'production',
+        devtool: 'source-map',
+        stats: { 
+            preset: 'errors-warnings', 
+            timings: true, 
+            colors: true,
+            modules: true
+        },
+        target: 'web',
+        module: defaultConfig.module,
+        performance: {
+            hints: 'warning',
+            maxAssetSize: 250000,
+            maxEntrypointSize: 400000
         }
-    );
+    };
+}
 
-    // Return a promise that runs the bundling process and resolves or rejects based on the result
+async function web_bundling(entry, dist) {
+    const compiler = rspack(createBundlerConfig(entry, dist));
+
     return new Promise((resolve, reject) => {
-        return compiler.run((error, stats) => {
-            // Handle errors during the bundling process
+        compiler.run((error, stats) => {
             if (error) {
-                reject(error.message); // Reject with the error message if bundling fails
+                return reject(new Error(`Bundling failed: ${error.message}`));
             }
 
-            // Check if there are any errors in the bundling stats
-            if (error || stats?.hasErrors()) {
-                reject(stats.toString("errors-only")); // Reject with errors-only details from stats
+            if (stats?.hasErrors()) {
+                const info = stats.toJson();
+                const errors = info.errors?.map(e => e.message).join('\n') || 'Unknown compilation errors';
+                return reject(new Error(`Compilation errors:\n${errors}`));
             }
-            resolve(0); // Resolve successfully when bundling is complete
+
+            resolve(0);
         });
     });
 }
 
 module.exports = {
-    web_bundling // Export the web_bundling function to call it via metacall
+    web_bundling
 };
