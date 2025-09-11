@@ -62,13 +62,14 @@ impl Exec for Builder {
             );
         }
 
-        if (_metacall.0)() == 0 {
-            info!(
-                target = "builder",
-                message = "Building is completed",
-                time = format!("{}ms", instant.elapsed().as_millis())
-            );
-        }
+        // if (_metacall.0)() == 0 {
+        //     info!(
+        //         target = "builder",
+        //         message = "Building is completed",
+        //         time = format!("{}ms", instant.elapsed().as_millis())
+        //     );
+        // }
+
         Ok(())
     }
 }

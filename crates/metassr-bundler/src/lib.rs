@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 use metacall::{load, metacall, MetaCallFuture, MetaCallValue};
 use metassr_utils::checker::CheckerState;
 use std::{
+    any::Any,
     collections::HashMap,
     ffi::OsStr,
     marker::Sized,
@@ -109,17 +110,19 @@ impl<'a> WebBundler<'a> {
         drop(guard);
 
         // Resolve callback when the bundling process is completed successfully
-        fn resolve(_: Box<dyn MetaCallValue>, _: Box<dyn MetaCallValue>) {
+        fn resolve(result: Box<dyn MetaCallValue>, _: Box<dyn Any>) -> Box<dyn MetaCallValue> {
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
             // Mark the process as completed and notify waiting threads
             started.make_true();
             compilation_wait.cond.notify_one();
+
+            result
         }
 
         // Reject callback for handling errors during the bundling process
-        fn reject(err: Box<dyn MetaCallValue>, _: Box<dyn MetaCallValue>) {
+        fn reject(err: Box<dyn MetaCallValue>, _: Box<dyn Any>) -> Box<dyn MetaCallValue> {
             let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
@@ -127,6 +130,8 @@ impl<'a> WebBundler<'a> {
             error!("Bundling rejected: {err:?}");
             started.make_true();
             compilation_wait.cond.notify_one();
+
+            err
         }
 
         // Call the `web_bundling` function in the MetaCall script with targets and output path
