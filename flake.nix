@@ -17,9 +17,7 @@
 
         metacallConfig = {
           defaultLibPaths = [
-            "/gnu/lib"
-            "/usr/local/lib"
-            "~/.local/lib"
+            "/gnu/"
           ];
         };
 
@@ -38,6 +36,7 @@
             openssl libffi llvmPackages.libclang
             # Runtimes
             nodejs_22
+            # dev tools
             git curl
           ];
 
