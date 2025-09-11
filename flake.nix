@@ -1,5 +1,6 @@
 {
   # USAGE: `nix develop`
+  # this flake only runs for architecture "x86_64-linux"
 
   description = "metassr - a simple dev shell with rust and metacall";
 
@@ -9,46 +10,63 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, ... }:
-    let
-      pkgs = nixpkgs.legacyPackages."x86_64-linux";
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        system = "x86_64-linux"; 
+        pkgs = nixpkgs.legacyPackages.${system};
 
-    in
-    {
-      devShells."x86_64-linux".default = pkgs.mkShell {
-        name = "metassr-dev";
-        src = "./.";
-        # tools for rust development
-        buildInputs = with pkgs; [
-          rustc
-          cargo
-          rustfmt
-          clippy
-          rust-analyzer
-          pkg-config
-          openssl
-          git
-          curl
-        ];
-        env = {
-          RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+        metacallConfig = {
+          defaultLibPaths = [
+            "/gnu/lib"
+            "/usr/local/lib"
+            "~/.local/lib"
+          ];
         };
-        shellHook = ''
-          # export PATH="$HOME/.local/bin:$PATH"
 
-          # change $PS1 if user uses bash
-          if [ -n "$BASH_VERSION" ]; then
-          export PS1="\[\033[1;32m\][metassr-dev]\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\] $ "
-          # change $PROMPT if user uses zsh
-          elif [ -n "$ZSH_VERSION" ]; then
-            export PROMPT="%F{green}[metassr-dev]%f:%F{blue}%~%f $ "
-          fi
+        formatLibPaths = paths: builtins.concatStringsSep ":" paths;
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          name = "metassr-dev";
 
-          # Ensure MetaCall is installed
-          echo "Installing MetaCall into $METACALL_INSTALL_PREFIX"
-          curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+          buildInputs = with pkgs; [
+            # Core Rust tools
+            rustc cargo rustfmt clippy rust-analyzer
+            # Build tools (REVIEW THIS)
+            pkg-config cmake gcc
+            # System libs
+            openssl libffi llvmPackages.libclang
+            # Runtimes
+            nodejs_22
+            git curl
+          ];
 
-          echo "welcome to dev shell"
-        '';
-      };
-    };
+          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+          BINDGEN_EXTRA_CLANG_ARGS =
+            "-I${pkgs.libclang.lib}/lib/clang/${pkgs.libclang.version}/include";
+
+          env = {
+            RUST_SRC_PATH =
+              "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+          };
+
+          shellHook = ''
+            # Adjust library paths for MetaCall
+            export LD_LIBRARY_PATH=${formatLibPaths metacallConfig.defaultLibPaths}:$LD_LIBRARY_PATH
+            export LIBRARY_PATH=${formatLibPaths metacallConfig.defaultLibPaths}:$LIBRARY_PATH
+            export RUSTFLAGS="${builtins.concatStringsSep " " (map (path: "-L ${path}") metacallConfig.defaultLibPaths)}"
+
+            # Prompt (bash vs zsh)
+            if [ -n "$BASH_VERSION" ]; then
+              export PS1="\[\033[1;32m\][metassr-dev]\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\] $ "
+            elif [ -n "$ZSH_VERSION" ]; then
+              export PROMPT="%F{green}[metassr-dev]%f:%F{blue}%~%f $ "
+            fi
+
+            echo "Welcome to dev shell"
+            echo "Node.js: $(node --version)"
+            echo "Rust: $(rustc --version)"
+          '';
+        };
+      });
 }
