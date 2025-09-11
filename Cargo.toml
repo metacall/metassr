@@ -39,6 +39,9 @@ metassr-create = { path = "crates/metassr-create" }
 metassr-bundler = { path = "crates/metassr-bundler" }
 metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
 
+[build-dependencies]
+metacall-sys = "0.1.0"
+
 [workspace]
 members = [
     "crates/logger",

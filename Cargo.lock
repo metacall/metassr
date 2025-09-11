@@ -558,6 +558,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "metacall"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f06da67fa5540d1c0554bf40165a3c30bff05c1c876e43be519e83aeee24415"
+dependencies = [
+ "metacall-inline",
+ "metacall-sys",
+]
+
+[[package]]
 name = "metacall-inline"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -566,6 +576,12 @@ dependencies = [
  "proc-macro2",
  "quote",
 ]
+
+[[package]]
+name = "metacall-sys"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbd98571788ed82d0068406cfb78e1d5dc57ad02348eafcbce7b6f1b711e69e4"
 
 [[package]]
 name = "metassr"
@@ -578,7 +594,8 @@ dependencies = [
  "html-generator",
  "lazy_static",
  "logger",
- "metacall",
+ "metacall 0.5.1",
+ "metacall-sys",
  "metassr-build",
  "metassr-bundler",
  "metassr-create",
@@ -604,7 +621,7 @@ dependencies = [
  "anyhow",
  "html-generator",
  "lazy_static",
- "metacall",
+ "metacall 0.4.4",
  "metassr-bundler",
  "metassr-fs-analyzer",
  "metassr-utils",
@@ -618,7 +635,7 @@ version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
  "lazy_static",
- "metacall",
+ "metacall 0.4.4",
  "metassr-utils",
  "serde_json",
  "tracing",
@@ -632,7 +649,7 @@ dependencies = [
  "axum",
  "clap",
  "logger",
- "metacall",
+ "metacall 0.4.4",
  "metassr-build",
  "metassr-create",
  "metassr-server",
