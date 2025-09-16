@@ -40,7 +40,7 @@ metassr-bundler = { path = "crates/metassr-bundler" }
 metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
 
 [build-dependencies]
-metacall-sys = "0.1.0"
+metacall-sys = "0.1.1"
 
 [workspace]
 members = [
