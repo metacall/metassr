@@ -12,3 +12,7 @@ metacall = "0.5.1"
 metassr-utils = { path = "../metassr-utils" }
 serde_json = "1.0.128"
 tracing = "0.1.40"
+
+
+[build-dependencies]
+metacall-sys = { version = "0.1.0" }
