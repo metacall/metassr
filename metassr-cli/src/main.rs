@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
             out_dir,
             build_type,
         } => {
-            println!("command build Out dir: {:?}", out_dir);
+            tracing::info!("command build Out dir: {:?}", out_dir);
 
             cli::Builder::new(build_type, out_dir).exec()?;
         }
@@ -75,8 +75,7 @@ async fn main() -> Result<()> {
             cli::Creator::new(project_name, version, description, template).exec()?;
         }
         Commands::Dev { port } => {
-            println!("command dev");
-            println!("port: {:?}", port);
+            tracing::info!("port: {:?}", port);
             cli::Dev::new(
                 port,
                 current_dir()?,

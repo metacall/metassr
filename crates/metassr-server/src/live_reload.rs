@@ -2,7 +2,6 @@
 use crate::rebuilder::RebuildType;
 use futures_util::{SinkExt, StreamExt};
 use serde::Serialize;
-use std::net::SocketAddr;
 use tokio_tungstenite::tungstenite::Message;
 
 use tokio::{net::TcpStream, sync::broadcast};
