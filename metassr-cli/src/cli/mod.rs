@@ -1,10 +1,12 @@
 mod builder;
 mod creator;
+mod dev;
 mod runner;
 pub mod traits;
 
 pub use builder::*;
 pub use creator::*;
+pub use dev::*;
 pub use runner::*;
 
 use clap::{command, Parser, Subcommand, ValueEnum};
@@ -85,5 +87,10 @@ pub enum Commands {
         /// The template to use for creating the new project.
         #[arg(long, short, default_value_t = Template::Javascript)]
         template: Template,
+    },
+
+    Dev {
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
     },
 }

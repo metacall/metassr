@@ -9,7 +9,7 @@ use logger::LoggingLayer;
 use anyhow::Result;
 
 use std::{
-    env::{set_current_dir, set_var},
+    env::{current_dir, set_current_dir, set_var},
     path::Path,
 };
 
@@ -50,6 +50,8 @@ async fn main() -> Result<()> {
             out_dir,
             build_type,
         } => {
+            println!("command build Out dir: {:?}", out_dir);
+
             cli::Builder::new(build_type, out_dir).exec()?;
         }
         Commands::Run { port, serve } => {
@@ -64,6 +66,17 @@ async fn main() -> Result<()> {
             template,
         } => {
             cli::Creator::new(project_name, version, description, template).exec()?;
+        }
+        Commands::Dev { port } => {
+            println!("command dev");
+            println!("port: {:?}", port);
+            cli::Dev::new(
+                port,
+                current_dir()?,
+                metassr_build::server::BuildingType::ServerSideRendering,
+            )?
+            .exec()
+            .await?;
         }
     };
 

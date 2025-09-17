@@ -1,21 +1,22 @@
 {
-  "name": "app",
-  "version": "1.0.0",
-  "description": "",
-  "main": "App.tsx",
-  "scripts": {
-    "build": "../../target/debug/metassr --debug-mode=metacall build",
-    "build:ssg": "../../target/debug/metassr --debug-mode=metacall build -t ssg",
-    "run": "../../target/debug/metassr --debug-mode=metacall run ",
-    "run:ssg": "../../target/debug/metassr --debug-mode=metacall run --serve"
-  },
-  "devDependencies": {
-    "@rspack/core": "^0.7.5",
-    "@types/react": "^18.0.24",
-    "@types/react-dom": "^18.0.8"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  }
+    "name": "app",
+    "version": "1.0.0",
+    "description": "",
+    "main": "App.tsx",
+    "scripts": {
+        "build": "../../target/release/metassr --debug-mode=metacall build",
+        "build:ssg": "../../target/release/metassr --debug-mode=metacall build -t ssg",
+        "run": "../../target/release/metassr --debug-mode=metacall run ",
+        "run:ssr": "../../target/release/metassr --debug-mode=metacall run --serve",
+        "dev": "npm run build && ../../target/release/metassr --debug-mode=metacall dev"
+    },
+    "devDependencies": {
+        "@types/react": "^18.0.24",
+        "@types/react-dom": "^18.0.8",
+        "@rspack/core": "^0.7.5"
+    },
+    "dependencies": {
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    }
 }
