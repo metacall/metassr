@@ -18,4 +18,4 @@ metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
 
 
 [build-dependencies]
-metacall-sys = { version = "0.1.0" }
+metacall-sys = "0.1.1"

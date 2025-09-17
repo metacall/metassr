@@ -22,4 +22,4 @@ metassr-build = { path = "../crates/metassr-build" }
 metassr-create = { path = "../crates/metassr-create" }
 
 [build-dependencies]
-metacall-sys = { version = "0.1.0" }
+metacall-sys = "0.1.1"

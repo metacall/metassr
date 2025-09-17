@@ -570,9 +570,9 @@ dependencies = [
 
 [[package]]
 name = "metacall-sys"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbd98571788ed82d0068406cfb78e1d5dc57ad02348eafcbce7b6f1b711e69e4"
+checksum = "8c6890fa4fc6790993c82dfd736389499d6c71c7ae798dc9bc8cbabf5df68611"
 
 [[package]]
 name = "metassr"

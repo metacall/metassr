@@ -15,4 +15,4 @@ tracing = "0.1.40"
 
 
 [build-dependencies]
-metacall-sys = { version = "0.1.0" }
+metacall-sys = "0.1.1"
