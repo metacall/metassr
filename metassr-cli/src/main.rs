@@ -13,7 +13,9 @@ use std::{
     path::Path,
 };
 
-use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -22,15 +24,20 @@ async fn main() -> Result<()> {
     let allow_metacall_debug =
         [Some(DebugMode::All), Some(DebugMode::Metacall)].contains(&args.debug_mode);
     let allow_http_debug = [Some(DebugMode::All), Some(DebugMode::Http)].contains(&args.debug_mode);
-
     if let Commands::Create { .. } = args.commands {
+        let filter = EnvFilter::new("info").add_directive("notify=off".parse().unwrap());
+
         tracing_subscriber::fmt()
+            .with_env_filter(filter)
             .with_target(false)
             .without_time()
             .compact()
             .init();
     } else {
+        let filter = EnvFilter::new("info").add_directive("notify=off".parse().unwrap());
+
         tracing_subscriber::registry()
+            .with(filter)
             .with(LoggingLayer {
                 logfile: args.log_file,
             })

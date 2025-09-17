@@ -38,8 +38,8 @@ impl FileWatcher {
                         let _ = notify_tx.send(event);
                     }
                 }
-                Err(errr) => {
-                    eprintln!("Error: {}", errr);
+                Err(err) => {
+                    eprintln!("Error: {err}");
                 }
             },
             Config::default(),

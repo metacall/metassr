@@ -34,5 +34,5 @@ pub fn format_event(event: &Event) -> String {
         .collect::<Vec<_>>()
         .join(", ");
 
-    format!("{} {}", action, paths)
+    format!("{action} {paths}")
 }
