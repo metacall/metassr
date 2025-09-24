@@ -15,24 +15,22 @@ const defaultConfig = {
         library: {
             type: 'commonjs2',
         },
-        publicPath: ''
+        publicPath: '',
     },
     resolve: {
         extensions: ['.js', '.jsx', '.tsx', '.ts'],
-        mainFields: ['browser', 'module', 'main']
     },
     optimization: {
-        minimize: false,
+        minimize: true,
     },
     module: {
         rules: [
-            {
+        {
                 test: /\.(jsx|js)$/,
                 exclude: /node_modules/,
                 use: {
                     loader: 'builtin:swc-loader',
                     options: {
-                        sourceMap: true,
                         jsc: {
                             parser: {
                                 syntax: 'ecmascript',
@@ -75,12 +73,7 @@ const defaultConfig = {
             },
             {
                 test: /\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf)$/,
-                type: 'asset',
-                parser: {
-                    dataUrlCondition: {
-                        maxSize: 8 * 1024
-                    }
-                }
+                type: 'asset/inline', // Inline assets as Base64 strings
             }
         ]
     }
@@ -97,9 +90,13 @@ function createBundlerConfig(entry, dist) {
         name: 'Client',
         mode: 'production',
         devtool: 'source-map',
-        stats: { 
-            preset: 'errors-warnings', 
-            timings: true, 
+        experiments: {
+            css: true
+        },
+        // plugins: [],
+        stats: {
+            preset: 'errors-warnings',
+            timings: true,
             colors: true,
             modules: true
         },
