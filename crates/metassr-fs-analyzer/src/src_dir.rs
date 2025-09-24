@@ -1,6 +1,7 @@
 use super::DirectoryAnalyzer;
 use anyhow::{anyhow, Result};
-use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::PathBuf};
+use metassr_utils::rand::Rand;
+use std::{collections::HashMap, ffi::OsStr, hash::{DefaultHasher, Hash, Hasher}, marker::Sized, path::PathBuf};
 use walkdir::WalkDir;
 
 /// Wrappers for special entries that collected by the source analyzer
@@ -17,20 +18,29 @@ pub mod special_entries {
 }
 
 #[derive(Debug, Clone)]
-pub struct Page {
+pub struct PageInformation {
     pub route: String,
     pub path: PathBuf,
 }
 
+#[derive(Debug, Clone)]
+pub struct Page {
+    pub id: u64,
+    pub info: PageInformation,
+}
+
 impl Page {
-    pub fn new<S, P>(route: &S, path: &P) -> Self
+    pub fn new<S, P>(id: u64, route: &S, path: &P) -> Self
     where
         S: ToString,
         P: AsRef<OsStr> + ?Sized,
     {
         Self {
-            route: route.to_string(),
-            path: PathBuf::from(path),
+            id,
+            info: PageInformation {
+                route: route.to_string(),
+                path: PathBuf::from(path),
+            },
         }
     }
 }
@@ -47,15 +57,15 @@ impl Pages {
         Self(pages)
     }
 
-    pub fn insert<S: ToString, P: AsRef<OsStr> + ?Sized>(&mut self, route: &S, path: &P) {
-        self.0.push(Page::new(route, path));
+    pub fn insert<S: ToString, P: AsRef<OsStr> + ?Sized>(&mut self, id: u64, route: &S, path: &P) {
+        self.0.push(Page::new(id, route, path));
     }
 
     pub fn as_map(&self) -> HashMap<String, PathBuf> {
         HashMap::from_iter(
             self.0
                 .iter()
-                .map(|Page { route, path }| (route.to_owned(), path.to_owned()))
+                .map(|Page { id, info }| (info.route.to_owned(), info.path.to_owned()))
                 .collect::<Vec<(String, PathBuf)>>(),
         )
     }
@@ -172,20 +182,22 @@ impl DirectoryAnalyzer for SourceDir {
             let path = entry.path();
             let stem = path.file_stem().unwrap().to_str().unwrap();
             let stripped = path.strip_prefix(src)?;
-
+            
             match stripped.iter().next() {
                 Some(_) if list_of_specials.contains(&stem) => match stem {
                     "_app" => specials.0 = Some(special_entries::App(path.to_path_buf())),
                     "_head" => specials.1 = Some(special_entries::Head(path.to_path_buf())),
                     _ => (),
                 },
-
+                
                 Some(p) if p == OsStr::new("pages") => {
+                    let mut hasher = DefaultHasher::new();
                     let route = path
                         .strip_prefix([src, "/pages"].concat())?
                         .to_str()
                         .unwrap();
-                    pages.insert(&route, path);
+                    route.hash(&mut  hasher);
+                    pages.insert(hasher.finish(), &route, path);
                 }
 
                 _ => (),
