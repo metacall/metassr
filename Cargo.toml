@@ -41,12 +41,12 @@ metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
 
 [workspace]
 members = [
+    "metassr-cli",
     "crates/logger",
     "crates/metassr-build",
     "crates/metassr-server",
     "crates/metassr-utils",
     "crates/html-generator",
-    "metassr-cli",
     "crates/metassr-create",
     "crates/metassr-bundler",
     "crates/metassr-fs-analyzer",
