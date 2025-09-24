@@ -37,7 +37,7 @@
             # Runtimes
             nodejs_22
             # dev tools
-            git curl
+            git curl yarn
           ];
 
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
