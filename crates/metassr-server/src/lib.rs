@@ -1,4 +1,3 @@
-// crates/metassr-server/src/lib.rs
 mod fallback;
 mod handler;
 mod layers;
@@ -16,11 +15,13 @@ use axum::{response::IntoResponse, routing::get};
 use live_reload::LiveReloadServer;
 use rebuilder::Rebuilder;
 use router::RouterMut;
+use serde_json::json;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
 use tokio::net::TcpListener;
+use tokio_tungstenite::tungstenite::Message;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 use tracing::info;
@@ -70,6 +71,7 @@ impl Server {
         let mut base_router: Router<()> = Router::new()
             .nest_service("/static", ServeDir::new(&static_dir))
             .nest_service("/dist", ServeDir::new(&dist_dir));
+
         if let ServerMode::Development = self.configs.mode {
             info!("Configuring server for development mode");
             let live_reload_script = include_str!("scripts/live-reload.js");
@@ -84,6 +86,7 @@ impl Server {
             );
             // Apply live reload middleware
             base_router = base_router.layer(axum::middleware::from_fn(inject_live_reload_script));
+
             // Start the WebSocket server for live reload
             let ws_listener = TcpListener::bind("127.0.0.1:3001").await.map_err(|e| {
                 info!("Failed to bind WebSocket listener: {}", e);
@@ -98,6 +101,7 @@ impl Server {
                     while let Ok((stream, addr)) = ws_listener.accept().await {
                         println!("WebSocket connection from {:?}", addr);
                         let live_reload = LiveReloadServer::new(rebuilder.subscribe());
+                        // live_reload.handle_connection(socket).await;
                         tokio::spawn(live_reload.handle_connection(stream, addr));
                     }
                 });

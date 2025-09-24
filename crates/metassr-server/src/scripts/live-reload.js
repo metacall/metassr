@@ -4,11 +4,11 @@
  * and updates the page accordingly.
  */
 
-(function () {
+(function() {
     let isReconnecting = false;
 
     function connect() {
-        const ws = new WebSocket('ws://localhost:8080/livereload');
+        const ws = new WebSocket('ws://localhost:3001');
         ws.onmessage = (event) => {
             const update = JSON.parse(event.data)
             const currentPath = window.location.pathname; //current page path

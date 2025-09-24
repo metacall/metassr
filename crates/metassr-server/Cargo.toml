@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.82"
-axum = "0.7.5"
+axum = { version = "0.7.5", features = ["ws"] }
 chrono = "0.4.38"
 metacall = "0.4.1"
 metassr-build = { path = "../metassr-build" }
