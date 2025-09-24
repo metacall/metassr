@@ -1,10 +1,18 @@
+use std::ops::Deref;
+
 // crates/metassr-server/src/live_reload.rs
 use crate::rebuilder::RebuildType;
+use axum::{
+    body::{to_bytes, Body},
+    http::{header, Request, Response, StatusCode},
+    middleware::Next,
+};
 use futures_util::{SinkExt, StreamExt};
 use serde::Serialize;
 use tokio_tungstenite::tungstenite::Message;
 
 use tokio::{net::TcpStream, sync::broadcast};
+use tracing::info;
 // use tokio_tungstenite::accept_async;
 
 #[derive(Debug, Serialize)]
@@ -61,4 +69,49 @@ impl LiveReloadServer {
             }
         }
     }
+}
+
+/// middlware to indject the live-reload.js script
+pub async fn inject_live_reload_script(
+    req: Request<Body>,
+    next: Next,
+) -> Result<Response<Body>, StatusCode> {
+    let response = next.run(req).await;
+
+    // Check if the response is HTML
+    let is_html: bool = response
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .map(|v| {
+            v.to_str()
+                .unwrap_or("")
+                .to_lowercase()
+                .contains("text/html")
+        })
+        .unwrap_or(false);
+
+    if is_html {
+        let (parts, body) = response.into_parts();
+
+        let body_bytes = axum::body::to_bytes(body, usize::MAX).await.map_err(|e| {
+            info!("Failed to read response body: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+        let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+
+        // Inject script before </body> or append if </body> is missing
+        let modified_body = body_str.replace(
+            "</body>",
+            r#"<script src="/livereload/script.js"></script></body>"#,
+        );
+
+        return Ok(Response::builder()
+            .status(parts.status)
+            .header(header::CONTENT_TYPE, "text/html")
+            .header(header::CACHE_CONTROL, "no-cache") // Prevent caching in dev
+            .body(Body::from(modified_body))
+            .unwrap());
+    }
+
+    Ok(response)
 }

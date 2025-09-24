@@ -25,6 +25,8 @@ use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 use tracing::info;
 
+use crate::live_reload::inject_live_reload_script;
+
 #[derive(Debug, Clone, Copy)]
 pub enum ServerMode {
     Development,
@@ -68,11 +70,11 @@ impl Server {
         let mut base_router: Router<()> = Router::new()
             .nest_service("/static", ServeDir::new(&static_dir))
             .nest_service("/dist", ServeDir::new(&dist_dir));
-
         if let ServerMode::Development = self.configs.mode {
+            info!("Configuring server for development mode");
             let live_reload_script = include_str!("scripts/live-reload.js");
             base_router = base_router.route(
-                "/livereload/script.js", //todo check this path
+                "/livereload/script.js",
                 get(|| async {
                     axum::response::Response::builder()
                         .header("Content-Type", "application/javascript")
@@ -80,12 +82,21 @@ impl Server {
                         .unwrap()
                 }),
             );
+            // Apply live reload middleware
+            base_router = base_router.layer(axum::middleware::from_fn(inject_live_reload_script));
             // Start the WebSocket server for live reload
-            let ws_listener = TcpListener::bind("127.0.0.1:3001").await?;
-            println!("0000000000000 {:?}", ws_listener);
+            let ws_listener = TcpListener::bind("127.0.0.1:3001").await.map_err(|e| {
+                info!("Failed to bind WebSocket listener: {}", e);
+                anyhow::anyhow!("WebSocket bind error: {}", e)
+            })?;
+            info!(
+                "WebSocket server listening on {:?}",
+                ws_listener.local_addr()?
+            );
             if let Some(rebuilder) = rebuilder {
                 tokio::spawn(async move {
                     while let Ok((stream, addr)) = ws_listener.accept().await {
+                        println!("WebSocket connection from {:?}", addr);
                         let live_reload = LiveReloadServer::new(rebuilder.subscribe());
                         tokio::spawn(live_reload.handle_connection(stream, addr));
                     }
@@ -113,6 +124,15 @@ impl Server {
         }
 
         PagesHandler::new(&mut app, &dist_dir, self.configs.running_type)?.build()?;
+
+        // Apply middleware again after PagesHandler to catch dynamic HTML
+        if let ServerMode::Development = self.configs.mode {
+            info!("Applying live reload middleware after PagesHandler");
+            app = RouterMut::from(
+                app.app()
+                    .layer(axum::middleware::from_fn(inject_live_reload_script)),
+            );
+        }
 
         TracingLayer::setup(
             TracingLayerOptions {
