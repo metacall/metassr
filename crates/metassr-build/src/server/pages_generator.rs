@@ -15,7 +15,7 @@ use crate::traits::Exec;
 
 use super::{
     render_exec::MultiRenderExec, renderer::head::HeadRenderer, renderer::html::HtmlRenderer,
-    targets::Targets,
+    target::Targets,
 };
 
 pub struct PagesGenerator {
