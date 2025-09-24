@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
             out_dir,
             build_type,
         } => {
-            cli::Builder::new(build_type, out_dir).exec()?;
+            cli::Builder::new(build_type, args.root, out_dir).exec()?;
         }
         Commands::Run { port, serve } => {
             cli::Runner::new(port, serve, allow_http_debug)

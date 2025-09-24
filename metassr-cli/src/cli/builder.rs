@@ -6,20 +6,25 @@ use clap::ValueEnum;
 use metacall::switch;
 use metassr_build::server;
 
-use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
+use metassr_build::{
+    client::{config::ClientConfig, ClientBuilder},
+    server::{config::ServerConfig, ServerSideBuilder},
+    traits::Build,
+};
 
 use std::time::Instant;
 
 use tracing::{error, info};
 
 pub struct Builder {
+    root_dir: String,
     out_dir: String,
     _type: BuildingType,
 }
 
 impl Builder {
-    pub fn new(_type: BuildingType, out_dir: String) -> Self {
-        Self { out_dir, _type }
+    pub fn new(_type: BuildingType, root_dir: String, out_dir: String) -> Self {
+        Self { root_dir, out_dir, _type }
     }
 }
 
@@ -27,13 +32,19 @@ impl Exec for Builder {
     fn exec(&self) -> anyhow::Result<()> {
         let _metacall = switch::initialize().unwrap();
         let instant = Instant::now();
+        
+        // Build client-side
         {
             let instant = Instant::now();
 
-            if let Err(e) = ClientBuilder::new("", &self.out_dir)?.build() {
+            // Create client configuration
+            let client_config = ClientConfig::new(".", &self.out_dir)?;
+            let client_builder = ClientBuilder::new(client_config);
+            
+            if let Err(e) = client_builder.build() {
                 error!(
                     target = "builder",
-                    message = format!("Couldn't build for the client side:  {e}"),
+                    message = format!("Couldn't build for the client side: {e}"),
                 );
                 return Err(anyhow!("Couldn't continue building process."));
             }
@@ -44,10 +55,16 @@ impl Exec for Builder {
             );
         }
 
+        // Build server-side
         {
             let instant = Instant::now();
 
-            if let Err(e) = ServerSideBuilder::new("", &self.out_dir, self._type.into())?.build() {
+            // Create server configuration
+            let server_config = ServerConfig::new(".", &self.out_dir)?
+                .with_building_type(self._type.into());
+            let server_builder = ServerSideBuilder::new(server_config);
+
+            if let Err(e) = server_builder.build() {
                 error!(
                     target = "builder",
                     message = format!("Couldn't build for the server side: {e}"),
@@ -81,11 +98,11 @@ pub enum BuildingType {
     SSR,
 }
 
-impl Into<server::BuildingType> for BuildingType {
-    fn into(self) -> server::BuildingType {
+impl Into<metassr_build::BuildingType> for BuildingType {
+    fn into(self) -> metassr_build::BuildingType {
         match self {
-            Self::SSG => server::BuildingType::StaticSiteGeneration,
-            Self::SSR => server::BuildingType::ServerSideRendering,
+            Self::SSG => metassr_build::BuildingType::StaticSiteGeneration,
+            Self::SSR => metassr_build::BuildingType::ServerSideRendering,
         }
     }
 }
