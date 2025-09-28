@@ -32,9 +32,9 @@ impl LiveReloadServer {
             .await
             .expect("Error during websocket handshake");
 
-        tracing::info!("New LiveReload connection from: {}", addr);
+        println!("!!!!!!!!! New LiveReload connection from: {}", addr);
 
-        let (mut ws_sender, mut ws_receiver) = ws_stream.split();
+        let (mut ws_sender, mut _ws_receiver) = ws_stream.split();
 
         while let Ok(rebuild_type) = self.receiver.recv().await {
             let message: LiveReloadMessage = match rebuild_type {

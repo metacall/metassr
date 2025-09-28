@@ -13,10 +13,12 @@
             const update = JSON.parse(event.data)
             const currentPath = window.location.pathname; //current page path
 
-            switch (update.type) {
+            console.log("update:", update.type_);
+
+            switch (update.type_) {
                 case 'page':
-                    if (!update.path || currentPath == update.path) {
-                        window.location.reload();
+                    if (update.path) {
+                        reloadPage(update.path, currentPath);
                     }
                     break;
                 case 'layout':
@@ -48,6 +50,22 @@
             }
         }
     };
+
+    function reloadPage(path, currentPath) {
+        if (path && urlMatchPath(path, currentPath)) {
+            window.location.reload();
+        }
+    }
+
+    function urlMatchPath(filePath, pathname) {
+
+        const match = filePath
+            .replace(/^src\/pages/, "") // remove "src/pages"
+            .replace(/\.(t|j)sx?$/, "") // remove extension
+            .replace(/index$/, ""); // "index" files map to "/"
+
+        return pathname == match || pathname == match + "/";
+    }
 
     function reloadStylesheets() {
         const links = document.querySelectorAll('link[rel="stylesheet"]');
