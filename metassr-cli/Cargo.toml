@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
+inquire = "0.9.1"
 metacall = "0.5.1"
 
 axum = "0.7.5"
@@ -20,3 +21,6 @@ logger = { path = "../crates/logger" }
 metassr-server = { path = "../crates/metassr-server" }
 metassr-build = { path = "../crates/metassr-build" }
 metassr-create = { path = "../crates/metassr-create" }
+
+[build-dependencies]
+metacall-sys = "0.1.1"
