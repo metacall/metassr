@@ -5,26 +5,22 @@ pub mod live_reload;
 pub mod rebuilder;
 mod router;
 
-use axum::extract::WebSocketUpgrade;
 use fallback::Fallback;
 use handler::PagesHandler;
 use layers::tracing::{LayerSetup, TracingLayer, TracingLayerOptions};
 
 use anyhow::Result;
+use axum::routing::get;
 use axum::{http::StatusCode, response::Redirect, Router};
-use axum::{response::IntoResponse, routing::get};
 use live_reload::LiveReloadServer;
 use rebuilder::Rebuilder;
 use router::RouterMut;
-use serde_json::json;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
 use tokio::net::TcpListener;
-use tokio_tungstenite::tungstenite::Message;
 use tower_http::services::ServeDir;
-use tower_http::services::ServeFile;
 use tracing::info;
 
 use crate::live_reload::inject_live_reload_script;
@@ -70,7 +66,7 @@ impl Server {
             self.configs.root_path.to_str().unwrap()
         ));
 
-        let mut base_router: Router<()> = Router::new()
+        let mut base_router = Router::new()
             .nest_service("/static", ServeDir::new(&static_dir))
             .nest_service("/dist", ServeDir::new(&dist_dir));
 
@@ -111,7 +107,7 @@ impl Server {
             }
         }
 
-        let mut app: RouterMut<()> = RouterMut::from(base_router);
+        let mut app = RouterMut::from(base_router);
 
         match self.configs.running_type {
             RunningType::SSG => {

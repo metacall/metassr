@@ -8,7 +8,7 @@ use futures_util::{SinkExt, StreamExt};
 use serde::Serialize;
 use tokio_tungstenite::tungstenite::Message;
 
-use tokio::{net::TcpStream, sync::broadcast};
+use tokio::{net::TcpStream, sync::broadcast::Receiver};
 use tracing::info;
 // use tokio_tungstenite::accept_async;
 
@@ -20,11 +20,11 @@ struct LiveReloadMessage {
 }
 
 pub struct LiveReloadServer {
-    receiver: broadcast::Receiver<RebuildType>,
+    receiver: Receiver<RebuildType>,
 }
 
 impl LiveReloadServer {
-    pub fn new(receiver: broadcast::Receiver<RebuildType>) -> Self {
+    pub fn new(receiver: Receiver<RebuildType>) -> Self {
         Self { receiver }
     }
 
@@ -35,9 +35,10 @@ impl LiveReloadServer {
 
         println!("!!!!!!!!! New LiveReload connection from: {}", addr);
 
-        let (mut ws_sender, mut _ws_receiver) = ws_stream.split();
+        let (mut ws_sender, _) = ws_stream.split();
 
         while let Ok(rebuild_type) = self.receiver.recv().await {
+            // construct the message sent to client
             let message: LiveReloadMessage = match rebuild_type {
                 RebuildType::Page(ref path) => LiveReloadMessage {
                     type_: "page".to_string(),
@@ -61,6 +62,7 @@ impl LiveReloadServer {
                 },
             };
             let message_json = serde_json::to_string(&message).unwrap();
+
             if let Err(e) = ws_sender.send(Message::Text(message_json.into())).await {
                 tracing::error!("Failed to send LiveReload message: {}", e);
                 break;

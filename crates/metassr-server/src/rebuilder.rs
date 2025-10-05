@@ -1,14 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
-use metacall::initialize;
 use metassr_build::{
     client::ClientBuilder,
     server::{BuildingType, ServerSideBuilder},
-    traits::{Build, Generate},
+    traits::Build,
 };
 use metassr_watcher::utils::*;
-use notify::Event;
 use tokio::sync::broadcast;
 
 use std::time::Instant;
@@ -70,13 +68,10 @@ impl Rebuilder {
 
         println!("Rel path: {:?}", rel_path);
 
-        let rebuild_type: RebuildType = self.map_path_to_type(rel_path)?;
+        let rebuild_type = self.map_path_to_type(rel_path)?;
 
         // Log what we're entered rebuilding
         info!("Rebuilding due to changes in: {:?}", rebuild_type);
-
-        // Send rebuild notification
-        let _ = self.sender.send(rebuild_type.clone()); // ?? validate the borrowing/ownership model here
 
         Ok(rebuild_type)
     }
@@ -128,8 +123,6 @@ impl Rebuilder {
 
     async fn rebuild_page(&self, path: PathBuf) -> Result<()> {
         info!("Rebuilding page {:?}", path);
-        // let _metacall = switch::initialize().unwrap();
-        let instant = Instant::now();
 
         println!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
         println!(
