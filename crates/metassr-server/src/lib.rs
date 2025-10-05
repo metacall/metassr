@@ -58,6 +58,7 @@ impl Server {
         Self { configs }
     }
 
+    // FIXME: don't use Option<T> here
     pub async fn run(&self, rebuilder: Option<Arc<Rebuilder>>) -> Result<()> {
         let listener =
             tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.configs.port)).await?;

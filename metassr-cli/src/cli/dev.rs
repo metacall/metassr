@@ -94,23 +94,26 @@ impl Dev {
         };
         let mut rebuild_rx: broadcast::Receiver<RebuildType> = self.rebuild_tx.subscribe();
 
-        let rebuilder: Option<Arc<Rebuilder>> = Some(self.rebuilder.clone());
-        let rebuilder_clone: Option<Arc<Rebuilder>> = Some(self.rebuilder.clone());
+        let rebuilder = Arc::clone(&self.rebuilder);
 
-        tokio::spawn(async move {
-            while let Ok(rebuild_type) = rebuild_rx.recv().await {
-                if let Err(e) = rebuilder_clone
-                    .clone()
-                    .expect("Rebuild failed")
-                    .rebuild(rebuild_type)
-                    .await
-                {
-                    error!("Rebuild failed: {}", e);
+        tokio::spawn({
+            let rebuilder = Arc::clone(&rebuilder);
+
+            async move {
+                while let Ok(rebuild_type) = rebuild_rx.recv().await {
+                    if let Err(e) = rebuilder
+                        .clone()
+                        // .expect("Rebuild failed")
+                        .rebuild(rebuild_type)
+                        .await
+                    {
+                        error!("Rebuild failed: {}", e);
+                    }
                 }
             }
         });
 
-        Server::new(server_configs).run(rebuilder).await?;
+        Server::new(server_configs).run(Some(rebuilder)).await?; // FIXME: don't use Option<T> here
         Ok(())
     }
 }
