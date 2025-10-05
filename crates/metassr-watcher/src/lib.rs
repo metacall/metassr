@@ -31,7 +31,6 @@ impl FileWatcher {
             move |res: DebounceEventResult| match res {
                 Ok(events) => {
                     for event in events {
-                        println!("File system change detected: {}", format_event(&event));
                         let _ = tx.send(event);
                     }
                 }

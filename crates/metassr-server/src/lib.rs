@@ -88,6 +88,26 @@ impl Server {
             );
             // Apply live reload middleware
             base_router = base_router.layer(axum::middleware::from_fn(inject_live_reload_script));
+
+            // Start the WebSocket server for live reload
+            let ws_listener = TcpListener::bind("127.0.0.1:3001").await.map_err(|e| {
+                info!("Failed to bind WebSocket listener: {}", e);
+                anyhow::anyhow!("WebSocket bind error: {}", e)
+            })?;
+            info!(
+                "WebSocket server listening on {:?}",
+                ws_listener.local_addr()?
+            );
+            if let Some(rebuilder) = rebuilder {
+                tokio::spawn(async move {
+                    while let Ok((stream, addr)) = ws_listener.accept().await {
+                        println!("WebSocket connection from {:?}", addr);
+                        let live_reload = LiveReloadServer::new(rebuilder.subscribe());
+                        // live_reload.handle_connection(socket).await;
+                        tokio::spawn(live_reload.handle_connection(stream, addr));
+                    }
+                });
+            }
         }
 
         let mut app: RouterMut<()> = RouterMut::from(base_router);

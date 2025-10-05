@@ -13,9 +13,9 @@
             const update = JSON.parse(event.data)
             const currentPath = window.location.pathname; //current page path
 
-            console.log("update:", update.type_);
+            console.log("update:", update);
 
-            switch (update.type_) {
+            switch (update.type) {
                 case 'page':
                     if (update.path) {
                         reloadPage(update.path, currentPath);

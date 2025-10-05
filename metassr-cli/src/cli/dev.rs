@@ -74,7 +74,9 @@ impl Dev {
                             error!("Error sending rebuild notification: {}", e);
                         }
                     }
-                    Err(e) => error!("Error handling file change: {}", e),
+                    Err(e) => {
+                        // error!("Error handling file change: {}", e)
+                    }
                 }
             }
         });
