@@ -13,13 +13,18 @@ use tokio::sync::broadcast;
 
 use std::time::Instant;
 
+use notify_debouncer_full::DebouncedEvent;
+
 use tracing::{error, info};
 
 #[derive(Clone, Debug)]
 pub enum RebuildType {
+    /// Rebuild a single page. page's path is providied
     Page(PathBuf), // this only is done
     Layout,
+    // Rebuild a single Component.
     Component,
+    // Reload Styles only.
     Style,
     Static,
 }
@@ -33,7 +38,7 @@ pub struct Rebuilder {
 
 impl Rebuilder {
     pub fn new(root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
-        let (sender, _) = broadcast::channel(100);
+        let (sender, _) = broadcast::channel(10);
         let out_dir = PathBuf::from("dist");
         println!("Out dir: {:?}", out_dir);
 
@@ -49,7 +54,7 @@ impl Rebuilder {
         self.sender.subscribe()
     }
 
-    pub fn handle_event(&self, event: Event) -> Result<RebuildType> {
+    pub fn handle_event(&self, event: DebouncedEvent) -> Result<RebuildType> {
         if !is_relevant_event(&event) {
             anyhow::bail!("Not a relevant event");
         }
@@ -90,7 +95,7 @@ impl Rebuilder {
             _ => RebuildType::Layout,
         };
 
-    Ok(rebuild_type)
+        Ok(rebuild_type)
     }
 
     pub async fn rebuild(&self, rebuild_type: RebuildType) -> Result<()> {

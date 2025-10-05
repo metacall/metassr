@@ -29,8 +29,8 @@ impl Dev {
     pub fn new(port: u16, root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
         let rebuild_tx: broadcast::Sender<RebuildType> = broadcast::channel(100).0; //channel for rebuild notifications
 
-        let watcher: Arc<Mutex<Option<FileWatcher>>> = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
-        let rebuilder: Arc<Rebuilder> = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
+        let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
+        let rebuilder = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
 
         Ok(Self {
             port,
@@ -90,7 +90,6 @@ impl Dev {
             running_type: RunningType::SSR,
             mode: metassr_server::ServerMode::Development,
         };
-        println!("{:?}", self.root_path);
         let mut rebuild_rx: broadcast::Receiver<RebuildType> = self.rebuild_tx.subscribe();
 
         let rebuilder: Option<Arc<Rebuilder>> = Some(self.rebuilder.clone());

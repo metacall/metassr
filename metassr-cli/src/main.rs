@@ -75,7 +75,6 @@ async fn main() -> Result<()> {
             cli::Creator::new(project_name, version, description, template).exec()?;
         }
         Commands::Dev { port } => {
-            tracing::info!("port: {:?}", port);
             cli::Dev::new(
                 port,
                 current_dir()?,

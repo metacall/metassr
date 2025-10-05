@@ -24,4 +24,5 @@ tower-layer = "0.3.3"
 tower-service = "0.3.3"
 tracing = "0.1.40"
 notify = { version = "8.0.0", features = ["serde"] }
+notify-debouncer-full = "0.6.0"
 walkdir = "2"

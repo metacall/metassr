@@ -1,48 +1,46 @@
 pub mod utils;
 
-use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::RecursiveMode;
+use notify_debouncer_full::{self, DebounceEventResult, DebouncedEvent};
 use std::{
     path::Path,
     sync::mpsc::{self, Receiver},
+    time::Duration,
 };
 use tokio::sync::broadcast;
 use utils::{format_event, is_relevant_event};
 
 pub struct FileWatcher {
-    watcher: RecommendedWatcher,
-    sender: broadcast::Sender<Event>,
+    watcher: notify_debouncer_full::Debouncer<
+        notify::RecommendedWatcher,
+        notify_debouncer_full::NoCache,
+    >,
+    sender: broadcast::Sender<DebouncedEvent>,
 }
 
 impl FileWatcher {
     pub fn new() -> notify::Result<Self> {
         // Create a broadcast channel with capacity for 100 messages
         // distributing file events to multiple subscribers
-        let (sender, _) = broadcast::channel(100);
+        let (sender, _) = broadcast::channel(10);
         let tx = sender.clone();
-        let (notify_tx, notify_rx) = mpsc::channel();
 
-        // spawn a new thread to handle file events
-        std::thread::spawn(move || {
-            while let Ok(event) = notify_rx.recv() {
-                if is_relevant_event(&event) {
-                    let _ = tx.send(event);
-                }
-            }
-        });
-
-        let watcher = RecommendedWatcher::new(
-            move |res: Result<Event, notify::Error>| match res {
-                Ok(event) => {
-                    if is_relevant_event(&event) {
+        let watcher = notify_debouncer_full::new_debouncer(
+            Duration::from_millis(100),
+            None,
+            move |res: DebounceEventResult| match res {
+                Ok(events) => {
+                    for event in events {
                         println!("File system change detected: {}", format_event(&event));
-                        let _ = notify_tx.send(event);
+                        let _ = tx.send(event);
                     }
                 }
-                Err(err) => {
-                    eprintln!("Error: {err}");
+                Err(errors) => {
+                    for err in errors {
+                        eprintln!("Watch Error: {err}");
+                    }
                 }
             },
-            Config::default(),
         )?;
 
         Ok(FileWatcher { watcher, sender })
@@ -54,7 +52,7 @@ impl FileWatcher {
         Ok(())
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<Event> {
+    pub fn subscribe(&self) -> broadcast::Receiver<DebouncedEvent> {
         self.sender.subscribe()
     }
 }

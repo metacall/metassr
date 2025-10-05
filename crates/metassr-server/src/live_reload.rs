@@ -1,6 +1,6 @@
 use crate::rebuilder::RebuildType;
 use axum::{
-    body::{to_bytes, Body},
+    body::Body,
     http::{header, Request, Response, StatusCode},
     middleware::Next,
 };
@@ -14,6 +14,7 @@ use tracing::info;
 
 #[derive(Debug, Serialize)]
 struct LiveReloadMessage {
+    #[serde(rename = "type")]
     type_: String,
     path: Option<String>,
 }
