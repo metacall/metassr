@@ -4,7 +4,6 @@ use super::traits::Exec;
 use anyhow::{anyhow, Result};
 use clap::ValueEnum;
 use metacall::initialize;
-use metassr_build::server;
 
 use metassr_build::{
     client::{config::ClientConfig, ClientBuilder},
@@ -99,8 +98,8 @@ pub enum BuildingType {
 impl Into<metassr_build::BuildingType> for BuildingType {
     fn into(self) -> metassr_build::BuildingType {
         match self {
-            Self::SSG => metassr_build::BuildingType::StaticSiteGeneration,
-            Self::SSR => metassr_build::BuildingType::ServerSideRendering,
+            Self::Ssg => metassr_build::BuildingType::StaticSiteGeneration,
+            Self::Ssr => metassr_build::BuildingType::ServerSideRendering,
         }
     }
 }
