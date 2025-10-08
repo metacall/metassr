@@ -1,4 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 use anyhow::{anyhow, Result};
 use metassr_build::{
@@ -32,19 +38,20 @@ pub struct Rebuilder {
     root_path: PathBuf,
     out_dir: PathBuf,
     building_type: BuildingType,
+    is_rebuilding: Arc<AtomicBool>,
 }
 
 impl Rebuilder {
     pub fn new(root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
-        let (sender, _) = broadcast::channel(10);
+        let (sender, _) = broadcast::channel(100);
         let out_dir = PathBuf::from("dist");
-        println!("Out dir: {:?}", out_dir);
 
         Ok(Self {
             sender,
             root_path,
             out_dir,
             building_type,
+            is_rebuilding: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -62,16 +69,9 @@ impl Rebuilder {
             .first()
             .ok_or_else(|| anyhow::anyhow!("No path"))?;
 
-        println!("Path: {path:#?}");
-
         let rel_path: &Path = path.strip_prefix(&self.root_path)?;
 
-        println!("Rel path: {:?}", rel_path);
-
         let rebuild_type = self.map_path_to_type(rel_path)?;
-
-        // Log what we're entered rebuilding
-        info!("Rebuilding due to changes in: {:?}", rebuild_type);
 
         Ok(rebuild_type)
     }
@@ -94,11 +94,23 @@ impl Rebuilder {
     }
 
     pub async fn rebuild(&self, rebuild_type: RebuildType) -> Result<()> {
+        if self.is_rebuilding.swap(true, Ordering::SeqCst) {
+            return Ok(()); // Already rebuilding, skip
+        }
+
         match rebuild_type {
             RebuildType::Page(ref path) => {
                 info!("entered rebuilding {:?} in {:?}", rebuild_type, path);
+
                 self.rebuild_page(path.clone()).await?;
-                let _ = self.sender.send(rebuild_type.clone());
+                match self.sender.send(rebuild_type.clone()) {
+                    Ok(rec) => {
+                        println!("Sent to: {rec} receivers")
+                    }
+                    Err(e) => {
+                        println!("FULL CHANNEL: {e}");
+                    }
+                };
             }
             RebuildType::Layout => {
                 // todo
@@ -118,6 +130,9 @@ impl Rebuilder {
             }
         }
 
+        self.is_rebuilding.store(false, Ordering::SeqCst);
+
+        println!("~~~~~~~~~~~Finished Rebuilding!~~~~~~~~~~~");
         Ok(())
     }
 
@@ -130,7 +145,6 @@ impl Rebuilder {
             path.to_str().ok_or_else(|| anyhow!("couldn't find path"))?,
         );
 
-        println!("{:?}", self.out_dir);
         // Build client-side bundle
         {
             let instant = Instant::now();
