@@ -3,15 +3,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::Result;
-
-use metassr_fs_analyzer::src_dir::PagesEntriesType;
-use metassr_utils::cache_dir::CacheDir;
-
-use crate::{traits::Generate, utils::setup_page_path};
-
-use super::render::ServerRender;
-
 #[derive(Debug, Clone)]
 pub struct Targets(HashMap<PathBuf, i64>);
 

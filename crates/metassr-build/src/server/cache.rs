@@ -1,10 +1,7 @@
 use anyhow::{Context, Result};
 use metassr_utils::cache_dir::CacheDir;
 
-use super::{
-    config::ServerConfig,
-    target::{ServerTarget, ServerTargetCollection},
-};
+use super::{config::ServerConfig, target::ServerTargetCollection};
 
 /// Service for managing cache operations during server build process
 pub struct ServerCacheService {
@@ -35,7 +32,7 @@ impl ServerCacheService {
 
         for target in targets.targets() {
             let cache_path = format!("pages/{}", target.id);
-            
+
             self.cache_dir
                 .insert(&cache_path, target.content_bytes())
                 .with_context(|| format!("Failed to cache server target: {}", target.id))?;
@@ -53,13 +50,14 @@ impl ServerCacheService {
 
     /// Retrieves the cache entries suitable for bundling
     pub fn get_bundler_entries(&self) -> Result<std::collections::HashMap<String, String>> {
-        let entries = self.cache_dir
+        let entries = self
+            .cache_dir
             .entries_in_scope()
             .iter()
             .map(|(entry_name, path)| {
-                let fullpath = path
-                    .canonicalize()
-                    .with_context(|| format!("Failed to canonicalize cache path: {}", path.display()))?;
+                let fullpath = path.canonicalize().with_context(|| {
+                    format!("Failed to canonicalize cache path: {}", path.display())
+                })?;
 
                 Ok((entry_name.to_owned(), format!("{}", fullpath.display())))
             })
@@ -81,14 +79,14 @@ impl ServerCacheService {
     /// Clears the cache
     pub fn clear_cache(&mut self) -> Result<()> {
         let cache_path = self.config.cache_dir_str();
-        
+
         if std::path::Path::new(cache_path).exists() {
             std::fs::remove_dir_all(cache_path)
                 .context("Failed to remove server cache directory")?;
         }
 
-        self.cache_dir = CacheDir::new(cache_path)
-            .context("Failed to recreate server cache directory")?;
+        self.cache_dir =
+            CacheDir::new(cache_path).context("Failed to recreate server cache directory")?;
 
         Ok(())
     }
@@ -126,10 +124,7 @@ impl ServerCacheService {
             } else {
                 // Check if file is readable
                 if let Err(e) = std::fs::read(path) {
-                    validation.add_error(format!(
-                        "Cannot read cache file '{}': {}",
-                        entry_name, e
-                    ));
+                    validation.add_error(format!("Cannot read cache file '{}': {}", entry_name, e));
                 }
             }
         }
@@ -195,14 +190,18 @@ impl ServerCacheValidation {
     /// Gets all validation issues
     pub fn issues(&self) -> Vec<String> {
         let mut issues = Vec::new();
-        
+
         for (entry, path) in &self.missing_files {
-            issues.push(format!("Missing cache file '{}' at {}", entry, path.display()));
+            issues.push(format!(
+                "Missing cache file '{}' at {}",
+                entry,
+                path.display()
+            ));
         }
-        
+
         issues.extend(self.errors.iter().cloned());
         issues.extend(self.warnings.iter().cloned());
-        
+
         issues
     }
 
@@ -242,7 +241,7 @@ impl std::fmt::Display for ServerCacheValidation {
 mod tests {
     use super::*;
     use crate::server::target::ServerTarget;
-    use std::{path::PathBuf, env};
+    use std::{env, path::PathBuf};
 
     fn create_test_config() -> ServerConfig {
         let temp_dir = env::temp_dir().join("metassr_server_cache_test");
@@ -255,10 +254,10 @@ mod tests {
     fn test_server_cache_service_creation() {
         let config = create_test_config();
         config.ensure_directories().unwrap();
-        
+
         let cache_service = ServerCacheService::new(config);
         assert!(cache_service.is_ok());
-        
+
         // Cleanup
         let _ = std::fs::remove_dir_all(env::temp_dir().join("metassr_server_cache_test"));
     }
@@ -267,12 +266,12 @@ mod tests {
     fn test_server_cache_stats() {
         let config = create_test_config();
         config.ensure_directories().unwrap();
-        
+
         let cache_service = ServerCacheService::new(config).unwrap();
         let stats = cache_service.get_cache_stats();
-        
+
         assert_eq!(stats.stored_files, 0); // Empty cache initially
-        
+
         // Cleanup
         let _ = std::fs::remove_dir_all(env::temp_dir().join("metassr_server_cache_test"));
     }
@@ -281,12 +280,12 @@ mod tests {
     fn test_server_cache_validation() {
         let config = create_test_config();
         config.ensure_directories().unwrap();
-        
+
         let cache_service = ServerCacheService::new(config).unwrap();
         let validation = cache_service.validate_cache().unwrap();
-        
+
         assert!(validation.is_valid()); // Empty cache should be valid
-        
+
         // Cleanup
         let _ = std::fs::remove_dir_all(env::temp_dir().join("metassr_server_cache_test"));
     }
@@ -296,7 +295,7 @@ mod tests {
         let mut validation = ServerCacheValidation::new();
         validation.add_error("Test error".to_string());
         validation.add_missing_file("test".to_string(), PathBuf::from("/missing"));
-        
+
         let display_text = format!("{}", validation);
         assert!(display_text.contains("Server cache validation failed"));
         assert!(display_text.contains("1 missing files"));
