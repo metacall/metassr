@@ -27,7 +27,7 @@ pub struct Dev {
 
 impl Dev {
     pub fn new(port: u16, root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
-        let rebuild_tx: broadcast::Sender<RebuildType> = broadcast::channel(100).0; //channel for rebuild notifications
+        let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
         let rebuilder = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);

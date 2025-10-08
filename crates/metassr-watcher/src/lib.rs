@@ -18,7 +18,7 @@ impl FileWatcher {
     pub fn new() -> notify::Result<Self> {
         // Create a broadcast channel with capacity for 100 messages
         // distributing file events to multiple subscribers
-        let (sender, _) = broadcast::channel(10);
+        let (sender, _) = broadcast::channel(100);
         let tx = sender.clone();
 
         let watcher = notify_debouncer_full::new_debouncer(
