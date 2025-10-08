@@ -1,5 +1,4 @@
 pub mod client;
-pub(crate) mod page;
 pub mod server;
 pub(crate) mod shared;
 pub mod traits;
