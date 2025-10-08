@@ -52,8 +52,8 @@ pub enum Commands {
         #[arg(long, default_value_t = String::from("dist"))]
         out_dir: String,
 
-        /// The type of build to perform. Choose between SSR (Server-Side Rendering) and SSG (Static Site Generation).
-        #[arg(short = 't', long = "type", default_value_t = BuildingType::SSR)]
+        /// The type of build to perform. Choose between Ssr (Server-Side Rendering) and Ssg (Static Site Generation).
+        #[arg(short = 't', long = "type", default_value_t = BuildingType::Ssr)]
         build_type: BuildingType,
     },
 

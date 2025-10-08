@@ -10,6 +10,7 @@
     "run:ssg": "../../target/debug/metassr --debug-mode=metacall run --serve"
   },
   "devDependencies": {
+    "@rspack/core": "^0.7.5",
     "@types/react": "^18.0.24",
     "@types/react-dom": "^18.0.8"
   },

@@ -584,11 +584,12 @@ checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "metacall"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3a4dc0497ed0e51ef1b3a9b404186ab03673ffc18af4532378d6b20d2ad7c44"
+checksum = "6f06da67fa5540d1c0554bf40165a3c30bff05c1c876e43be519e83aeee24415"
 dependencies = [
  "metacall-inline",
+ "metacall-sys",
 ]
 
 [[package]]
@@ -602,6 +603,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "metacall-sys"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90573f16c6ecec86326c251dba0651b0cdc67aae1885970a8ea457df25302b9f"
+
+[[package]]
 name = "metassr"
 version = "0.0.1-alpha"
 dependencies = [
@@ -613,6 +620,7 @@ dependencies = [
  "lazy_static",
  "logger",
  "metacall",
+ "metacall-sys",
  "metassr-build",
  "metassr-bundler",
  "metassr-create",

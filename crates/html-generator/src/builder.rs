@@ -1,6 +1,6 @@
 use super::{html_props::HtmlProps, template::HtmlTemplate};
 use anyhow::Result;
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{fmt::Display, fs::File, io::Write, path::PathBuf};
 
 const LANG_TAG: &str = "%LANG%";
 const HEAD_TAG: &str = "%HEAD%";
@@ -23,9 +23,9 @@ impl HtmlOutput {
     }
 }
 
-impl ToString for HtmlOutput {
-    fn to_string(&self) -> String {
-        self.0.clone()
+impl Display for HtmlOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
     }
 }
 
@@ -71,13 +71,13 @@ impl HtmlBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::{html_props::HtmlProps, template::HtmlTemplate};
+    use crate::{html_props::HtmlPropsBuilder, template::HtmlTemplate};
 
     use super::HtmlBuilder;
 
     #[test]
     fn generating_html() {
-        let binding = HtmlProps::new()
+        let binding = HtmlPropsBuilder::new()
             .lang("en")
             .body("<div id=\"root\"></div>")
             .head(

@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 use html_generator::{
     builder::{HtmlBuilder, HtmlOutput},
-    html_props::HtmlProps,
+    html_props::{HtmlPropsBuilder},
     template::HtmlTemplate,
 };
 use metassr_fs_analyzer::dist_dir::PageEntry;
@@ -38,7 +38,7 @@ impl<'a> HtmlRenderer<'a> {
             .map(|p| Path::new("/").join(p).to_str().unwrap().to_owned())
             .collect();
 
-        let html_props = HtmlProps::new()
+        let html_props = HtmlPropsBuilder::new()
             .head(&self.head)
             .body(&format!("<div id='root'>{}</div>", self.body))
             .lang("en")

@@ -15,7 +15,7 @@ authors = ["Mohamed Emad (hulxxv@gmail.com)"]
 anyhow = "1.0.82"
 chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive"] }
-metacall = "0.4.1"
+metacall = "0.5.1"
 nu-ansi-term = "0.50.0"
 walkdir = "2.5.0"
 serde_json = "1.0.120"
@@ -38,6 +38,9 @@ tower-service = "0.3.3"
 metassr-create = { path = "crates/metassr-create" }
 metassr-bundler = { path = "crates/metassr-bundler" }
 metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
+
+[build-dependencies]
+metacall-sys = "0.1.1"
 
 [workspace]
 members = [

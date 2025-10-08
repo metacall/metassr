@@ -38,8 +38,8 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
     pub fn build(&mut self) -> Result<()> {
         for (route, entries) in self.pages.iter() {
             let html = match self.running_type {
-                RunningType::SSG => Box::new(read_to_string(entries.path.join("index.html"))?),
-                RunningType::SSR => {
+                RunningType::StaticSiteGeneration => Box::new(read_to_string(entries.path.join("index.html"))?),
+                RunningType::ServerSideRendering => {
                     Box::new(PageRenderer::from_manifest(&self.dist_dir, route)?.render()?)
                 }
             };
@@ -47,7 +47,7 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
             let handler =
                 move |Query(params): Query<HashMap<String, String>>,
                       Path(path): Path<HashMap<String, String>>| async move {
-                    // dbg!(&params, &path);
+                    dbg!(&params, &path);
                     Html(*html)
                 };
 

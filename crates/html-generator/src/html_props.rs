@@ -13,11 +13,11 @@ pub struct HtmlProps {
     pub styles: Vec<PathBuf>,
 }
 
-impl HtmlProps {
-    pub fn new() -> HtmlPropsBuilder {
-        HtmlPropsBuilder::new()
-    }
-}
+// impl HtmlProps {
+//     pub fn new() -> HtmlPropsBuilder {
+//         HtmlPropsBuilder::new()
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct HtmlPropsBuilder {

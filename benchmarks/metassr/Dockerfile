@@ -18,7 +18,7 @@ RUN apt-get update \
 WORKDIR /root
 
 # Clone and build the project
-RUN git clone --branch v0.8.7 https://github.com/metacall/core \
+RUN git clone --branch v0.9.14 https://github.com/metacall/core \
 	&& mkdir core/build && cd core/build \
 	&& ../tools/metacall-environment.sh release base nodejs python backtrace \
 	&& ../tools/metacall-configure.sh release nodejs python ports install \
