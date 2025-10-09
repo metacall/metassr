@@ -74,7 +74,7 @@ impl<'a> WebBundler<'a> {
             })
             .collect();
 
-        if non_found_files.len() > 0 {
+        if !non_found_files.is_empty() {
             return Err(anyhow!(
                 "[bundler] Non Exist files found: {:?}",
                 non_found_files

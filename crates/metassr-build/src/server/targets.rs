@@ -53,7 +53,7 @@ impl Targets {
             .collect()
     }
 
-    pub fn iter(&self) -> Iter<PathBuf, i64> {
+    pub fn iter(&self) -> Iter<'_, PathBuf, i64> {
         self.0.iter()
     }
 }

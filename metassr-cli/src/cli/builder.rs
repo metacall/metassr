@@ -27,6 +27,7 @@ impl Exec for Builder {
     fn exec(&self) -> anyhow::Result<()> {
         let _metacall = initialize().unwrap();
         let instant = Instant::now();
+
         {
             let instant = Instant::now();
 
@@ -76,17 +77,17 @@ impl Exec for Builder {
 
 #[derive(Debug, ValueEnum, PartialEq, Eq, Clone, Copy)]
 pub enum BuildingType {
-    /// Static-Site Generation.
-    SSG,
-    /// Server-Side Rendering.
-    SSR,
+    /// Static Site Generation
+    Ssg,
+    /// Server Side Rendering
+    Ssr,
 }
 
-impl Into<server::BuildingType> for BuildingType {
-    fn into(self) -> server::BuildingType {
-        match self {
-            Self::SSG => server::BuildingType::StaticSiteGeneration,
-            Self::SSR => server::BuildingType::ServerSideRendering,
+impl From<BuildingType> for server::BuildingType {
+    fn from(val: BuildingType) -> Self {
+        match val {
+            BuildingType::Ssg => server::BuildingType::StaticSiteGeneration,
+            BuildingType::Ssr => server::BuildingType::ServerSideRendering,
         }
     }
 }
@@ -94,8 +95,8 @@ impl Into<server::BuildingType> for BuildingType {
 impl Display for BuildingType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match *self {
-            Self::SSG => "ssg",
-            Self::SSR => "ssr",
+            Self::Ssg => "ssg",
+            Self::Ssr => "ssr",
         })
     }
 }
@@ -104,8 +105,8 @@ impl FromStr for BuildingType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "ssr" | "server-side rendering" => Ok(BuildingType::SSR),
-            "ssg" | "static-site generation" => Ok(BuildingType::SSG),
+            "ssr" | "server-side rendering" => Ok(BuildingType::Ssg),
+            "ssg" | "static-site generation" => Ok(BuildingType::Ssr),
             _ => Err("unsupported option.".to_string()),
         }
     }

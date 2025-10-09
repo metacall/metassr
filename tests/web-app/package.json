@@ -6,8 +6,8 @@
     "scripts": {
         "build": "../../target/release/metassr --debug-mode=metacall build",
         "build:ssg": "../../target/release/metassr --debug-mode=metacall build -t ssg",
-        "run": "../../target/release/metassr --debug-mode=metacall run ",
-        "run:ssr": "../../target/release/metassr --debug-mode=metacall run --serve",
+        "start": "../../target/release/metassr --debug-mode=metacall run ",
+        "start:ssr": "../../target/release/metassr --debug-mode=metacall run --serve",
         "dev": "npm run build && ../../target/release/metassr --debug-mode=metacall dev"
     },
     "devDependencies": {

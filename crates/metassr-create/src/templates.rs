@@ -1,6 +1,6 @@
 use crate::{load_templates, tags, Creator};
 use anyhow::Result;
-use std::{collections::HashMap, str::from_utf8};
+use std::{collections::HashMap, fmt::Display, str::from_utf8};
 
 pub enum Template {
     Javascript,
@@ -17,13 +17,13 @@ impl From<&str> for Template {
     }
 }
 
-impl ToString for Template {
-    fn to_string(&self) -> String {
-        match *self {
+impl Display for Template {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
             Self::Javascript => "javascript",
             Self::Typescript => "typescript",
-        }
-        .to_string()
+        };
+        f.write_fmt(format_args!("{}", s))
     }
 }
 

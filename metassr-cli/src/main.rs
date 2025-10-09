@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
             description,
             template,
         } => {
-            cli::Creator::new(project_name, version, description, template).exec()?;
+            cli::Creator::new(project_name, version, description, template)?.exec()?;
         }
         Commands::Dev { port } => {
             cli::Dev::new(

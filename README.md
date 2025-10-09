@@ -28,10 +28,26 @@ To get started with MetaSSR, follow these steps:
 1. **Installation**: Review our [Installation Guide](docs/getting-started/installation.md) to install MetaSSR on your system.
 2. **CLI Documentation**: Learn how to utilize the MetaSSR CLI with our [CLI Documentation](docs/getting-started/cli.md).
 
-
 ## Contributing
 
 We welcome contributions from the community! If you’re interested in helping out, please check out our [Contributing Guide](CONTRIBUTING.md) for information on how to get involved.
+
+## Development
+
+For running a development environment:
+
+### Docker
+
+```sh
+docker build -t metacall/metassr:dev -f Dockerfile.dev .
+docker run --rm -it metacall/metassr:dev bash
+```
+
+### Nix
+
+```sh
+TODO
+```
 
 ## Code of Conduct
 

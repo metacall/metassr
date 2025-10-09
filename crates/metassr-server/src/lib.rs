@@ -42,8 +42,8 @@ impl std::fmt::Display for ServerMode {
 
 #[derive(Debug, Clone, Copy)]
 pub enum RunningType {
-    SSG,
-    SSR,
+    StaticSiteGeneration,
+    ServerSideRendering,
 }
 
 impl std::fmt::Display for RunningType {
@@ -126,7 +126,7 @@ impl Server {
         let mut app = RouterMut::from(base_router);
 
         match self.configs.running_type {
-            RunningType::SSG => {
+            RunningType::StaticSiteGeneration => {
                 let fallback = move || async {
                     (
                         StatusCode::NOT_FOUND,
@@ -139,7 +139,7 @@ impl Server {
                 };
                 app.fallback(fallback);
             }
-            RunningType::SSR => app.fallback(|| async { Redirect::to("/_notfound") }),
+            RunningType::ServerSideRendering => app.fallback(|| async { Redirect::to("/_notfound") }),
         }
 
         PagesHandler::new(&mut app, &dist_dir, self.configs.running_type)?.build()?;

@@ -54,8 +54,8 @@ pub enum Commands {
         #[arg(long, default_value_t = String::from("dist"))]
         out_dir: String,
 
-        /// The type of build to perform. Choose between SSR (Server-Side Rendering) and SSG (Static Site Generation).
-        #[arg(short = 't', long = "type", default_value_t = BuildingType::SSR)]
+        /// The type of build to perform. Choose between Ssr (Server-Side Rendering) and Ssg (Static Site Generation).
+        #[arg(short = 't', long = "type", default_value_t = BuildingType::Ssr)]
         build_type: BuildingType,
     },
 
@@ -74,19 +74,19 @@ pub enum Commands {
     Create {
         /// The name of the new project. This is a required argument.
         #[arg(index = 1)]
-        project_name: String,
+        project_name: Option<String>,
 
         /// The version of your web application.
-        #[arg(long, short, default_value_t = String::from("1.0.0"))]
-        version: String,
+        #[arg(long, short)]
+        version: Option<String>,
 
         /// A brief description of your web application.
-        #[arg(long, short, default_value_t = String::from("A web application built with MetaSSR framework"))]
-        description: String,
+        #[arg(long, short)]
+        description: Option<String>,
 
         /// The template to use for creating the new project.
-        #[arg(long, short, default_value_t = Template::Javascript)]
-        template: Template,
+        #[arg(long, short)]
+        template: Option<Template>,
     },
 
     Dev {

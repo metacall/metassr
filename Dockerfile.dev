@@ -1,0 +1,33 @@
+FROM rust:slim-trixie
+
+# Image descriptor
+LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \
+	copyright.address="vic798@gmail.com" \
+	maintainer.name="Vicente Eduardo Ferrer Garcia" \
+	maintainer.address="vic798@gmail.com" \
+	vendor="MetaCall Inc." \
+	version="0.1"
+
+# Install MetaCall dependencies
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		ca-certificates \
+        git \
+		wget \
+		npm \
+		nodejs
+
+# Set working directory to root
+WORKDIR /root
+
+# Install MetaCall in debug mode
+RUN wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | bash -s -- --debug
+
+# Copy the project
+COPY . .
+
+# Build with debug mode
+RUN cargo build \
+	&& cd ./tests/web-app \
+	&& npm install \
+	&& npm run build

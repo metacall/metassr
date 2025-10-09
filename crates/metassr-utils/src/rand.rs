@@ -59,12 +59,15 @@ impl Display for Rand {
     }
 }
 
+impl Default for Rand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PartialEq for Rand {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
-    }
-    fn ne(&self, other: &Self) -> bool {
-        self.0 != other.0
     }
 }
 
@@ -90,9 +93,6 @@ impl PartialOrd for Rand {
 impl PartialEq<i64> for Rand {
     fn eq(&self, other: &i64) -> bool {
         &self.0 == other
-    }
-    fn ne(&self, other: &i64) -> bool {
-        &self.0 != other
     }
 }
 

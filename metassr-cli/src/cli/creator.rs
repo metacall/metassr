@@ -1,4 +1,5 @@
 use clap::ValueEnum;
+use inquire;
 use metassr_create::Creator as MetassrCreator;
 use std::{fmt::Display, str::FromStr};
 use tracing::{error, info};
@@ -14,17 +15,51 @@ pub struct Creator {
 
 impl Creator {
     pub fn new(
-        project_name: String,
-        version: String,
-        description: String,
-        template: Template,
-    ) -> Self {
-        Self {
+        project_name: Option<String>,
+        version: Option<String>,
+        description: Option<String>,
+        template: Option<Template>,
+    ) -> anyhow::Result<Self> {
+        let project_name = match project_name {
+            Some(name) => name,
+            None => inquire::Text::new("Project name:")
+                .with_help_message("Enter the name of your new project")
+                .prompt()?,
+        };
+
+        let template = match template {
+            Some(template) => template,
+            None => {
+                let options = vec![Template::Javascript, Template::Typescript];
+                inquire::Select::new("Template:", options)
+                    .with_help_message("Choose a template for your new project")
+                    .with_starting_cursor(0)
+                    .prompt()?
+            }
+        };
+
+        let version = match version {
+            Some(version) => version,
+            None => inquire::Text::new("Version:")
+                .with_help_message("Enter the version of your application")
+                .with_default("1.0.0")
+                .prompt()?,
+        };
+
+        let description = match description {
+            Some(desc) => desc,
+            None => inquire::Text::new("Description:")
+                .with_default("A web application built with MetaSSR framework")
+                .with_help_message("Enter a brief description of your application")
+                .prompt()?,
+        };
+
+        Ok(Self {
             project_name,
             version,
             description,
             template,
-        }
+        })
     }
 }
 
