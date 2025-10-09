@@ -947,7 +947,6 @@ dependencies = [
  "clap",
  "logger",
  "metacall 0.5.1",
- "metacall-sys",
  "metassr-build",
  "metassr-create",
  "metassr-server",
