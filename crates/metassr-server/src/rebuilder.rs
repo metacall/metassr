@@ -15,6 +15,7 @@ use metassr_build::{
 use metassr_watcher::utils::*;
 use tokio::sync::broadcast;
 
+use std::fmt;
 use std::time::Instant;
 
 use notify_debouncer_full::DebouncedEvent;
@@ -31,6 +32,20 @@ pub enum RebuildType {
     // Reload Styles only.
     Style,
     Static,
+}
+
+impl fmt::Display for RebuildType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RebuildType::Page(path) => {
+                write!(f, "page:{}", path.to_string_lossy())
+            }
+            RebuildType::Layout => write!(f, "layout"),
+            RebuildType::Component => write!(f, "component"),
+            RebuildType::Style => write!(f, "style"),
+            RebuildType::Static => write!(f, "static"),
+        }
+    }
 }
 
 pub struct Rebuilder {

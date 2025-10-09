@@ -19,6 +19,19 @@ struct LiveReloadMessage {
     path: Option<String>,
 }
 
+impl RebuildType {
+    fn as_message(&self) -> LiveReloadMessage {
+        let (type_, path) = match self {
+            RebuildType::Page(path) => {
+                ("page".to_string(), Some(path.to_string_lossy().to_string()))
+            }
+            _ => (self.to_string(), None),
+        };
+
+        LiveReloadMessage { type_, path }
+    }
+}
+
 pub struct LiveReloadServer {
     receiver: Receiver<RebuildType>,
 }
@@ -36,29 +49,7 @@ impl LiveReloadServer {
         let (mut ws_sender, _) = ws_stream.split();
 
         while let Ok(rebuild_type) = self.receiver.recv().await {
-            // construct the message sent to client
-            let message: LiveReloadMessage = match rebuild_type {
-                RebuildType::Page(ref path) => LiveReloadMessage {
-                    type_: "page".to_string(),
-                    path: Some(path.to_string_lossy().to_string()),
-                },
-                RebuildType::Layout => LiveReloadMessage {
-                    type_: "layout".to_string(),
-                    path: None,
-                },
-                RebuildType::Component => LiveReloadMessage {
-                    type_: "component".to_string(),
-                    path: None,
-                },
-                RebuildType::Style => LiveReloadMessage {
-                    type_: "style".to_string(),
-                    path: None,
-                },
-                RebuildType::Static => LiveReloadMessage {
-                    type_: "static".to_string(),
-                    path: None,
-                },
-            };
+            let message = rebuild_type.as_message();
             let message_json = serde_json::to_string(&message).unwrap();
 
             if let Err(e) = ws_sender.send(Message::Text(message_json.into())).await {
