@@ -46,6 +46,15 @@ pub enum RunningType {
     SSR,
 }
 
+impl std::fmt::Display for RunningType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SSG => write!(f, "SSG"),
+            Self::SSR => write!(f, "SSR"),
+        }
+    }
+}
+
 pub struct ServerConfigs {
     pub port: u16,
     pub _enable_http_logging: bool,
@@ -106,7 +115,6 @@ impl Server {
             if let Some(rebuilder) = self.configs.rebuilder.clone() {
                 tokio::spawn(async move {
                     while let Ok((stream, addr)) = ws_listener.accept().await {
-                        println!("WebSocket connection from {:?}", addr);
                         let live_reload = LiveReloadServer::new(rebuilder.subscribe());
                         // live_reload.handle_connection(socket).await;
                         tokio::spawn(live_reload.handle_connection(stream, addr));

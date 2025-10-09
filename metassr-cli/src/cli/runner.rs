@@ -38,7 +38,10 @@ impl AsyncExec for Runner {
             rebuilder: None,
         };
 
-        info!("Running your web application on {:?} mode", running_type);
+        info!(
+            message = "Running your web application",
+            mode = running_type.to_string()
+        );
 
         Server::new(server_configs).run().await?;
         Ok(())

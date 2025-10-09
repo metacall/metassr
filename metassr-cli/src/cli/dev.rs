@@ -12,7 +12,7 @@ use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use super::traits::AsyncExec;
 
@@ -127,24 +127,14 @@ impl AsyncExec for Dev {
         self.setup_watcher()?;
 
         let current = current_dir()?;
-        info!("Current directory: {:?}", current);
+        debug!("Current directory: {:?}", current);
 
         let cache_dir = current.join("dist/cache/pages");
-        info!("Checking cache directory: {:?}", cache_dir);
-
-        if let Ok(entries) = std::fs::read_dir(&cache_dir) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    info!("Found file: {:?}", entry.path());
-                }
-            }
-        }
+        debug!("Checking cache directory: {:?}", cache_dir);
 
         self.handle_file_changes().await?;
 
         self.start_server().await?;
-
-        info!("Running your web application on dev mode",);
 
         Ok(())
     }

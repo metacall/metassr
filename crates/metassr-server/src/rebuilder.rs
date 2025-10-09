@@ -19,7 +19,7 @@ use std::time::Instant;
 
 use notify_debouncer_full::DebouncedEvent;
 
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 #[derive(Clone, Debug)]
 pub enum RebuildType {
@@ -100,50 +100,44 @@ impl Rebuilder {
 
         match rebuild_type {
             RebuildType::Page(ref path) => {
-                info!("entered rebuilding {:?} in {:?}", rebuild_type, path);
+                debug!("entered rebuilding {:?} in {:?}", rebuild_type, path);
 
                 self.rebuild_page(path.clone()).await?;
                 match self.sender.send(rebuild_type.clone()) {
                     Ok(rec) => {
-                        println!("Sent to: {rec} receivers")
+                        debug!("Sent to: {rec} receivers")
                     }
                     Err(e) => {
-                        println!("FULL CHANNEL: {e}");
+                        debug!("FULL CHANNEL: {e}");
                     }
                 };
             }
             RebuildType::Layout => {
                 // todo
-                info!("entered rebuilding {:?}", rebuild_type);
+                debug!("entered rebuilding {:?}", rebuild_type);
             }
             RebuildType::Component => {
                 // todo
-                info!("entered rebuilding {:?}", rebuild_type);
+                debug!("entered rebuilding {:?}", rebuild_type);
             }
             RebuildType::Style => {
                 // todo
-                info!("entered rebuilding {:?}", rebuild_type);
+                debug!("entered rebuilding {:?}", rebuild_type);
             }
             RebuildType::Static => {
                 // todo
-                info!("entered rebuilding {:?}", rebuild_type);
+                debug!("entered rebuilding {:?}", rebuild_type);
             }
         }
 
         self.is_rebuilding.store(false, Ordering::SeqCst);
-
-        println!("~~~~~~~~~~~Finished Rebuilding!~~~~~~~~~~~");
         Ok(())
     }
 
     async fn rebuild_page(&self, path: PathBuf) -> Result<()> {
-        info!("Rebuilding page {:?}", path);
+        debug!("Rebuilding page {:?}", path);
 
-        println!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
-        println!(
-            "{:?}",
-            path.to_str().ok_or_else(|| anyhow!("couldn't find path"))?,
-        );
+        debug!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
 
         // Build client-side bundle
         {
@@ -156,8 +150,6 @@ impl Rebuilder {
             )?
             .build();
 
-            println!("{:?}", client_builder);
-
             if let Err(e) = client_builder {
                 error!(
                     target = "rebuilder",
@@ -166,7 +158,7 @@ impl Rebuilder {
                 return Err(anyhow!("Couldn't continue rebuilding process."));
             }
 
-            info!(
+            debug!(
                 target = "rebuilder",
                 message = "Client building is completed",
                 time = format!("{}ms", instant.elapsed().as_millis())
@@ -193,7 +185,7 @@ impl Rebuilder {
                 return Err(anyhow!("Server-side build failed"));
             }
 
-            info!(
+            debug!(
                 target = "rel_path",
                 message = "Server building is completed",
                 time = format!("{}ms", instant.elapsed().as_millis())
