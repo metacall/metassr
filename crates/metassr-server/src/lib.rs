@@ -49,8 +49,8 @@ pub enum RunningType {
 impl std::fmt::Display for RunningType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::SSG => write!(f, "SSG"),
-            Self::SSR => write!(f, "SSR"),
+            Self::StaticSiteGeneration => write!(f, "SSG"),
+            Self::ServerSideRendering => write!(f, "SSR"),
         }
     }
 }
@@ -139,7 +139,9 @@ impl Server {
                 };
                 app.fallback(fallback);
             }
-            RunningType::ServerSideRendering => app.fallback(|| async { Redirect::to("/_notfound") }),
+            RunningType::ServerSideRendering => {
+                app.fallback(|| async { Redirect::to("/_notfound") })
+            }
         }
 
         PagesHandler::new(&mut app, &dist_dir, self.configs.running_type)?.build()?;
@@ -162,9 +164,8 @@ impl Server {
         );
 
         info!(
-            "Listening on http://{} in {} mode",
-            listener.local_addr()?,
-            self.configs.mode
+            message = format!("Listening on http://{}", listener.local_addr()?),
+            mode = self.configs.mode.to_string()
         );
 
         axum::serve(listener, app.app()).await?;
