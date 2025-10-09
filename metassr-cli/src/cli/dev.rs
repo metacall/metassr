@@ -85,13 +85,6 @@ impl Dev {
     }
 
     async fn start_server(&self) -> Result<()> {
-        let server_configs: ServerConfigs = ServerConfigs {
-            port: self.port,
-            _enable_http_logging: true,
-            root_path: self.root_path.clone(),
-            running_type: RunningType::SSR,
-            mode: metassr_server::ServerMode::Development,
-        };
         let mut rebuild_rx: broadcast::Receiver<RebuildType> = self.rebuild_tx.subscribe();
 
         let rebuilder = Arc::clone(&self.rebuilder);
@@ -113,7 +106,16 @@ impl Dev {
             }
         });
 
-        Server::new(server_configs).run(Some(rebuilder)).await?; // FIXME: don't use Option<T> here
+        let server_configs = ServerConfigs {
+            port: self.port,
+            _enable_http_logging: true,
+            root_path: self.root_path.clone(),
+            running_type: RunningType::SSR,
+            mode: metassr_server::ServerMode::Development,
+            rebuilder: Some(rebuilder),
+        };
+
+        Server::new(server_configs).run().await?;
         Ok(())
     }
 }

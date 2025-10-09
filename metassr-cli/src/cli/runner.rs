@@ -35,11 +35,12 @@ impl AsyncExec for Runner {
             root_path: current_dir()?,
             running_type,
             mode: metassr_server::ServerMode::Production,
+            rebuilder: None,
         };
 
         info!("Running your web application on {:?} mode", running_type);
 
-        Server::new(server_configs).run(None).await?;
+        Server::new(server_configs).run().await?;
         Ok(())
     }
 }

@@ -52,6 +52,7 @@ pub struct ServerConfigs {
     pub root_path: PathBuf,
     pub running_type: RunningType,
     pub mode: ServerMode,
+    pub rebuilder: Option<Arc<Rebuilder>>,
 }
 
 pub struct Server {
@@ -63,8 +64,7 @@ impl Server {
         Self { configs }
     }
 
-    // FIXME: don't use Option<T> here
-    pub async fn run(&self, rebuilder: Option<Arc<Rebuilder>>) -> Result<()> {
+    pub async fn run(&self) -> Result<()> {
         let listener =
             tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.configs.port)).await?;
 
@@ -103,7 +103,7 @@ impl Server {
                 "WebSocket server listening on {:?}",
                 ws_listener.local_addr()?
             );
-            if let Some(rebuilder) = rebuilder {
+            if let Some(rebuilder) = self.configs.rebuilder.clone() {
                 tokio::spawn(async move {
                     while let Ok((stream, addr)) = ws_listener.accept().await {
                         println!("WebSocket connection from {:?}", addr);
