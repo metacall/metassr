@@ -760,7 +760,6 @@ dependencies = [
  "inquire",
  "logger",
  "metacall",
- "metacall-sys",
  "metassr-build",
  "metassr-create",
  "metassr-server",
