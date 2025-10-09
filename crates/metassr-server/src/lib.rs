@@ -21,7 +21,7 @@ use std::{
 };
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::live_reload::inject_live_reload_script;
 
@@ -87,11 +87,10 @@ impl Server {
             base_router = base_router.layer(axum::middleware::from_fn(inject_live_reload_script));
 
             // Start the WebSocket server for live reload
-            let ws_listener = TcpListener::bind("127.0.0.1:3001").await.map_err(|e| {
-                info!("Failed to bind WebSocket listener: {}", e);
-                anyhow::anyhow!("WebSocket bind error: {}", e)
-            })?;
-            info!(
+            let ws_listener = TcpListener::bind("127.0.0.1:3001")
+                .await
+                .map_err(|e| anyhow::anyhow!("WebSocket bind error: {}", e))?;
+            debug!(
                 "WebSocket server listening on {:?}",
                 ws_listener.local_addr()?
             );
@@ -130,7 +129,7 @@ impl Server {
 
         // Apply middleware again after PagesHandler to catch dynamic HTML
         if let ServerMode::Development = self.configs.mode {
-            info!("Applying live reload middleware after PagesHandler");
+            debug!("Applying live reload middleware after PagesHandler");
             app = RouterMut::from(
                 app.app()
                     .layer(axum::middleware::from_fn(inject_live_reload_script)),

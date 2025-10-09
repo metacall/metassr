@@ -33,8 +33,6 @@ impl LiveReloadServer {
             .await
             .expect("Error during websocket handshake");
 
-        println!("!!!!!!!!! New LiveReload connection from: {}", addr);
-
         let (mut ws_sender, _) = ws_stream.split();
 
         while let Ok(rebuild_type) = self.receiver.recv().await {
