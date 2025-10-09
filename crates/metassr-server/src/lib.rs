@@ -31,6 +31,15 @@ pub enum ServerMode {
     Production,
 }
 
+impl std::fmt::Display for ServerMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Self::Development => write!(f, "development"),
+            Self::Production => write!(f, "production"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum RunningType {
     SSG,
@@ -147,10 +156,7 @@ impl Server {
         info!(
             "Listening on http://{} in {} mode",
             listener.local_addr()?,
-            match self.configs.mode {
-                ServerMode::Development => "development",
-                ServerMode::Production => "production",
-            }
+            self.configs.mode
         );
 
         axum::serve(listener, app.app()).await?;
