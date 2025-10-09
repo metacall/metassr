@@ -15,8 +15,6 @@
             const update = JSON.parse(event.data)
             const currentPath = window.location.pathname; //current page path
 
-            console.log("update:", update);
-
             switch (update.type) {
                 case 'page':
                     if (update.path) {
@@ -54,7 +52,7 @@
     };
 
     function reloadPage(path, currentPath) {
-        if (path && urlMatchPath(path, currentPath)) {
+        if (urlMatchPath(path, currentPath)) {
             window.location.reload();
         }
     }
