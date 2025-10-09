@@ -110,7 +110,7 @@ impl Dev {
             port: self.port,
             _enable_http_logging: true,
             root_path: self.root_path.clone(),
-            running_type: RunningType::SSR,
+            running_type: RunningType::ServerSideRendering,
             mode: metassr_server::ServerMode::Development,
             rebuilder: Some(rebuilder),
         };
