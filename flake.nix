@@ -20,7 +20,11 @@
         pkgs = nixpkgs.legacyPackages.${system};
         
         # Create a Rust toolchain using fenix (Nightly)
-        rustToolchain = fenix.packages.${system}.latest.toolchain;
+        rustToolchain = (fenix.packages.${system}.toolchainOf {
+          channel = "nightly";
+          date = "2025-10-15";
+          sha256 = "sha256-nYxm7Okhb4WOD0C/qCJ3uzm+VwgQTG4SSpO8IXewVXU=";
+        }).defaultToolchain;
         
         # Or for more granular control, use:
         # rustToolchain = fenix.packages.${system}.combine [
