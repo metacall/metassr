@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 use html_generator::{
     builder::{HtmlBuilder, HtmlOutput},
-    html_props::{HtmlPropsBuilder},
+    html_props::HtmlPropsBuilder,
     template::HtmlTemplate,
 };
 use metassr_fs_analyzer::dist_dir::PageEntry;

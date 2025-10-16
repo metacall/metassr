@@ -67,7 +67,9 @@ impl Server {
                 };
                 app.fallback(fallback)
             }
-            RunningType::ServerSideRendering => app.fallback(|| async { Redirect::to("/_notfound") }),
+            RunningType::ServerSideRendering => {
+                app.fallback(|| async { Redirect::to("/_notfound") })
+            }
         }
 
         PagesHandler::new(&mut app, &dist_dir, self.configs.running_type)?.build()?;

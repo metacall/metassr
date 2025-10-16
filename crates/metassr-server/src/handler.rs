@@ -38,7 +38,9 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
     pub fn build(&mut self) -> Result<()> {
         for (route, entries) in self.pages.iter() {
             let html = match self.running_type {
-                RunningType::StaticSiteGeneration => Box::new(read_to_string(entries.path.join("index.html"))?),
+                RunningType::StaticSiteGeneration => {
+                    Box::new(read_to_string(entries.path.join("index.html"))?)
+                }
                 RunningType::ServerSideRendering => {
                     Box::new(PageRenderer::from_manifest(&self.dist_dir, route)?.render()?)
                 }

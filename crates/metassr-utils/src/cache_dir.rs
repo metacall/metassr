@@ -88,7 +88,6 @@ impl CacheDir {
     /// cache.insert("data.txt", "Some data".as_bytes()).unwrap();
     /// ```
     pub fn insert(&mut self, pathname: &str, buf: &[u8]) -> Result<PathBuf> {
-
         // Set the path
         let path = format!("{}/{}", self.path.to_str().unwrap(), pathname);
         let path = Path::new(&path);

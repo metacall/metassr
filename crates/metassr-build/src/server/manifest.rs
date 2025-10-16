@@ -119,7 +119,7 @@ impl ManifestGenerator {
         }
     }
     pub fn generate<H: AsRef<OsStr> + ?Sized>(&self, head: &H) -> Result<Manifest> {
-        let cache_path  = self.cache.path();
+        let cache_path = self.cache.path();
         let global = GlobalEntry::new(head, cache_path)?;
         let mut manifest = Manifest::new(global);
 
