@@ -71,9 +71,6 @@ To ensure a positive and inclusive environment, please review our [Code of Condu
 
 ## Community
 
-Stay connected and updated with MetaSSR:
-
-- **GitHub**: [MetaSSR Repository](https://github.com/metacall/metassr)
 - **Discussion Forum**: [Join the Conversation](https://github.com/metacall/metassr/discussions)
 - **Twitter**: [Follow US](https://twitter.com/metacallio)
 - **Metacall Community**: 
