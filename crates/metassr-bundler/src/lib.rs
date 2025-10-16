@@ -17,7 +17,7 @@ lazy_static! {
     static ref IS_BUNDLING_SCRIPT_LOADED: Mutex<CheckerState> = Mutex::new(CheckerState::default());
 
     /// A simple checker to check if the bundling function is done or not. It is used to block the program until bundling done.
-    static ref IS_COMPLIATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
+    static ref IS_COMPILATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
 }
 static BUILD_SCRIPT: &str = include_str!("./bundle.js");
 const BUNDLING_FUNC: &str = "web_bundling";
@@ -111,7 +111,7 @@ impl<'a> WebBundler<'a> {
 
         // Resolve callback when the bundling process is completed successfully
         fn resolve(result: Box<dyn MetaCallValue>, _: Box<dyn Any>) -> Box<dyn MetaCallValue> {
-            let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
+            let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
             // Mark the process as completed and notify waiting threads
@@ -123,7 +123,7 @@ impl<'a> WebBundler<'a> {
 
         // Reject callback for handling errors during the bundling process
         fn reject(err: Box<dyn MetaCallValue>, _: Box<dyn Any>) -> Box<dyn MetaCallValue> {
-            let compilation_wait = &*Arc::clone(&IS_COMPLIATION_WAIT);
+            let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
             // Log the bundling error and mark the process as completed
@@ -151,12 +151,12 @@ impl<'a> WebBundler<'a> {
         future.then(resolve).catch(reject).await_fut();
 
         // Lock the mutex and wait for the bundling process to complete
-        let compilation_wait = Arc::clone(&IS_COMPLIATION_WAIT);
+        let compilation_wait = Arc::clone(&IS_COMPILATION_WAIT);
         let mut started = compilation_wait.checker.lock().unwrap();
 
         // Block the current thread until the bundling process signals completion
         while !started.is_true() {
-            started = Arc::clone(&IS_COMPLIATION_WAIT).cond.wait(started).unwrap();
+            started = Arc::clone(&IS_COMPILATION_WAIT).cond.wait(started).unwrap();
         }
 
         // Reset the checker state to false after the process completes

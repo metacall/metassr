@@ -91,7 +91,7 @@ Starts the HTTP server to serve your SSR application. You can also use this comm
   The port number on which the HTTP server will run.
 
 - **`--serve`**  
-  Enables serving of the generated static site directly, it's used if you build your porject with `ssg` building type.
+  Enables serving of the generated static site directly, it's used if you build your project with `ssg` building type.
 
 **Usage:**
 
