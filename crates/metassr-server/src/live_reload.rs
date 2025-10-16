@@ -10,7 +10,6 @@ use tokio_tungstenite::tungstenite::Message;
 
 use tokio::{net::TcpStream, sync::broadcast::Receiver};
 use tracing::info;
-// use tokio_tungstenite::accept_async;
 
 #[derive(Debug, Serialize)]
 struct LiveReloadMessage {
