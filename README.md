@@ -2,22 +2,38 @@
 > this project under development, **Using it is your responsibility**.
 
 <div align="center">
- <h1>MetaSSR</h1>
-
+<img src="assets/logo.png" h alt="MetaSSR">
 <p align='center'> SSR framework for React.js built on <a href="https://github.com/metacall/core">MetaCall</a> </p>
 </div>
 
 
-MetaSSR is a powerful Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. Built on Rust and leveraging the Axum web framework, MetaSSR integrates seamlessly with the Metacall platform, showcasing a real-world use case for polyglot programming.
+MetaSSR is a powerful Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. Built on Rust and leveraging the Axum web framework, MetaSSR integrates seamlessly with the Metacall Runtime, showcasing a real-world use case for polyglot programming. It was created as part of [Google Summer of Code 2024](https://summerofcode.withgoogle.com/archive/2024/projects/yRWw2gPh) by [Mohamed Emad](https://github.com/hulxv), to demonstrate the capabilities of polyglot programming.
 
 ## Why MetaSSR?
 
-MetaSSR combines the robustness of Rust with the flexibility of Metacall and the simplicity of Axum to deliver a framework that's both fast and versatile. Whether you're building complex web applications or straightforward static sites, MetaSSR provides the tools and performance you need.
+MetaSSR delivers exceptional performance that sets it apart from traditional SSR solutions. Built with Rust and optimized for speed, it significantly outperforms conventional Node.js-based SSR frameworks.
 
-### Key Features
+Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s):
+
+<center>
+
+| Metric              |  MetaSSR  |   Next.js    | Performance Gain |
+| ------------------- | :-------: | :----------: | ---------------- |
+| **Requests/sec**    | 98,420.11 |   3,170.95   | **31x faster**   |
+| **Average Latency** |  8.63ms   |   119.90ms   | **14x lower**    |
+| **Transfer/sec**    |  4.98GB   |   37.95MB    | **134x higher**  |
+| **Total Requests**  | 2,962,418 |    95,326    | **31x more**     |
+| **Max Latency**     |  65.22ms  |    1.99s     | **30x lower**    |
+| **Socket Errors**   |     0     | 239 timeouts | **Zero errors**  |
+
+</center>
+
+
+
+## Key Features
 
 - **Rust-Powered Performance**: Enjoy the speed and safety of Rust in your server-side rendering tasks.
-- **High Performance with Axum.rs**: Achieve fast load times and excellent user experiences with optimized server-side rendering.
+- **High Performance**: Achieve fast load times and excellent user experiences with optimized server-side rendering.
 - **Comprehensive CLI**: Manage your MetaSSR projects effortlessly using our powerful command-line interface.
 - **API Route with Polyglot Programming (SOON)**: Integrate multiple languages seamlessly with Metacall's support.
 
@@ -55,9 +71,6 @@ To ensure a positive and inclusive environment, please review our [Code of Condu
 
 ## Community
 
-Stay connected and updated with MetaSSR:
-
-- **GitHub**: [MetaSSR Repository](https://github.com/metacall/metassr)
 - **Discussion Forum**: [Join the Conversation](https://github.com/metacall/metassr/discussions)
 - **Twitter**: [Follow US](https://twitter.com/metacallio)
 - **Metacall Community**: 
@@ -68,12 +81,3 @@ Stay connected and updated with MetaSSR:
 ## License
 
 MetaSSR is licensed under the [MIT License](LICENSE). See the LICENSE file for more details.
-
-## Acknowledgments
-
-A big thank you to the Metacall team for their incredible platform, and to the Rust and Axum communities for their tools and support. We also appreciate all contributors and supporters of the project.
-
----
-
-We hope you enjoy working with MetaSSR as much as we do. Happy coding!
-

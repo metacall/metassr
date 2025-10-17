@@ -63,7 +63,7 @@ impl PageEntry {
     /// ```no_run
     /// use metassr_fs_analyzer::dist_dir::PageEntry;
     /// use std::path::PathBuf;
-    /// 
+    ///
     /// let page_entry = PageEntry::new(PathBuf::from("/dist/pages/home"));
     /// println!("{:?}", page_entry.path);
     /// ```
@@ -164,7 +164,7 @@ impl DistDir {
 ///
 /// ```no_run
 /// use metassr_fs_analyzer::{dist_dir::DistDir, DirectoryAnalyzer};
-/// 
+///
 /// let dist_dir = DistDir::new("/path/to/dist").unwrap();
 /// let result = dist_dir.analyze().unwrap();
 /// for (page, entry) in result.pages {

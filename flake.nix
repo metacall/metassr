@@ -7,13 +7,34 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
+  outputs = { self, nixpkgs, flake-utils, fenix, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         system = "x86_64-linux"; 
         pkgs = nixpkgs.legacyPackages.${system};
+        
+        # Create a Rust toolchain using fenix (Nightly)
+        rustToolchain = (fenix.packages.${system}.toolchainOf {
+          channel = "nightly";
+          date = "2025-10-15";
+          sha256 = "sha256-nYxm7Okhb4WOD0C/qCJ3uzm+VwgQTG4SSpO8IXewVXU=";
+        }).defaultToolchain;
+        
+        # Or for more granular control, use:
+        # rustToolchain = fenix.packages.${system}.combine [
+        #   fenix.packages.${system}.latest.rustc
+        #   fenix.packages.${system}.latest.cargo
+        #   fenix.packages.${system}.latest.rustfmt
+        #   fenix.packages.${system}.latest.clippy
+        #   fenix.packages.${system}.latest.rust-src
+        #   fenix.packages.${system}.latest.rust-analyzer
+        # ];
 
         metacallConfig = {
           defaultLibPaths = [
@@ -28,9 +49,9 @@
           name = "metassr-dev";
 
           buildInputs = with pkgs; [
-            # Core Rust tools
-            rustc cargo rustfmt clippy rust-analyzer
-            # Build tools (REVIEW THIS)
+            # Rust toolchain from fenix
+            rustToolchain
+            # Build tools
             pkg-config cmake gcc
             # System libs
             openssl libffi llvmPackages.libclang
@@ -38,7 +59,6 @@
             nodejs_22
             # dev tools
             git curl
-
             less
           ];
 
@@ -47,8 +67,8 @@
             "-I${pkgs.libclang.lib}/lib/clang/${pkgs.libclang.version}/include";
 
           env = {
-            RUST_SRC_PATH =
-              "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+            # rust-src is included in the fenix toolchain
+            RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
           };
 
           shellHook = ''

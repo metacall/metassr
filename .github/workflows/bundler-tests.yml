@@ -1,0 +1,45 @@
+name: Bundler Tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundler-tests:
+    name: Bundler Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -f Dockerfile.dev -t metassr-test .
+
+      - name: Run bundler tests in Docker
+        run: |
+          docker run --rm -v $(pwd)/tests/web-app/dist:/root/tests/web-app/dist metassr-test bash -c "
+            # Run the build
+            cd /root/tests/web-app
+            npm run build
+            
+            # Copy the test script into the container and run it
+            cp /root/tests/test-bundle.sh ./
+            chmod +x test-bundle.sh
+            ./test-bundle.sh
+          "
+
+      - name: Upload dist artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundler-dist-output
+          path: tests/web-app/dist/
+          retention-days: 7

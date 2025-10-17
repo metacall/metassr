@@ -1,7 +1,7 @@
 ## TODO
 
 #### Main features
-- [x] Serving staic files are located in ``./static/**``
+- [x] Serving static files are located in ``./static/**``
 
 - [x] the HTML builder
 

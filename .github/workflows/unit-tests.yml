@@ -1,0 +1,31 @@
+name: Rust Tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Rust Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -f Dockerfile.dev -t metassr-test .
+
+      - name: Run Rust tests in Docker
+        run: |
+          docker run --rm metassr-test bash -c "
+            cd /root
+            cargo test --verbose
+          "
