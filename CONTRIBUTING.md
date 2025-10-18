@@ -3,8 +3,8 @@
 Thank you for your interest in contributing to MetaSSR! We welcome contributions from the community to help improve and expand the framework. Please follow the guidelines below to ensure your contributions are effective and align with the project's goals.
 
 ## Table of contents
-- [Development Setup](##developmentSetup)
-- [How to Contribute](##howtocontribute)
+- [Development Setup](#development-setup)
+- [How to Contribute](#how-to-contribute)
 
 ## Development Setup
 
