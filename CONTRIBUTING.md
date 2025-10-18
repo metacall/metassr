@@ -8,13 +8,30 @@ Thank you for your interest in contributing to MetaSSR! We welcome contributions
 
 ## Development Setup
 
-To set up your development environment, choose one of these methods:
+To set up your development environment for MetaSSR, choose one of the following methods based on your preferences and system configuration:
 
-### Nix Flake
-1. Install Nix: https://nixos.org/download.html
-> `$ sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon`
-3. `nano ~/.config/nix/nix.conf` and enable flakes by adding `experimental-features = nix-command flakes` 
-4. Run `nix develop` in repo root.
+### Nix Flake (Recommended)
+
+The fastest way to get started with a fully configured development environment:
+
+1. **Install Nix** (if not already installed):
+   ```bash
+   sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
+   ```
+   
+2. **Enable Nix Flakes**:
+   ```bash
+   mkdir -p ~/.config/nix
+   echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+   ```
+
+3. **Enter Development Shell**:
+   ```bash
+   cd /path/to/metassr
+   nix develop
+   ```
+
+This will automatically set up Rust, MetaCall, and all required dependencies in an isolated environment.
 
 <!--
 ### Installation Script
@@ -27,9 +44,32 @@ Run `./install.sh` to download MetaCall and link it for most distros without con
 -->
 
 ### Manual Installation
-1. Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-2. Install MetaCall: `curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh`
-3. Clone repo, then `cargo build --release`
+
+If you prefer to set up dependencies manually:
+
+1. **Install Rust Toolchain**:
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source ~/.cargo/env
+   ```
+
+2. **Install MetaCall Runtime**:
+   ```bash
+   curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+   ```
+
+3. **Clone and Build**:
+   ```bash
+   git clone https://github.com/metacall/metassr.git
+   cd metassr
+   cargo build --release
+   ```
+
+4. **Verify Installation**:
+   ```bash
+   cargo test
+   ./target/release/metassr --help
+   ```
 
 ## How to Contribute
 
@@ -65,7 +105,7 @@ To contribute code, follow these steps:
 
    ```bash
    git add .
-   git commit -m "Add feature: Description of the feature"
+   git commit -m "feat: Description of the feature"
    ```
 
 7. **Push Changes**: Push your changes to your forked repository:
@@ -112,7 +152,7 @@ also, you can test one of web applications that located at [tests](../../tests/)
 
 **Example:**
 ```bash
-$ cargo run --bin metassr-cli -- --root=tests/web-app --debug-mode=all run 
+$ cargo run --bin metassr -- --root=tests/web-app --debug-mode=all run 
 ```
 
 
