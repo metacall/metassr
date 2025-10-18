@@ -2,6 +2,35 @@
 
 Thank you for your interest in contributing to MetaSSR! We welcome contributions from the community to help improve and expand the framework. Please follow the guidelines below to ensure your contributions are effective and align with the project's goals.
 
+## Table of contents
+- [Development Setup](##developmentSetup)
+- [How to Contribute](##howtocontribute)
+
+## Development Setup
+
+To set up your development environment, choose one of these methods:
+
+### Nix Flake
+1. Install Nix: https://nixos.org/download.html
+> `$ sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon`
+3. `nano ~/.config/nix/nix.conf` and enable flakes by adding `experimental-features = nix-command flakes` 
+4. Run `nix develop` in repo root.
+
+<!--
+### Installation Script
+Run `./install.sh` to download MetaCall and link it for most distros without conflicts.
+-->
+<!--
+### Docker
+1. Build: `docker build -t metacall/metassr:dev -f Dockerfile.dev .`
+2. Run: `docker run --rm -it metacall/metassr:dev bash`
+-->
+
+### Manual Installation
+1. Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+2. Install MetaCall: `curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh`
+3. Clone repo, then `cargo build --release`
+
 ## How to Contribute
 
 ### 1. Reporting Issues
@@ -96,4 +125,3 @@ Please adhere to our [Code of Conduct](code-of-conduct.md) while participating i
 If you have any questions or need assistance, feel free to reach out to us through the project's [discussion forum](https://github.com/metacall/metassr/discussions) or open an issue.
 
 Thank you for contributing to MetaSSR!
-
