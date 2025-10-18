@@ -2,7 +2,7 @@ pub mod utils;
 
 use notify::RecursiveMode;
 use notify_debouncer_full::{self, DebounceEventResult, DebouncedEvent};
-use std::{ path::Path, time::Duration};
+use std::{path::Path, time::Duration};
 use tokio::sync::broadcast;
 use utils::{format_event, is_relevant_event};
 
