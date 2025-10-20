@@ -27,7 +27,6 @@ The fastest way to get started with a fully configured development environment:
 
 3. **Enter Development Shell**:
    ```bash
-   cd /path/to/metassr
    nix develop
    ```
 
