@@ -75,10 +75,11 @@ impl<'a> WebBundler<'a> {
             .collect();
 
         if !non_found_files.is_empty() {
-            return Err(anyhow!(
-                "[bundler] Non Exist files found: {:?}",
-                non_found_files
-            ));
+            let mut error_msg = String::from("[bundler] Non-existent files found:\n");
+            for file_name in non_found_files {
+                error_msg.push_str(&format!("  - {}\n", file_name));
+            }
+            return Err(anyhow!("{}", error_msg));
         }
 
         Ok(Self {
@@ -147,7 +148,6 @@ impl<'a> WebBundler<'a> {
         .unwrap();
 
         // Set the resolve and reject handlers for the bundling future
-        // TODO: uncomment this code and resolve the error
         future.then(resolve).catch(reject).await_fut();
 
         // Lock the mutex and wait for the bundling process to complete
