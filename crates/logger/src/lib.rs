@@ -28,19 +28,15 @@ where
         let mut visitor = LogVisitor(&mut fields);
         event.record(&mut visitor);
 
-        let binding = fields.clone();
-        let message = binding.get("message");
-        let target = binding.get("target");
-
-        fields.remove("message");
-        fields.remove("target");
+        let message = fields.remove("message");
+        let target = fields.remove("target");
 
         let mut logfmt = LogFormat {
             timestamp: Local::now(),
             message,
             target,
             level: event.metadata().level(),
-            fields: fields.clone(),
+            fields,
         };
 
         if let Some(logfile) = &self.logfile {
@@ -70,14 +66,14 @@ where
 }
 
 /// Formatting Logs
-struct LogFormat<'a> {
+struct LogFormat {
     timestamp: DateTime<Local>,
-    message: Option<&'a String>,
-    level: &'a Level,
-    target: Option<&'a String>,
+    message: Option<String>,
+    level: &'static Level,
+    target: Option<String>,
     fields: HashMap<String, String>,
 }
-impl<'a> LogFormat<'a> {
+impl LogFormat {
     /// Formatting logs with styling & colors
     pub fn with_ansi(&mut self) -> String {
         format!(
@@ -95,8 +91,8 @@ impl<'a> LogFormat<'a> {
             "{} {:<6}[{}]{} {}",
             self.timestamp,
             self.level,
-            self.target.unwrap_or(&"".to_string()),
-            self.message.unwrap_or(&"".to_string()),
+            self.target.as_ref().map_or("", |s| s),
+            self.message.as_ref().map_or("", |s| s),
             self.fields_as_str()
         )
     }
@@ -124,17 +120,15 @@ impl<'a> LogFormat<'a> {
     }
     /// Custom format for target
     fn format_target(&self) -> String {
-        if let Some(target) = self.target {
+        self.target.as_ref().map_or("".to_string(), |target| {
             format!("[{}]", Style::new().italic().dimmed().paint(target))
-        } else {
-            "".to_string()
-        }
+        })
     }
     /// Custom format for log message
     pub fn format_message(&self) -> String {
         Style::new()
             .bold()
-            .paint(self.message.unwrap_or(&"".to_string()))
+            .paint(self.message.as_ref().map_or("", |s| s))
             .to_string()
     }
     /// Custom format for fields
