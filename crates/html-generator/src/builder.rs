@@ -8,7 +8,7 @@ const BODY_TAG: &str = "%BODY%";
 const SCRIPTS_TAG: &str = "%SCRIPTS%";
 const STYLES_TAG: &str = "%STYLES%";
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct HtmlOutput(String);
 
 impl HtmlOutput {

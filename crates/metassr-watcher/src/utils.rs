@@ -4,6 +4,7 @@ pub fn is_relevant_event(event: &DebouncedEvent) -> bool {
     use notify::event::ModifyKind;
     use notify::EventKind::*;
 
+    #[allow(clippy::match_like_matches_macro)]
     match event.kind {
         Create(_) => true,
         Modify(ModifyKind::Data(_)) => true,

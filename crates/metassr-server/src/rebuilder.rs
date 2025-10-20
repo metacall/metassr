@@ -20,7 +20,7 @@ use std::time::Instant;
 
 use notify_debouncer_full::DebouncedEvent;
 
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 #[derive(Clone, Debug)]
 pub enum RebuildType {

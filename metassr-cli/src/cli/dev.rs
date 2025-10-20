@@ -12,7 +12,7 @@ use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 use super::traits::AsyncExec;
 
@@ -75,7 +75,7 @@ impl Dev {
                         }
                     }
                     Err(e) => {
-                        // error!("Error handling file change: {}", e)
+                        error!("Error handling file change: {}", e)
                     }
                 }
             }

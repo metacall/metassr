@@ -40,7 +40,7 @@ impl LiveReloadServer {
         Self { receiver }
     }
 
-    pub async fn handle_connection(mut self, stream: TcpStream, addr: std::net::SocketAddr) {
+    pub async fn handle_connection(mut self, stream: TcpStream) {
         let ws_stream = tokio_tungstenite::accept_async(stream)
             .await
             .expect("Error during websocket handshake");
