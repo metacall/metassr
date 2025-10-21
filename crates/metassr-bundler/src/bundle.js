@@ -1,5 +1,5 @@
 const { rspack } = require('@rspack/core');
-const path = require('path');
+const { join } = require('path');
 
 /**
  * Safely parses a JSON string, returning undefined if parsing fails.
@@ -9,13 +9,13 @@ const path = require('path');
 function safelyParseJSON(json) {
     try {
         return JSON.parse(json);
-    } catch (_) {
+    } catch {
         return undefined;
     }
 }
 
 // Default configuration object for rspack bundling process
-let config = {
+const defaultConfig = {
     output: {
         filename: '[name].js', // Output filename with the entry name
         library: {
@@ -27,7 +27,7 @@ let config = {
         extensions: ['.js', '.jsx', '.tsx', '.ts'] // Extensions that will be resolved
     },
     optimization: {
-        minimize: false, // Disable minimization for easier debugging
+        minimize: true, // You can disable minimization for easier debugging
     },
     module: {
         rules: [
@@ -37,19 +37,16 @@ let config = {
                 use: {
                     loader: 'builtin:swc-loader', // Use the SWC loader to transpile ES6+ and JSX
                     options: {
-                        sourceMap: true, // Enable source maps for easier debugging
                         jsc: {
                             parser: {
                                 syntax: 'ecmascript', // Set parser syntax to ECMAScript
                                 jsx: true, // Enable parsing JSX syntax
+                                dynamicImport: true, // Enable parsing JSX syntax
                             },
-                            externalHelpers: false, // Disable external helpers (use inline helpers)
-                            preserveAllComments: false, // Remove comments from output
                             transform: {
                                 react: {
                                     runtime: 'automatic', // Use React's automatic JSX runtime
                                     throwIfNamespace: true, // Throw error if namespace is used
-                                    useBuiltins: false, // Don't include built-in polyfills
                                 },
                             },
                         },
@@ -67,12 +64,12 @@ let config = {
                             parser: {
                                 syntax: 'typescript', // Set parser syntax to TypeScript
                                 tsx: true, // Enable parsing TSX syntax
+                                decorators: true
                             },
                             transform: {
                                 react: {
                                     runtime: 'automatic', // Use React's automatic JSX runtime
                                     throwIfNamespace: true, // Throw error if namespace is used
-                                    useBuiltins: false, // Don't include built-in polyfills
                                 },
                             },
                         },
@@ -81,12 +78,44 @@ let config = {
                 type: 'javascript/auto', // Specify the type as auto
             },
             {
-                test: /\.(png|svg|jpg)$/, // Rule for image files (PNG, SVG, JPG)
+                test: /\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf)$/,
                 type: 'asset/inline', // Inline assets as Base64 strings
             },
         ],
-    },
+    }
 };
+
+function createBundlerConfig(entry, dist) {
+    return {
+        ...defaultConfig, // Merge with the default config
+        entry: safelyParseJSON(entry) ?? entry,
+        output: dist ? {
+            ...defaultConfig.output,
+            path: join(process.cwd(), dist)
+        } : defaultConfig.output,
+        name: 'Client',
+        mode: 'production',
+        devtool: 'source-map',
+        experiments: {
+            css: true
+        },
+        // plugins: [],
+        stats: {
+            preset: 'errors-warnings',
+            timings: true,
+            colors: true,
+            modules: true
+        },
+        target: 'web',
+        module: defaultConfig.module,
+        performance: {
+            hints: 'warning',
+            maxAssetSize: 250000,
+            maxEntrypointSize: 400000
+        }
+    };
+}
+
 
 /**
  * Bundles web resources using rspack.
@@ -96,36 +125,22 @@ let config = {
  */
 async function web_bundling(entry, dist) {
     // Create a bundler instance using the config and parameters
-    const compiler = rspack(
-        {
-            ...config, // Merge with the default config
-            entry: safelyParseJSON(entry) ?? entry, // Parse entry if it's JSON, otherwise use it as is
-            output: dist ? {
-                ...config.output,
-                path: path.join(process.cwd(), dist), // Use current working directory and output path
-            } : config.output,
-            // minimize: true,
-            name: 'Client', // Name of the bundle (Client)
-            mode: 'production', // Set mode to development (for non-minimized builds)
-            devtool: 'source-map', // Enable source maps for better debugging
-            stats: { preset: 'errors-warnings', timings: true, colors: true }, // Customize bundling stats output
-            target: 'web', // Set the target environment to web (for browser usage)
-        }
-    );
+    const compiler = rspack(createBundlerConfig(entry, dist));
 
     // Return a promise that runs the bundling process and resolves or rejects based on the result
     return new Promise((resolve, reject) => {
-        return compiler.run((error, stats) => {
-            // Handle errors during the bundling process
+        compiler.run((error, stats) => {
             if (error) {
-                reject(error.message); // Reject with the error message if bundling fails
+                return reject(new Error(`Bundling failed: ${error.message}`));
             }
 
-            // Check if there are any errors in the bundling stats
-            if (error || stats?.hasErrors()) {
-                reject(stats.toString("errors-only")); // Reject with errors-only details from stats
+            if (stats?.hasErrors()) {
+                const info = stats.toJson();
+                const errors = info.errors?.map(e => e.message).join('\n') || 'Unknown compilation errors';
+                return reject(new Error(`Compilation errors:\n${errors}`));
             }
-            resolve(0); // Resolve successfully when bundling is complete
+
+            resolve(0);
         });
     });
 }
