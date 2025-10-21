@@ -13,7 +13,7 @@
     "devDependencies": {
         "@types/react": "^18.0.24",
         "@types/react-dom": "^18.0.8",
-        "@rspack/core": "^0.7.5"
+        "@rspack/core": "1.5.5"
     },
     "dependencies": {
         "react": "^18.3.1",

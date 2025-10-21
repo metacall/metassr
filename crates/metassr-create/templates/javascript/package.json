@@ -9,7 +9,7 @@
     "build:ssg": "metassr --debug-mode=metacall build -t ssg"
   },
   "devDependencies": {
-    "@rspack/core": "^0.7.5"
+    "@rspack/core": "1.5.5"
   },
   "dependencies": {
     "react": "^18.3.1",
