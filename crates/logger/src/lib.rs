@@ -77,7 +77,7 @@ struct LogFormat<'a> {
     target: Option<&'a String>,
     fields: HashMap<String, String>,
 }
-impl<'a> LogFormat<'a> {
+impl LogFormat<'_> {
     /// Formatting logs with styling & colors
     pub fn with_ansi(&mut self) -> String {
         format!(
@@ -158,7 +158,7 @@ impl<'a> LogFormat<'a> {
 
 struct LogVisitor<'a>(&'a mut HashMap<String, String>);
 
-impl<'a> tracing::field::Visit for LogVisitor<'a> {
+impl tracing::field::Visit for LogVisitor<'_> {
     fn record_f64(&mut self, field: &tracing::field::Field, value: f64) {
         self.0.insert(field.name().to_string(), value.to_string());
     }

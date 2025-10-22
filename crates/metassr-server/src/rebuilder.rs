@@ -20,7 +20,7 @@ use std::time::Instant;
 
 use notify_debouncer_full::DebouncedEvent;
 
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 #[derive(Clone, Debug)]
 pub enum RebuildType {
@@ -210,8 +210,8 @@ impl Rebuilder {
         Ok(())
     }
 
+    #[allow(dead_code)]
     async fn rebuild_all_pages(&self) -> Result<()> {
-        // todo: itereate entered rebuilding "rebuild_page fn-" on all pages
-        Ok(())
+        todo!("itereate entered rebuilding rebuild_page() on all pages")
     }
 }

@@ -12,7 +12,7 @@ use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 use super::traits::AsyncExec;
 
@@ -70,12 +70,12 @@ impl Dev {
                 match rebuilder.handle_event(event) {
                     Ok(rebuild_type) => {
                         // Notify the server about what needs rebuilding
-                        if let Err(e) = rebuild_tx.send(rebuild_type) {
-                            error!("Error sending rebuild notification: {}", e);
+                        if let Err(err) = rebuild_tx.send(rebuild_type) {
+                            error!("Error sending rebuild notification: {}", err);
                         }
                     }
-                    Err(e) => {
-                        // error!("Error handling file change: {}", e)
+                    Err(err) => {
+                        error!("Error handling file change: {}", err)
                     }
                 }
             }

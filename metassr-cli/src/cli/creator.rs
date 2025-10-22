@@ -1,5 +1,4 @@
 use clap::ValueEnum;
-use inquire;
 use metassr_create::Creator as MetassrCreator;
 use std::{fmt::Display, str::FromStr};
 use tracing::{error, info};
