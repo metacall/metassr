@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use html_generator::{
+use metassr_html::{
     builder::{HtmlBuilder, HtmlOutput},
     html_props::HtmlPropsBuilder,
     template::HtmlTemplate,
