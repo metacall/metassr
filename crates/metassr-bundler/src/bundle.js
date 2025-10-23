@@ -106,7 +106,6 @@ function createBundlerConfig(entry, dist) {
             modules: true
         },
         target: 'web',
-        module: defaultConfig.module,
         performance: {
             hints: 'warning',
             maxAssetSize: 250000,
