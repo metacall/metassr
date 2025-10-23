@@ -41,7 +41,7 @@ const defaultConfig = {
                             parser: {
                                 syntax: 'ecmascript', // Set parser syntax to ECMAScript
                                 jsx: true, // Enable parsing JSX syntax
-                                dynamicImport: true, // Enable parsing JSX syntax
+                                dynamicImport: true, // Enable parsing dynamic imports
                             },
                             transform: {
                                 react: {
@@ -78,7 +78,7 @@ const defaultConfig = {
                 type: 'javascript/auto', // Specify the type as auto
             },
             {
-                test: /\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf)$/,
+                test: /\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf|webp)$/,
                 type: 'asset/inline', // Inline assets as Base64 strings
             },
         ],
@@ -99,7 +99,6 @@ function createBundlerConfig(entry, dist) {
         experiments: {
             css: true
         },
-        // plugins: [],
         stats: {
             preset: 'errors-warnings',
             timings: true,
