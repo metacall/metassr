@@ -114,7 +114,7 @@ impl Server {
             );
             if let Some(rebuilder) = self.configs.rebuilder.clone() {
                 tokio::spawn(async move {
-                    while let Ok((stream, _addr)) = ws_listener.accept().await {
+                    while let Ok((stream, _)) = ws_listener.accept().await {
                         let live_reload = LiveReloadServer::new(rebuilder.subscribe());
                         // live_reload.handle_connection(socket).await;
                         tokio::spawn(live_reload.handle_connection(stream));

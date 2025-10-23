@@ -210,8 +210,8 @@ impl Rebuilder {
         Ok(())
     }
 
+    #[allow(dead_code)]
     async fn rebuild_all_pages(&self) -> Result<()> {
-        // todo: itereate entered rebuilding "rebuild_page fn-" on all pages
-        Ok(())
+        todo!("iterate entered rebuilding rebuild_page() on all pages")
     }
 }

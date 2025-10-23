@@ -547,13 +547,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
-name = "html-generator"
-version = "0.0.1-alpha"
-dependencies = [
- "anyhow",
-]
-
-[[package]]
 name = "http"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -852,7 +845,6 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
- "html-generator",
  "inquire",
  "lazy_static",
  "logger",
@@ -862,6 +854,7 @@ dependencies = [
  "metassr-bundler",
  "metassr-create",
  "metassr-fs-analyzer",
+ "metassr-html",
  "metassr-server",
  "metassr-utils",
  "metassr-watcher",
@@ -882,12 +875,12 @@ name = "metassr-build"
 version = "0.0.1-alpha"
 dependencies = [
  "anyhow",
- "html-generator",
  "lazy_static",
  "metacall 0.5.1",
  "metacall-sys",
  "metassr-bundler",
  "metassr-fs-analyzer",
+ "metassr-html",
  "metassr-utils",
  "serde",
  "serde_json",
@@ -942,6 +935,13 @@ dependencies = [
  "metassr-utils",
  "serde",
  "walkdir",
+]
+
+[[package]]
+name = "metassr-html"
+version = "0.0.1-alpha"
+dependencies = [
+ "anyhow",
 ]
 
 [[package]]

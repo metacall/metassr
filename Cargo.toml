@@ -32,7 +32,7 @@ logger = { path = "crates/logger" }
 metassr-server = { path = "crates/metassr-server" }
 metassr-build = { path = "crates/metassr-build" }
 metassr-utils = { path = "crates/metassr-utils" }
-html-generator = { path = "crates/html-generator" }
+metassr-html = { path = "crates/metassr-html" }
 serde = "1.0.207"
 tower-layer = "0.3.3"
 tower-service = "0.3.3"
@@ -50,7 +50,7 @@ members = [
     "crates/metassr-build",
     "crates/metassr-server",
     "crates/metassr-utils",
-    "crates/html-generator",
+    "crates/metassr-html",
     "metassr-cli",
     "crates/metassr-create",
     "crates/metassr-bundler",

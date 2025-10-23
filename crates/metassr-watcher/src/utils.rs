@@ -1,22 +1,15 @@
+use notify::event::ModifyKind;
+use notify::EventKind::*;
 use notify_debouncer_full::DebouncedEvent;
 
 pub fn is_relevant_event(event: &DebouncedEvent) -> bool {
-    use notify::event::ModifyKind;
-    use notify::EventKind::*;
-
-    #[allow(clippy::match_like_matches_macro)]
-    match event.kind {
-        Create(_) => true,
-        Modify(ModifyKind::Data(_)) => true,
-        Modify(ModifyKind::Name(_)) => true,
-        Remove(_) => true,
-        _ => false,
-    }
+    matches!(
+        event.kind,
+        Create(_) | Modify(ModifyKind::Data(_)) | Modify(ModifyKind::Name(_)) | Remove(_)
+    )
 }
-pub fn format_event(event: &DebouncedEvent) -> String {
-    use notify::event::ModifyKind;
-    use notify::EventKind::*;
 
+pub fn format_event(event: &DebouncedEvent) -> String {
     let action = match event.kind {
         Create(_) => "created",
         Modify(ModifyKind::Data(_)) => "modified",
