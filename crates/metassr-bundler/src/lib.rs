@@ -68,7 +68,7 @@ impl<'a> WebBundler<'a> {
             .map(|(k, path)| {
                 let path = Path::new(path);
                 if !path.exists() {
-                    non_found_files.push(path.display());
+                    non_found_files.push(path.display().to_string());
                 }
                 (k.into(), path)
             })
