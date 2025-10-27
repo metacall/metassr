@@ -8,6 +8,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.89"
-metassr-utils = { version = "0.0.1-alpha", path = "../metassr-utils" }
+metassr-utils = { version = "1.0.0-alpha", path = "../metassr-utils" }
 serde = "1.0.210"
 walkdir = "2.5.0"

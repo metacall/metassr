@@ -772,7 +772,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "logger"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "chrono",
  "nu-ansi-term 0.50.0",
@@ -839,7 +839,7 @@ checksum = "8c6890fa4fc6790993c82dfd736389499d6c71c7ae798dc9bc8cbabf5df68611"
 
 [[package]]
 name = "metassr"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "axum",
@@ -872,7 +872,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-build"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "lazy_static",
@@ -888,7 +888,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-bundler"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "lazy_static",
@@ -901,7 +901,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-cli"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "axum",
@@ -921,7 +921,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-create"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "walkdir",
@@ -929,7 +929,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-fs-analyzer"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "metassr-utils",
@@ -939,14 +939,14 @@ dependencies = [
 
 [[package]]
 name = "metassr-html"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
 ]
 
 [[package]]
 name = "metassr-server"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "axum",
@@ -972,7 +972,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-utils"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "serde",
@@ -981,7 +981,7 @@ dependencies = [
 
 [[package]]
 name = "metassr-watcher"
-version = "0.0.1-alpha"
+version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "notify",
