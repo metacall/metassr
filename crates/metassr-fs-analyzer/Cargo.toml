@@ -1,7 +1,7 @@
 [package]
 name = "metassr-fs-analyzer"
 description = "This module provides directory analyzers for MetaSSR web applications."
-version = "1.0.0-alpha"
+version.workspace = true
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

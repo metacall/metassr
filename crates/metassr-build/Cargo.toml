@@ -1,6 +1,6 @@
 [package]
 name = "metassr-build"
-version = "1.0.0-alpha"
+version.workspace = true
 edition = "2021"
 description = "Web builder & client bundler (built on Rspack), built for MetaSSR."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

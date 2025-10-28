@@ -1,6 +1,6 @@
 [package]
 name = "metassr"
-version = "1.0.0-alpha"
+version.workspace = true
 edition = "2021"
 description = "Another SSR framework but built with MetaCall!"
 license = "MIT"
@@ -57,6 +57,9 @@ members = [
     "crates/metassr-fs-analyzer",
     "crates/metassr-watcher",
 ]
+
+[workspace.package]
+version = "1.0.0-alpha"
 
 [[bin]]
 name = "metassr"

@@ -1,6 +1,6 @@
 [package]
 name = "metassr-bundler"
-version = "1.0.0-alpha"
+version.workspace = true
 edition = "2021"
 description = "A simple crate is used for web bundling built on Metacall and Rspack."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

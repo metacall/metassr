@@ -1,6 +1,6 @@
 [package]
 name = "logger"
-version = "1.0.0-alpha"
+version.workspace = true
 edition = "2021"
 description = "Custom Logging layer for tracing-rs is used in MetaSSR"
 
