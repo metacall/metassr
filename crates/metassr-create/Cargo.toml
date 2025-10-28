@@ -1,6 +1,6 @@
 [package]
 name = "metassr-create"
-version = "1.0.0-alpha"
+version.workspace = true
 edition = "2021"
 build = "build.rs"
 
