@@ -89,33 +89,27 @@ pub enum Template {
     Typescript,
 }
 impl Template {
-    fn templates_info() -> HashMap<Template, (&'static str, &'static str)> {
-        let mut map = HashMap::new();
-        map.insert(Template::Javascript, ("javascript", YELLOW));
-        map.insert(Template::Typescript, ("typescript", BLUE));
-        map
-    }
-
     pub fn as_str(&self) -> &'static str {
-        Self::templates_info()
-            .get(self)
-            .map(|(name, _)| *name)
-            .unwrap_or("unknown")
-    }
-
-    pub fn fmt_colored(&self) -> String {
-        let templates = Self::templates_info();
-        if let Some((name, color)) = templates.get(self) {
-            format!("{}{}{RESET}", color, name)
-        } else {
-            String::from("unknown")
+        match self {
+            Template::Javascript => "javascript",
+            Template::Typescript => "typescript",
         }
     }
 }
 
 impl Display for Template {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fmt_colored())
+        let templates =
+            HashMap::from([(Template::Javascript, YELLOW), (Template::Typescript, BLUE)]);
+        write!(
+            f,
+            "{}{}{RESET}",
+            templates.get(self).unwrap(),
+            match self {
+                Template::Javascript => "javascript",
+                Template::Typescript => "typescript",
+            }
+        )
     }
 }
 
