@@ -108,7 +108,7 @@ impl Rebuilder {
         Ok(rebuild_type)
     }
 
-    pub async fn rebuild(&self, rebuild_type: RebuildType) -> Result<()> {
+    pub fn rebuild(&self, rebuild_type: RebuildType) -> Result<()> {
         if self.is_rebuilding.swap(true, Ordering::SeqCst) {
             return Ok(()); // Already rebuilding, skip
         }
@@ -117,7 +117,7 @@ impl Rebuilder {
             RebuildType::Page(ref path) => {
                 debug!("entered rebuilding {:?} in {:?}", rebuild_type, path);
 
-                self.rebuild_page(path.clone()).await?;
+                self.rebuild_page(path.clone())?;
                 match self.sender.send(rebuild_type.clone()) {
                     Ok(rec) => {
                         debug!("Sent to: {rec} receivers")
@@ -149,7 +149,7 @@ impl Rebuilder {
         Ok(())
     }
 
-    async fn rebuild_page(&self, path: PathBuf) -> Result<()> {
+    fn rebuild_page(&self, path: PathBuf) -> Result<()> {
         debug!("Rebuilding page {:?}", path);
 
         debug!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
@@ -211,7 +211,7 @@ impl Rebuilder {
     }
 
     #[allow(dead_code)]
-    async fn rebuild_all_pages(&self) -> Result<()> {
+    fn rebuild_all_pages(&self) -> Result<()> {
         todo!("iterate entered rebuilding rebuild_page() on all pages")
     }
 }
