@@ -1,0 +1,233 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+  schedule:
+    # Run benchmarks weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Performance Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install MetaCall Linux
+        run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: tests/web-app/package-lock.json
+
+      - name: Install wrk (load testing tool)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wrk
+
+      - name: Build MetaSSR
+        run: cargo build --release
+
+      - name: Setup benchmark test app
+        working-directory: ./tests/web-app
+        run: |
+          npm install
+          npm run build
+
+      - name: Start MetaSSR server
+        working-directory: ./tests/web-app
+        run: |
+          npm run start &
+          echo $! > metassr.pid
+          sleep 10
+
+      - name: Warm up MetaSSR server
+        run: |
+          curl -s http://localhost:8080 > /dev/null
+          sleep 2
+
+      - name: Benchmark MetaSSR
+        run: |
+          echo "=== MetaSSR Benchmark ===" > benchmark_results.txt
+          wrk -t12 -c100 -d30s --latency http://localhost:8080 >> benchmark_results.txt
+          echo "" >> benchmark_results.txt
+
+      - name: Benchmark MetaSSR (Light Load)
+        run: |
+          echo "=== MetaSSR Light Load (1 thread, 10 connections) ===" >> benchmark_results.txt
+          wrk -t1 -c10 -d30s --latency http://localhost:8080 >> benchmark_results.txt
+          echo "" >> benchmark_results.txt
+
+      - name: Benchmark MetaSSR (Medium Load)
+        run: |
+          echo "=== MetaSSR Medium Load (4 threads, 50 connections) ===" >> benchmark_results.txt
+          wrk -t4 -c50 -d30s --latency http://localhost:8080 >> benchmark_results.txt
+          echo "" >> benchmark_results.txt
+
+      - name: Benchmark MetaSSR (Heavy Load)
+        run: |
+          echo "=== MetaSSR Heavy Load (12 threads, 1000 connections) ===" >> benchmark_results.txt
+          wrk -t12 -c1000 -d30s --latency http://localhost:8080 >> benchmark_results.txt
+          echo "" >> benchmark_results.txt
+
+      - name: Benchmark MetaSSR (Sustained Load)
+        run: |
+          echo "=== MetaSSR Sustained Load (8 threads, 200 connections, 2 minutes) ===" >> benchmark_results.txt
+          wrk -t8 -c200 -d120s --latency http://localhost:8080 >> benchmark_results.txt
+          echo "" >> benchmark_results.txt
+
+      - name: Stop MetaSSR server
+        working-directory: ./tests/web-app
+        run: |
+          if [ -f metassr.pid ]; then
+            kill $(cat metassr.pid) || true
+            rm metassr.pid
+          fi
+          sleep 5
+
+      - name: Install Python dependencies
+        run: |
+          pip install pandas matplotlib seaborn numpy
+
+      - name: Make scripts executable
+        run: |
+          chmod +x benchmarks/run-benchmarks.sh
+          chmod +x benchmarks/benchmark.sh
+          chmod +x benchmarks/analyze-benchmarks.py
+          chmod +x benchmarks/move-results.sh
+
+      - name: Setup benchmark results directory
+        run: |
+          mkdir -p benchmark-results
+          # Move any existing results from wrong location
+          ./benchmarks/move-results.sh
+
+      - name: Run comprehensive benchmarks
+        run: |
+          ./benchmarks/run-benchmarks.sh --skip-build --analyze
+        env:
+          RESULTS_DIR: benchmark-results
+
+      - name: Generate PR benchmark summary
+        run: |
+          chmod +x benchmarks/generate-pr-summary.py
+          python3 benchmarks/generate-pr-summary.py
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          RUNNER_OS: ${{ runner.os }}
+
+      - name: Display results
+        run: |
+          echo "Benchmark completed successfully!"
+          echo "=== PR Summary ==="
+          cat pr_benchmark_summary.md
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: |
+            benchmark-results/
+            benchmarks/benchmark-config.json
+          retention-days: 30
+
+      - name: Comment benchmark results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const summary = fs.readFileSync('pr_benchmark_summary.md', 'utf8');
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+              
+              console.log('Successfully posted benchmark results to PR');
+            } catch (error) {
+              console.error('Failed to post benchmark results:', error);
+            }
+
+  memory-benchmark:
+    name: Memory Usage Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Install MetaCall Linux
+        run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build MetaSSR
+        run: cargo build --release
+
+      - name: Setup test app
+        working-directory: ./tests/web-app
+        run: |
+          npm install
+          npm run build
+
+      - name: Monitor MetaSSR memory usage
+        working-directory: ./tests/web-app
+        run: |
+          npm run start &
+          SERVER_PID=$!
+          sleep 10
+          
+          # Monitor memory for 60 seconds
+          echo "timestamp,memory_mb" > memory_usage.csv
+          for i in {1..60}; do
+            memory=$(ps -o rss= -p $SERVER_PID | awk '{print $1/1024}')
+            echo "$i,$memory" >> memory_usage.csv
+            sleep 1
+          done
+          
+          kill $SERVER_PID
+
+      - name: Upload memory benchmark
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-benchmark-${{ github.run_id }}
+          path: tests/web-app/memory_usage.csv
+          retention-days: 30
