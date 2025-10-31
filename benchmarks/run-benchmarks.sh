@@ -185,14 +185,11 @@ stop_server() {
 run_benchmarks() {
     log "Running benchmark suite..."
     
-    # Set absolute path for output directory
-    local abs_output_dir="$PROJECT_ROOT/$OUTPUT_DIR"
+    # Set environment for .bench structure
+    export BENCH_DIR="$PROJECT_ROOT/.bench"
     
-    # Ensure output directory exists
-    mkdir -p "$abs_output_dir"
-    
-    # Run the benchmark script with absolute path
-    RESULTS_DIR="$abs_output_dir" "$BENCHMARK_SCRIPT" -u "http://localhost:$SERVER_PORT" -o "$abs_output_dir"
+    # Run the benchmark script 
+    "$BENCHMARK_SCRIPT" -u "http://localhost:$SERVER_PORT"
     
     success "Benchmarks completed"
 }
@@ -204,19 +201,24 @@ analyze_results() {
     
     log "Analyzing benchmark results..."
     
-    # Use absolute path for results
-    local abs_output_dir="$PROJECT_ROOT/$OUTPUT_DIR"
+    # Find the latest session directory in .bench
+    local bench_dir="$PROJECT_ROOT/.bench"
+    local latest_session=$(ls -t "$bench_dir" 2>/dev/null | head -1)
     
-    # Find the latest results file
-    local latest_result=$(ls -t "$abs_output_dir"/benchmark_*.json 2>/dev/null | head -1)
-    
-    if [ -z "$latest_result" ]; then
-        warn "No benchmark results found to analyze"
+    if [ -z "$latest_session" ]; then
+        warn "No benchmark session found to analyze"
         return
     fi
     
-    # Create analysis directory
-    local analysis_dir="$abs_output_dir/analysis_$(date +%Y%m%d_%H%M%S)"
+    local latest_result="$bench_dir/$latest_session/results/benchmark.json"
+    
+    if [ ! -f "$latest_result" ]; then
+        warn "No benchmark results found to analyze in $latest_session"
+        return
+    fi
+    
+    # Create analysis directory in the session
+    local analysis_dir="$bench_dir/$latest_session/analysis"
     
     # Run analyzer
     local analyzer_args=("$latest_result" "-o" "$analysis_dir")
@@ -318,10 +320,10 @@ main() {
     
     success "Automated benchmark completed successfully!"
     echo ""
-    echo "Results location: $PROJECT_ROOT/$OUTPUT_DIR"
+    echo "Results location: $PROJECT_ROOT/.bench"
     
     if [ "$ANALYZE_RESULTS" = true ]; then
-        echo "Analysis reports generated in: $PROJECT_ROOT/$OUTPUT_DIR/analysis_*"
+        echo "Analysis reports generated in: $PROJECT_ROOT/.bench/*/analysis"
     fi
 }
 

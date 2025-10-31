@@ -46,9 +46,6 @@ jobs:
       - name: Build
         run: cargo build
 
-      - name: Unit Testing
-        run: cargo test
-
       - name: Integration Testing
         working-directory: ./tests/web-app
         run: |

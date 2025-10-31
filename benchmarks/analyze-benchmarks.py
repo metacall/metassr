@@ -53,15 +53,34 @@ class BenchmarkAnalyzer:
             results_data = test['results']
             
             # Convert latency to milliseconds
-            avg_latency = self.parse_latency(results_data['avg_latency'])
-            p99_latency = self.parse_latency(results_data['latency_percentiles']['p99'])
+            avg_latency = self.parse_latency(results_data.get('avg_latency', ''))
+            
+            # Safely get P99 latency
+            latency_percentiles = results_data.get('latency_percentiles', {})
+            p99_latency = self.parse_latency(latency_percentiles.get('p99', '')) if latency_percentiles else 0
+            
+            # Safely parse numeric values
+            try:
+                rps = float(str(results_data.get('requests_per_sec', '0')).replace(',', '') or 0)
+            except (ValueError, TypeError):
+                rps = 0
+                
+            try:
+                total_requests = int(str(results_data.get('total_requests', '0')).replace(',', '') or 0)
+            except (ValueError, TypeError):
+                total_requests = 0
+                
+            try:
+                errors = int(str(results_data.get('total_errors', '0')) or 0)
+            except (ValueError, TypeError):
+                errors = 0
             
             analysis['trends'][test_name] = {
-                'rps': float(results_data['requests_per_sec'].replace(',', '') or 0),
+                'rps': rps,
                 'avg_latency_ms': avg_latency,
                 'p99_latency_ms': p99_latency,
-                'errors': int(results_data['total_errors'] or 0),
-                'total_requests': int(results_data['total_requests'].replace(',', '') or 0)
+                'errors': errors,
+                'total_requests': total_requests
             }
         
         # Generate recommendations
@@ -73,16 +92,32 @@ class BenchmarkAnalyzer:
         """Parse latency string and convert to milliseconds"""
         if not latency_str:
             return 0
+        
+        try:
+            # Clean the string - handle multi-line strings and extra data
+            latency_str = str(latency_str).strip()
             
-        latency_str = latency_str.lower()
-        if 'ms' in latency_str:
-            return float(latency_str.replace('ms', ''))
-        elif 'us' in latency_str:
-            return float(latency_str.replace('us', '')) / 1000
-        elif 's' in latency_str:
-            return float(latency_str.replace('s', '')) * 1000
-        else:
-            return float(latency_str)
+            # Split by newlines and take the first non-empty line
+            lines = [line.strip() for line in latency_str.split('\n') if line.strip()]
+            if not lines:
+                return 0
+                
+            # Take the first line and get the first word (the actual latency value)
+            first_value = lines[0].split()[0].lower()
+            
+            # Parse based on unit
+            if 'ms' in first_value:
+                return float(first_value.replace('ms', ''))
+            elif 'us' in first_value:
+                return float(first_value.replace('us', '')) / 1000
+            elif first_value.endswith('s') and 'ms' not in first_value and 'us' not in first_value:
+                return float(first_value.replace('s', '')) * 1000
+            else:
+                # Try to parse as plain number (assume milliseconds)
+                return float(first_value)
+                
+        except (ValueError, TypeError, IndexError, AttributeError):
+            return 0
     
     def generate_recommendations(self, analysis):
         """Generate performance recommendations"""

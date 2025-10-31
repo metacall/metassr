@@ -113,15 +113,13 @@ jobs:
 
       - name: Setup benchmark results directory
         run: |
-          mkdir -p benchmark-results
+          mkdir -p .bench
           # Move any existing results from wrong location
           ./benchmarks/move-results.sh
 
       - name: Run comprehensive benchmarks
         run: |
           ./benchmarks/run-benchmarks.sh --skip-build --analyze
-        env:
-          RESULTS_DIR: benchmark-results
 
       - name: Generate PR benchmark summary
         run: python3 benchmarks/generate-pr-summary.py
@@ -140,7 +138,7 @@ jobs:
         with:
           name: benchmark-results-${{ github.run_id }}
           path: |
-            benchmark-results/
+            .bench/
             benchmarks/benchmark-config.json
           retention-days: 30
 

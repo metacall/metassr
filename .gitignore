@@ -1,3 +1,6 @@
 target
 node_modules
 dist
+
+# benchmarking results
+.bench
