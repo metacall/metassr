@@ -34,18 +34,22 @@ def parse_latency(latency_str):
     if not latency_str or latency_str == "N/A":
         return 0
         
-    latency_str = str(latency_str).lower()
-    if 'ms' in latency_str:
-        return float(latency_str.replace('ms', ''))
-    elif 's' in latency_str and 'ms' not in latency_str:
-        return float(latency_str.replace('s', '')) * 1000
-    elif 'us' in latency_str:
-        return float(latency_str.replace('us', '')) / 1000
-    else:
-        try:
+    latency_str = str(latency_str).lower().strip()
+    
+    try:
+        # Check for most specific patterns first
+        if 'ms' in latency_str:
+            return float(latency_str.replace('ms', ''))
+        elif 'us' in latency_str:
+            return float(latency_str.replace('us', '')) / 1000
+        elif latency_str.endswith('s'):
+            # Only for pure seconds (not microseconds or milliseconds)
+            return float(latency_str.replace('s', '')) * 1000
+        else:
+            # Try to parse as plain number (assume milliseconds)
             return float(latency_str)
-        except:
-            return 0
+    except (ValueError, TypeError):
+        return 0
 
 def format_rps(rps_str):
     """Format RPS for display"""
