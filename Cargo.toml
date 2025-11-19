@@ -1,12 +1,11 @@
 [package]
 name = "metassr"
-version = "0.0.1-alpha"
+version.workspace = true
 edition = "2021"
 description = "Another SSR framework but built with MetaCall!"
 license = "MIT"
 license-file = "LICENSE"
 default-run = "metassr"
-
 
 [package.metadata]
 authors = ["Mohamed Emad (hulxxv@gmail.com)"]
@@ -15,7 +14,7 @@ authors = ["Mohamed Emad (hulxxv@gmail.com)"]
 anyhow = "1.0.82"
 chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive"] }
-metacall = "0.5.1"
+metacall = "0.5.3"
 nu-ansi-term = "0.50.0"
 walkdir = "2.5.0"
 serde_json = "1.0.120"
@@ -32,7 +31,7 @@ logger = { path = "crates/logger" }
 metassr-server = { path = "crates/metassr-server" }
 metassr-build = { path = "crates/metassr-build" }
 metassr-utils = { path = "crates/metassr-utils" }
-html-generator = { path = "crates/html-generator" }
+metassr-html = { path = "crates/metassr-html" }
 serde = "1.0.207"
 tower-layer = "0.3.3"
 tower-service = "0.3.3"
@@ -42,7 +41,7 @@ metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
 metassr-watcher = { path = "crates/metassr-watcher" }
 
 [build-dependencies]
-metacall-sys = "0.1.1"
+metacall-sys = "0.1.2"
 
 [workspace]
 members = [
@@ -50,13 +49,16 @@ members = [
     "crates/metassr-build",
     "crates/metassr-server",
     "crates/metassr-utils",
-    "crates/html-generator",
+    "crates/metassr-html",
     "metassr-cli",
     "crates/metassr-create",
     "crates/metassr-bundler",
     "crates/metassr-fs-analyzer",
     "crates/metassr-watcher",
 ]
+
+[workspace.package]
+version = "1.0.0-alpha"
 
 [[bin]]
 name = "metassr"

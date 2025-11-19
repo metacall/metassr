@@ -1,4 +1,4 @@
-name: Rust Clippy
+name: Linter
 
 on:
   push:
@@ -13,19 +13,19 @@ concurrency:
 
 jobs:
   clippy:
-    name: Run Clippy
+    name: Run Format, Clippy, Spellcheck
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: rustfmt, clippy
 
-      - name: Cache Rust dependencies
+      - name: Cache Rust Dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -34,7 +34,13 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run clippy
+      - name: Check Formatting
+        run: cargo fmt --check
+
+      - name: Run Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Spell Checking with Typos
+        uses: crate-ci/typos@master

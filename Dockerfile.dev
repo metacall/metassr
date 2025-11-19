@@ -1,4 +1,4 @@
-FROM rust:slim-trixie
+FROM rust:slim-trixie AS base
 
 # Image descriptor
 LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \
@@ -10,7 +10,7 @@ LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \
 
 # Install MetaCall dependencies
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 		ca-certificates \
         git \
 		wget \
@@ -20,14 +20,58 @@ RUN apt-get update \
 # Set working directory to root
 WORKDIR /root
 
+# Debug Image
+FROM base AS build_debug
+
 # Install MetaCall in debug mode
 RUN wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | bash -s -- --debug
 
 # Copy the project
 COPY . .
 
+ENV RUSTFLAGS="-g"
+
 # Build with debug mode
-RUN cargo build \
-	&& cd ./tests/web-app \
-	&& npm install \
-	&& npm run build
+RUN cargo build
+
+# Unit test debug image
+FROM build_debug AS unit_test_debug
+
+# Run tests in debug mode
+RUN cargo test --workspace --verbose
+
+# Integration test debug image
+FROM build_debug AS integration_test_debug
+
+WORKDIR /root/tests/web-app
+
+RUN npm install \
+	&& npm run build:debug \
+	&& ./tests/bundle.sh
+
+# Release image
+FROM base AS build_release
+
+# Install MetaCall
+RUN wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | bash
+
+# Copy the project
+COPY . .
+
+# Build with release mode
+RUN cargo build --release
+
+# Unit test release image
+FROM build_release AS unit_test_release
+
+# Run tests in release mode
+RUN cargo test --workspace --verbose --release
+
+# Integration test release image
+FROM build_release AS integration_test_release
+
+WORKDIR /root/tests/web-app
+
+RUN npm install \
+	&& npm run build \
+	&& ./tests/bundle.sh

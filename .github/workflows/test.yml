@@ -1,0 +1,62 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type: [debug, release]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Unit Tests
+        run: docker build --target unit_test_${{ matrix.build-type }} -f Dockerfile.dev -t metacall/metassr:unit .
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type: [debug, release]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Bundler Integration Tests
+        run: docker build --target integration_test_${{ matrix.build-type }} -f Dockerfile.dev -t metacall/metassr:integration .
+
+      - name: Copy Bundler Artifacts
+        run: |
+          docker create --name metassr-integration-artifacts metacall/metassr:integration
+          docker cp metassr-integration-artifacts:/root/tests/web-app/dist $(pwd)/tests/web-app/dist
+          docker rm metassr-integration-artifacts
+
+      - name: Upload Bundler Artifacts
+        if: matrix.build-type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundler-dist-output
+          path: tests/web-app/dist/
+          retention-days: 7

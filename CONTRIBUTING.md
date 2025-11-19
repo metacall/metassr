@@ -144,7 +144,7 @@ fix(builder): fix a bug in building operation
 Make sure your changes pass all existing and new tests. Run the tests locally before submitting your pull request:
 
 ```bash
-cargo test
+cargo test --workspace
 ```
 
 also, you can test one of web applications that located at [tests](../../tests/) directory.

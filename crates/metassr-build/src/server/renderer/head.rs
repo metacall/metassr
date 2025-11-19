@@ -34,7 +34,7 @@ impl HeadRenderer {
             }
 
             let _ = load::from_single_file(
-                "node",
+                load::Tag::NodeJS,
                 format!("{}/head.js", self.cache_dir.path().display()),
             );
             guard.make_true()

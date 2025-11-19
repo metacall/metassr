@@ -1,6 +1,6 @@
 [package]
 name = "metassr-watcher"
-version = "0.0.1-alpha"
+version.workspace = true
 edition = "2021"
 
 [dependencies]

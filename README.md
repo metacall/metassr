@@ -55,7 +55,7 @@ For running a development environment:
 ### Docker
 
 ```sh
-docker build -t metacall/metassr:dev -f Dockerfile.dev .
+docker build --target build_debug -t metacall/metassr:dev -f Dockerfile.dev .
 docker run --rm -it metacall/metassr:dev bash
 ```
 

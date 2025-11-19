@@ -1,6 +1,6 @@
 [package]
 name = "metassr-cli"
-version = "0.0.1-alpha"
+version.workspace = true
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -22,3 +22,6 @@ metassr-server = { path = "../crates/metassr-server" }
 metassr-build = { path = "../crates/metassr-build" }
 metassr-create = { path = "../crates/metassr-create" }
 metassr-watcher = { path = "../crates/metassr-watcher" }
+
+[build-dependencies]
+metacall-sys = "0.1.2"

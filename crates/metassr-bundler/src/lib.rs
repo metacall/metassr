@@ -100,7 +100,7 @@ impl<'a> WebBundler<'a> {
         let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
         if !guard.is_true() {
             // If not loaded, attempt to load the script into MetaCall
-            if let Err(e) = load::from_memory("node", BUILD_SCRIPT) {
+            if let Err(e) = load::from_memory(load::Tag::NodeJS, BUILD_SCRIPT) {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
             }
             // Mark the script as loaded
@@ -110,7 +110,10 @@ impl<'a> WebBundler<'a> {
         drop(guard);
 
         // Resolve callback when the bundling process is completed successfully
-        fn resolve(result: Box<dyn MetaCallValue>, _: Box<dyn Any>) -> Box<dyn MetaCallValue> {
+        fn resolve(
+            result: Box<dyn MetaCallValue>,
+            _: Option<Box<dyn Any>>,
+        ) -> Box<dyn MetaCallValue> {
             let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
@@ -122,7 +125,7 @@ impl<'a> WebBundler<'a> {
         }
 
         // Reject callback for handling errors during the bundling process
-        fn reject(err: Box<dyn MetaCallValue>, _: Box<dyn Any>) -> Box<dyn MetaCallValue> {
+        fn reject(err: Box<dyn MetaCallValue>, _: Option<Box<dyn Any>>) -> Box<dyn MetaCallValue> {
             let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 

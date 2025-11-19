@@ -6,9 +6,8 @@
 set -e
 
 # Get the script directory and project root
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-WEB_APP_DIR="$PROJECT_ROOT/tests/web-app"
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+WEB_APP_DIR=$(dirname "$SCRIPT_DIR")
 DIST_DIR="$WEB_APP_DIR/dist"
 
 # Configuration: Expected files and directories
@@ -50,7 +49,6 @@ MIN_BUNDLE_SIZE=500
 MIN_CSS_SIZE=100
 
 echo "Running MetaSSR bundler tests..."
-echo "[INFO] Project root: $PROJECT_ROOT"
 echo "[INFO] Web app directory: $WEB_APP_DIR"
 echo "[INFO] Dist directory: $DIST_DIR"
 

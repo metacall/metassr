@@ -66,9 +66,6 @@ npm run build
 
 2. Run the test script from anywhere in the project:
 ```bash
-# Make the script executable
-chmod +x tests/test-bundle.sh
-
 # Run from project root
 ./tests/test-bundle.sh
 
