@@ -84,11 +84,79 @@ impl Build for ClientBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::io::Write;
+
+    fn setup_test_project() -> tempfile::TempDir {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let pages_dir = src_dir.join("pages");
+        let dist_dir = temp_dir.path().join("dist");
+
+        fs::create_dir_all(&pages_dir).unwrap();
+        fs::create_dir_all(&dist_dir).unwrap();
+
+        // Create package.json
+        let mut package_json = fs::File::create(temp_dir.path().join("package.json")).unwrap();
+        writeln!(package_json, "{{").unwrap();
+        writeln!(package_json, "  \"name\": \"test-app\",").unwrap();
+        writeln!(package_json, "  \"version\": \"1.0.0\",").unwrap();
+        writeln!(package_json, "  \"type\": \"module\"").unwrap();
+        writeln!(package_json, "}}").unwrap();
+
+        // Create _app.tsx
+        let mut app_file = fs::File::create(src_dir.join("_app.tsx")).unwrap();
+        writeln!(app_file, "import React from 'react';").unwrap();
+        writeln!(app_file, "export default function App({{ children }}) {{").unwrap();
+        writeln!(app_file, "  return <div>{{children}}</div>;").unwrap();
+        writeln!(app_file, "}}").unwrap();
+
+        // Create _head.tsx
+        let mut head_file = fs::File::create(src_dir.join("_head.tsx")).unwrap();
+        writeln!(head_file, "import React from 'react';").unwrap();
+        writeln!(head_file, "export default function Head() {{").unwrap();
+        writeln!(head_file, "  return (").unwrap();
+        writeln!(head_file, "    <>").unwrap();
+        writeln!(head_file, "      <title>Test App</title>").unwrap();
+        writeln!(
+            head_file,
+            "      <meta name=\"description\" content=\"Test application\" />"
+        )
+        .unwrap();
+        writeln!(head_file, "    </>").unwrap();
+        writeln!(head_file, "  );").unwrap();
+        writeln!(head_file, "}}").unwrap();
+
+        // Create index page
+        let mut index_file = fs::File::create(pages_dir.join("index.jsx")).unwrap();
+        writeln!(index_file, "import React from 'react';").unwrap();
+        writeln!(index_file, "export default function Index() {{").unwrap();
+        writeln!(index_file, "  return <div>Index Page</div>;").unwrap();
+        writeln!(index_file, "}}").unwrap();
+        temp_dir
+    }
+
     #[test]
     fn client_builder() {
-        ClientBuilder::new("../../tests/web-app", "../../tests/web-app/dist")
-            .unwrap()
-            .build()
-            .unwrap();
+        let temp_dir = setup_test_project();
+        let project_path = temp_dir.path();
+        let dist_path = project_path.join("dist");
+
+        let result =
+            ClientBuilder::new(project_path.to_str().unwrap(), dist_path.to_str().unwrap());
+
+        match result {
+            Ok(builder) => match builder.build() {
+                Ok(_) => {
+                    println!("✓ Client built successfully");
+                }
+                Err(e) => {
+                    panic!("Build failed with unexpected error: {:?}", e);
+                }
+            },
+            Err(e) => {
+                panic!("ClientBuilder creation failed: {:?}", e);
+            }
+        }
     }
 }

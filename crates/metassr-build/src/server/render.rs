@@ -48,13 +48,61 @@ impl Generate for ServerRender {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::io::Write;
+
+    fn setup_test_files() -> tempfile::TempDir {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let pages_dir = src_dir.join("pages");
+
+        fs::create_dir_all(&pages_dir).unwrap();
+
+        // Create minimal _app.tsx
+        let mut app_file = fs::File::create(src_dir.join("_app.tsx")).unwrap();
+        writeln!(app_file, "import React from 'react';").unwrap();
+        writeln!(app_file, "export default function App({{ children }}) {{").unwrap();
+        writeln!(
+            app_file,
+            "  return <div className=\"app\">{{children}}</div>;"
+        )
+        .unwrap();
+        writeln!(app_file, "}}").unwrap();
+
+        // Create minimal home.jsx
+        let mut home_file = fs::File::create(pages_dir.join("home.jsx")).unwrap();
+        writeln!(home_file, "import React from 'react';").unwrap();
+        writeln!(home_file, "export default function Home() {{").unwrap();
+        writeln!(
+            home_file,
+            "  return <div className=\"home\">Home Page</div>;"
+        )
+        .unwrap();
+        writeln!(home_file, "}}").unwrap();
+
+        temp_dir
+    }
+
     #[test]
     fn generate_render_file() {
-        println!(
-            "{:?}",
-            ServerRender::new("src/_app.tsx", "src/pages/home.jsx")
-                .generate()
-                .unwrap()
-        );
+        let temp_dir = setup_test_files();
+        let base = temp_dir.path();
+
+        let app_path = base.join("src/_app.tsx");
+        let page_path = base.join("src/pages/home.jsx");
+
+        let result =
+            ServerRender::new(app_path.to_str().unwrap(), page_path.to_str().unwrap()).generate();
+
+        match result {
+            Ok(output) => {
+                assert!(!output.1.is_empty(), "Generated output should not be empty");
+                println!("✓ Generated render code successfully");
+                println!("{:?}", output);
+            }
+            Err(e) => {
+                panic!("Failed to generate render file: {:?}", e);
+            }
+        }
     }
 }
