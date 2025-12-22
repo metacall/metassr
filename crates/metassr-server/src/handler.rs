@@ -47,9 +47,8 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
             };
 
             let handler =
-                move |Query(params): Query<HashMap<String, String>>,
-                      Path(path): Path<HashMap<String, String>>| async move {
-                    // dbg!(&params, &path);
+                move |Query(_params): Query<HashMap<String, String>>,
+                      Path(_path): Path<HashMap<String, String>>| async move {
                     Html(*html)
                 };
 
