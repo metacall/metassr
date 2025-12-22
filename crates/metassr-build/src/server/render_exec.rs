@@ -35,7 +35,8 @@ impl Exec for RenderExec {
     type Output = String;
     fn exec(&self) -> Result<Self::Output> {
         // let path = self.0.strip_prefix(current_dir()?)?;
-        if let Err(e) = load::from_single_file(load::Tag::NodeJS, &self.path) {
+        // TODO: should the scope of this loading be a handle or None ?
+        if let Err(e) = load::from_single_file(load::Tag::NodeJS, &self.path, None) {
             return Err(anyhow!(
                 "Cannot load render script: {e:?} \n  path: {:#?}",
                 self.path
