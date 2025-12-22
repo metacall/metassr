@@ -412,6 +412,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fastrand"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
+
+[[package]]
 name = "file-id"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -813,9 +819,9 @@ dependencies = [
 
 [[package]]
 name = "metacall"
-version = "0.5.3"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a4426ccc6c29749c4ef02c68a2ff075770b02a2a6bdc04c03d3101483dd95c9"
+checksum = "e4b4dca40b8e62399b8ccd47aece9e1b8712c82e1f4d271c8adf32d0b3b58975"
 dependencies = [
  "metacall-inline",
  "metacall-sys",
@@ -833,9 +839,9 @@ dependencies = [
 
 [[package]]
 name = "metacall-sys"
-version = "0.1.2"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90573f16c6ecec86326c251dba0651b0cdc67aae1885970a8ea457df25302b9f"
+checksum = "5691669137ed8dd625ba30c68a8f174f6d9aee1137445065aea50798cfda4e92"
 
 [[package]]
 name = "metassr"
@@ -848,7 +854,7 @@ dependencies = [
  "inquire",
  "lazy_static",
  "logger",
- "metacall 0.5.3",
+ "metacall 0.5.6",
  "metacall-sys",
  "metassr-build",
  "metassr-bundler",
@@ -876,7 +882,7 @@ version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "lazy_static",
- "metacall 0.5.3",
+ "metacall 0.5.6",
  "metacall-sys",
  "metassr-bundler",
  "metassr-fs-analyzer",
@@ -884,6 +890,7 @@ dependencies = [
  "metassr-utils",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -892,7 +899,7 @@ version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "lazy_static",
- "metacall 0.5.3",
+ "metacall 0.5.6",
  "metacall-sys",
  "metassr-utils",
  "serde_json",
@@ -908,7 +915,7 @@ dependencies = [
  "clap",
  "inquire",
  "logger",
- "metacall 0.5.3",
+ "metacall 0.5.6",
  "metacall-sys",
  "metassr-build",
  "metassr-create",
@@ -1524,6 +1531,19 @@ name = "sync_wrapper"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
+
+[[package]]
+name = "tempfile"
+version = "3.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d31c77bdf42a745371d260a26ca7163f1e0924b64afa0b688e61b5a9fa02f16"
+dependencies = [
+ "fastrand",
+ "getrandom",
+ "once_cell",
+ "rustix",
+ "windows-sys 0.60.2",
+]
 
 [[package]]
 name = "thiserror"

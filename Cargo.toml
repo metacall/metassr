@@ -14,7 +14,7 @@ authors = ["Mohamed Emad (hulxxv@gmail.com)"]
 anyhow = "1.0.82"
 chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive"] }
-metacall = "0.5.3"
+metacall = "0.5.6"
 nu-ansi-term = "0.50.0"
 walkdir = "2.5.0"
 serde_json = "1.0.120"
@@ -45,16 +45,16 @@ metacall-sys = "0.1.2"
 
 [workspace]
 members = [
-    "crates/logger",
-    "crates/metassr-build",
-    "crates/metassr-server",
-    "crates/metassr-utils",
-    "crates/metassr-html",
-    "metassr-cli",
-    "crates/metassr-create",
-    "crates/metassr-bundler",
-    "crates/metassr-fs-analyzer",
-    "crates/metassr-watcher",
+  "crates/logger",
+  "crates/metassr-build",
+  "crates/metassr-server",
+  "crates/metassr-utils",
+  "crates/metassr-html",
+  "metassr-cli",
+  "crates/metassr-create",
+  "crates/metassr-bundler",
+  "crates/metassr-fs-analyzer",
+  "crates/metassr-watcher",
 ]
 
 [workspace.package]

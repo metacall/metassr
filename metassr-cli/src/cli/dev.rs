@@ -98,7 +98,6 @@ impl Dev {
                         .clone()
                         // .expect("Rebuild failed")
                         .rebuild(rebuild_type)
-                        .await
                     {
                         error!("Rebuild failed: {}", e);
                     }

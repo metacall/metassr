@@ -100,7 +100,8 @@ impl<'a> WebBundler<'a> {
         let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
         if !guard.is_true() {
             // If not loaded, attempt to load the script into MetaCall
-            if let Err(e) = load::from_memory(load::Tag::NodeJS, BUILD_SCRIPT) {
+            // println!("{:?}", BUILD_SCRIPT);
+            if let Err(e) = load::from_memory(load::Tag::NodeJS, BUILD_SCRIPT, None) {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
             }
             // Mark the script as loaded
@@ -150,7 +151,6 @@ impl<'a> WebBundler<'a> {
         .unwrap();
 
         // Set the resolve and reject handlers for the bundling future
-        // TODO: uncomment this code and resolve the error
         future.then(resolve).catch(reject).await_fut();
 
         // Lock the mutex and wait for the bundling process to complete

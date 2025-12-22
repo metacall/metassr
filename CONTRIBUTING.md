@@ -2,6 +2,74 @@
 
 Thank you for your interest in contributing to MetaSSR! We welcome contributions from the community to help improve and expand the framework. Please follow the guidelines below to ensure your contributions are effective and align with the project's goals.
 
+## Table of contents
+- [Development Setup](#development-setup)
+- [How to Contribute](#how-to-contribute)
+
+## Development Setup
+
+To set up your development environment for MetaSSR, choose one of the following methods based on your preferences and system configuration:
+
+### Nix Flake (Recommended)
+
+The fastest way to get started with a fully configured development environment:
+
+1. **Install Nix** (if not already installed):
+   ```bash
+   sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
+   ```
+   
+2. **Enable Nix Flakes**:
+   ```bash
+   mkdir -p ~/.config/nix
+   echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+   ```
+
+3. **Enter Development Shell**:
+   ```bash
+   nix develop
+   ```
+
+This will automatically set up Rust, MetaCall, and all required dependencies in an isolated environment.
+
+<!--
+### Installation Script
+Run `./install.sh` to download MetaCall and link it for most distros without conflicts.
+-->
+<!--
+### Docker
+1. Build: `docker build -t metacall/metassr:dev -f Dockerfile.dev .`
+2. Run: `docker run --rm -it metacall/metassr:dev bash`
+-->
+
+### Manual Installation
+
+If you prefer to set up dependencies manually:
+
+1. **Install Rust Toolchain**:
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source ~/.cargo/env
+   ```
+
+2. **Install MetaCall Runtime**:
+   ```bash
+   curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+   ```
+
+3. **Clone and Build**:
+   ```bash
+   git clone https://github.com/metacall/metassr.git
+   cd metassr
+   cargo build --release
+   ```
+
+4. **Verify Installation**:
+   ```bash
+   cargo test
+   ./target/release/metassr --help
+   ```
+
 ## How to Contribute
 
 ### 1. Reporting Issues
@@ -36,7 +104,7 @@ To contribute code, follow these steps:
 
    ```bash
    git add .
-   git commit -m "Add feature: Description of the feature"
+   git commit -m "feat: Description of the feature"
    ```
 
 7. **Push Changes**: Push your changes to your forked repository:
@@ -83,7 +151,7 @@ also, you can test one of web applications that located at [tests](../../tests/)
 
 **Example:**
 ```bash
-$ cargo run --bin metassr-cli -- --root=tests/web-app --debug-mode=all run 
+$ cargo run --bin metassr -- --root=tests/web-app --debug-mode=all run 
 ```
 
 
@@ -96,4 +164,3 @@ Please adhere to our [Code of Conduct](code-of-conduct.md) while participating i
 If you have any questions or need assistance, feel free to reach out to us through the project's [discussion forum](https://github.com/metacall/metassr/discussions) or open an issue.
 
 Thank you for contributing to MetaSSR!
-

@@ -1,10 +1,14 @@
 use clap::ValueEnum;
 use metassr_create::Creator as MetassrCreator;
-use std::{fmt::Display, str::FromStr};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 use tracing::{error, info};
 
 use super::traits::Exec;
 
+// ANSI color codes
+pub const RESET: &str = "\x1b[0m";
+pub const YELLOW: &str = "\x1b[93m";
+pub const BLUE: &str = "\x1b[94m";
 pub struct Creator {
     project_name: String,
     version: String,
@@ -68,7 +72,7 @@ impl Exec for Creator {
             &self.project_name,
             &self.version,
             &self.description,
-            &self.template.to_string(),
+            &self.template.as_str(),
         )
         .generate()
         {
@@ -79,18 +83,33 @@ impl Exec for Creator {
     }
 }
 
-#[derive(Debug, ValueEnum, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, ValueEnum, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Template {
     Javascript,
     Typescript,
 }
+impl Template {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Template::Javascript => "javascript",
+            Template::Typescript => "typescript",
+        }
+    }
+}
 
 impl Display for Template {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match *self {
-            Self::Javascript => "javascript",
-            Self::Typescript => "typescript",
-        })
+        let templates =
+            HashMap::from([(Template::Javascript, YELLOW), (Template::Typescript, BLUE)]);
+        write!(
+            f,
+            "{}{}{RESET}",
+            templates.get(self).unwrap(),
+            match self {
+                Template::Javascript => "javascript",
+                Template::Typescript => "typescript",
+            }
+        )
     }
 }
 

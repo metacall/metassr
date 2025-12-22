@@ -61,9 +61,23 @@ docker run --rm -it metacall/metassr:dev bash
 
 ### Nix
 
-```sh
-TODO
-```
+1. **Install Nix** (if not already installed):
+   ```bash
+   sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
+   ```
+
+2. **Enable Nix Flakes**:
+   ```bash
+   mkdir -p ~/.config/nix
+   echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+   ```
+
+3. **Enter Development Shell**:
+   ```bash
+   nix develop
+   ```
+
+This will automatically set up Rust, MetaCall, and all required dependencies in an isolated environment.
 
 ## Code of Conduct
 
