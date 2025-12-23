@@ -62,11 +62,8 @@ mod tests {
         fs::write(&app_path, "// app").unwrap();
         fs::write(&page_path, "// page").unwrap();
 
-        let result = ServerRender::new(
-            app_path.to_str().unwrap(),
-            page_path.to_str().unwrap(),
-        )
-        .generate();
+        let result =
+            ServerRender::new(app_path.to_str().unwrap(), page_path.to_str().unwrap()).generate();
 
         assert!(result.is_ok());
         let (func_id, content) = result.unwrap();

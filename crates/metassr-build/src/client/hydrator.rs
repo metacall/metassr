@@ -62,7 +62,7 @@ mod tests {
         let result = Hydrator::new(
             app_path.to_str().unwrap(),
             page_path.to_str().unwrap(),
-            "root"
+            "root",
         )
         .generate();
 
