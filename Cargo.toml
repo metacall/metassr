@@ -40,7 +40,7 @@ metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
 metassr-watcher = { path = "crates/metassr-watcher" }
 
 [build-dependencies]
-metacall-sys = "0.1.2"
+metacall-sys = "0.1.4"
 
 [workspace]
 members = [

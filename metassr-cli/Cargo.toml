@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
 inquire = "0.9.1"
-metacall = "0.5.1"
+metacall = "0.5.6"
 
 axum = "0.7.5"
 tokio = "1.37.0"
@@ -24,4 +24,4 @@ metassr-create = { path = "../crates/metassr-create" }
 metassr-watcher = { path = "../crates/metassr-watcher" }
 
 [build-dependencies]
-metacall-sys = "0.1.2"
+metacall-sys = "0.1.4"
