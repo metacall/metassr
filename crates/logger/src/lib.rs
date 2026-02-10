@@ -145,7 +145,7 @@ impl LogFormat<'_> {
             .to_string()
     }
 
-    /// combaining fields into string
+    /// combining fields into string
     fn fields_as_str(&self) -> String {
         let mut fields_str = String::new();
         for (key, val) in self.fields.iter() {
