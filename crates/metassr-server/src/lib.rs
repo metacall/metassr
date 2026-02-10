@@ -144,6 +144,21 @@ impl Server {
             }
         }
 
+        // Register API routes from ./src/api/ directory
+        // This scans for .js files and registers GET/POST handlers
+        let src_path = self.configs.root_path.join("src");
+        if src_path.join("api").exists() {
+            match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path) {
+                Ok((router_with_api, _api_routes)) => {
+                    app = RouterMut::from(router_with_api);
+                    info!("API routes registered successfully");
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to register API routes: {}", e);
+                }
+            }
+        }
+
         PagesHandler::new(&mut app, &dist_dir, self.configs.running_type)?.build()?;
 
         // Apply middleware again after PagesHandler to catch dynamic HTML
