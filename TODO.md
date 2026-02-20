@@ -64,7 +64,7 @@
 
 - [ ] Finish API Handler & add languages support
 - [ ] dev mode
-  - [ ] websocket port now is hardcoded to `3001`
+  - [x] websocket port now is hardcoded to `3001`
   - [ ] Granular Rebuilds
     - right now, the `rebuild_page()` function rebuilds both client and server bundles entirely, this is slow. only rebuild changed pages, and eventually, changed components
   - [ ] implement real HMR, not just restarting the page (line 34 in live_reload.js)

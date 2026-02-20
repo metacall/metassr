@@ -10,7 +10,7 @@
 
     function connect() {
         if (ws) ws.close(); // Close old connection
-        ws = new WebSocket('ws://localhost:3001')
+        ws = new WebSocket('ws://localhost:__WS_PORT__')
         ws.onmessage = (event) => {
             const update = JSON.parse(event.data)
             const currentPath = window.location.pathname; //current page path
