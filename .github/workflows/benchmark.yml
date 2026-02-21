@@ -36,32 +36,109 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: tests/web-app/package-lock.json
+          node-version: '20'
 
       - name: Install wrk
         run: sudo apt-get update && sudo apt-get install -y wrk
 
-      - name: Build MetaSSR
-        run: cargo build --release
-
-      - name: Setup test app
-        working-directory: ./tests/web-app
-        run: npm install && npm run build
-
-      - name: Start server
-        working-directory: ./tests/web-app
+      - name: Benchmark MetaSSR
         run: |
+          cargo build --release
+          python3 benchmarks/benchmark.py
+          mkdir -p benchmarks/ci-results
+          mv .bench/results.json benchmarks/ci-results/metassr.json || true
+
+      - name: Create Next.js benchmark app
+        run: |
+          npx create-next-app@latest next-bench --use-npm --yes --no-eslint --no-tailwind --no-src-dir --app
+          cd next-bench
+          npm run build
+
+      - name: Start Next.js server
+        run: |
+          cd next-bench
           npm start &
           sleep 10
 
-      - name: Run benchmarks
-        run: python3 benchmarks/benchmark.py --skip-build
+      - name: Benchmark Next.js
+        run: |
+          python3 benchmarks/benchmark.py --url http://localhost:3000 --port 3000 --skip-build
+          mv .bench/results.json benchmarks/ci-results/nextjs.json || true
 
-      - name: Upload results
+      - name: Print Benchmark Summary
+        run: |
+          python3 << 'EOF'
+          import json
+
+          with open("benchmarks/ci-results/metassr.json") as f:
+              metassr = json.load(f)
+
+          with open("benchmarks/ci-results/nextjs.json") as f:
+              nextjs = json.load(f)
+
+          metassr_max = max(t["rps"] for t in metassr["tests"])
+          nextjs_max = max(t["rps"] for t in nextjs["tests"])
+
+          ratio = metassr_max / nextjs_max if nextjs_max else 0
+
+          print("\n================ BENCHMARK SUMMARY ================")
+          print(f"MetaSSR Max RPS : {metassr_max:,.0f}")
+          print(f"Next.js Max RPS : {nextjs_max:,.0f}")
+          print(f"Performance Ratio (MetaSSR / Next.js): {ratio:.2f}x")
+          print("===================================================\n")
+          EOF
+
+      - name: Comment Benchmark Results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            const metassr = JSON.parse(fs.readFileSync('benchmarks/ci-results/metassr.json', 'utf8'));
+            const nextjs = JSON.parse(fs.readFileSync('benchmarks/ci-results/nextjs.json', 'utf8'));
+
+            const metassrMax = Math.max(...metassr.tests.map(t => t.rps));
+            const nextjsMax = Math.max(...nextjs.tests.map(t => t.rps));
+            const ratio = nextjsMax > 0 ? (metassrMax / nextjsMax).toFixed(2) : "N/A";
+
+            const body = `
+              ## Benchmark Results
+              
+              **MetaSSR Max RPS:** ${metassrMax.toLocaleString()}
+              **Next.js Max RPS:** ${nextjsMax.toLocaleString()}
+
+              **Performance Ratio (MetaSSR / Next.js):** ${ratio}x
+              `;
+
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const existingComment = comments.data.find(comment =>
+              comment.body.includes("Benchmark Results")
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
+
+      - name: Upload CI Benchmark Results
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: .bench/
-          retention-days: 90
+          path: benchmarks/ci-results/
