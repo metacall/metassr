@@ -4,15 +4,17 @@
     "description": "",
     "main": "App.tsx",
     "scripts": {
-        "build": "../../target/release/metassr build",
-        "build:ssg": "../../target/release/metassr build -t ssg",
-        "start": "../../target/release/metassr run ",
-        "start:ssr": "../../target/release/metassr run --serve",
-        "build:debug": "../../target/debug/metassr --debug-mode=metacall build",
-        "build:debug:ssg": "../../target/debug/metassr --debug-mode=metacall build -t ssg",
-        "start:debug": "../../target/debug/metassr --debug-mode=metacall run",
-        "start:debug:ssg": "../../target/debug/metassr --debug-mode=metacall run --serve",
-        "dev": "npm run build:debug && ../../target/release/metassr --debug-mode=metacall dev"
+        "metassr": "cargo run --bin metassr --",
+        "metassr:release": "cargo run --release --bin metassr --",
+        "build": "npm run metassr:release -- build",
+        "build:ssg": "npm run metassr:release -- build -t ssg",
+        "start": "npm run metassr:release -- run",
+        "start:ssr": "npm run metassr:release -- run --serve",
+        "build:debug": "npm run metassr -- --debug-mode=metacall build",
+        "build:debug:ssg": "npm run metassr -- --debug-mode=metacall build -t ssg",
+        "start:debug": "npm run metassr -- --debug-mode=metacall run",
+        "start:debug:ssg": "npm run metassr -- --debug-mode=metacall run --serve",
+        "dev": "npm run build:debug && npm run metassr:release -- --debug-mode=metacall dev"
     },
     "devDependencies": {
         "@types/react": "^18.0.24",
