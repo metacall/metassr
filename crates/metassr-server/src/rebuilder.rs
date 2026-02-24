@@ -32,6 +32,11 @@ pub enum RebuildType {
     // Reload Styles only.
     Style,
     Static,
+    /// A compilation error occurred during rebuild, the error message is forwarded to the browser
+    /// so the dev mode overlay can display it
+    BuildError {
+        errors: Vec<String>,
+    },
 }
 
 impl fmt::Display for RebuildType {
@@ -44,6 +49,7 @@ impl fmt::Display for RebuildType {
             RebuildType::Component => write!(f, "component"),
             RebuildType::Style => write!(f, "style"),
             RebuildType::Static => write!(f, "static"),
+            RebuildType::BuildError { errors } => write!(f, "build_error:{}", errors.join(", ")),
         }
     }
 }
@@ -54,6 +60,7 @@ pub struct Rebuilder {
     out_dir: PathBuf,
     building_type: BuildingType,
     is_rebuilding: Arc<AtomicBool>,
+    pub last_errors: Arc<std::sync::Mutex<Option<Vec<String>>>>,
 }
 
 impl Rebuilder {
@@ -67,11 +74,20 @@ impl Rebuilder {
             out_dir,
             building_type,
             is_rebuilding: Arc::new(AtomicBool::new(false)),
+            last_errors: Arc::new(std::sync::Mutex::new(None)),
         })
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<RebuildType> {
         self.sender.subscribe()
+    }
+
+    pub fn building_type(&self) -> BuildingType {
+        self.building_type
+    }
+
+    pub fn out_dir(&self) -> &PathBuf {
+        &self.out_dir
     }
 
     pub fn handle_event(&self, event: DebouncedEvent) -> Result<RebuildType> {
@@ -117,7 +133,19 @@ impl Rebuilder {
             RebuildType::Page(ref path) => {
                 debug!("entered rebuilding {:?} in {:?}", rebuild_type, path);
 
-                self.rebuild_page(path.clone())?;
+                if let Err(e) = self.rebuild_page(path.clone()) {
+                    let err_msg = e.to_string();
+                    *self.last_errors.lock().unwrap() = Some(vec![err_msg.clone()]);
+                    // Broadcast the error so the browser overlay can display it
+                    let _ = self.sender.send(RebuildType::BuildError {
+                        errors: vec![err_msg],
+                    });
+                    self.is_rebuilding.store(false, Ordering::SeqCst);
+                    return Err(e);
+                } else {
+                    *self.last_errors.lock().unwrap() = None;
+                }
+
                 match self.sender.send(rebuild_type.clone()) {
                     Ok(rec) => {
                         debug!("Sent to: {rec} receivers")
@@ -143,6 +171,10 @@ impl Rebuilder {
                 // todo
                 debug!("entered rebuilding {:?}", rebuild_type);
             }
+            RebuildType::BuildError { .. } => {
+                // BuildError is only ever emitted by rebuild() itself, receiving one as
+                // an input here is a no-op
+            }
         }
 
         self.is_rebuilding.store(false, Ordering::SeqCst);
@@ -166,11 +198,14 @@ impl Rebuilder {
             .build();
 
             if let Err(e) = client_builder {
-                error!(
-                    target = "rebuilder",
-                    message = format!("Couldn't build for the client side:  {e}"),
-                );
-                return Err(anyhow!("Couldn't continue rebuilding process."));
+                let msg = format!("Client-side build failed: {e}");
+
+                // strip ANSI escape codes for cleaner logs
+                let ansi_regex = regex::Regex::new(r"\\u\{1b\}\[[0-9;]*m").unwrap();
+                let clean_log_msg = ansi_regex.replace_all(&msg, "").to_string();
+
+                error!(target = "rebuilder", message = clean_log_msg);
+                return Err(anyhow!(msg));
             }
 
             debug!(
@@ -193,11 +228,9 @@ impl Rebuilder {
             )?;
 
             if let Err(e) = server_builder.build() {
-                error!(
-                    target = "rebuilder",
-                    message = format!("Failed to build server-side for {}: {}", path.display(), e)
-                );
-                return Err(anyhow!("Server-side build failed"));
+                let msg = format!("Server-side build failed for {}: {e}", path.display());
+                error!(target = "rebuilder", message = msg);
+                return Err(anyhow!(msg));
             }
 
             debug!(

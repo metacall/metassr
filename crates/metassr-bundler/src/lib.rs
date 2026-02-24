@@ -18,6 +18,9 @@ lazy_static! {
 
     /// A simple checker to check if the bundling function is done or not. It is used to block the program until bundling done.
     static ref IS_COMPILATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
+
+    /// A container for the most recent bundling error that was resolved from the JS script
+    pub static ref BUNDLING_ERROR: Mutex<Option<String>> = Mutex::new(None);
 }
 static BUILD_SCRIPT: &str = include_str!("./bundle.js");
 const BUNDLING_FUNC: &str = "web_bundling";
@@ -118,6 +121,15 @@ impl<'a> WebBundler<'a> {
             let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
+            let res_str = format!("{:?}", result);
+            if res_str.contains("ERROR:") {
+                let msg = res_str.replace("String(\"", "").replace("\")", "");
+                let msg = msg.replace("\\n", "\n");
+                *BUNDLING_ERROR.lock().unwrap() = Some(msg);
+            } else {
+                *BUNDLING_ERROR.lock().unwrap() = None;
+            }
+
             // Mark the process as completed and notify waiting threads
             started.make_true();
             compilation_wait.cond.notify_one();
@@ -132,6 +144,8 @@ impl<'a> WebBundler<'a> {
 
             // Log the bundling error and mark the process as completed
             error!("Bundling rejected: {err:?}");
+            *BUNDLING_ERROR.lock().unwrap() = Some(format!("Bundling rejected: {err:?}"));
+
             started.make_true();
             compilation_wait.cond.notify_one();
 
@@ -164,6 +178,12 @@ impl<'a> WebBundler<'a> {
 
         // Reset the checker state to false after the process completes
         started.make_false();
+
+        let mut err_guard = BUNDLING_ERROR.lock().unwrap();
+        if let Some(err_msg) = err_guard.take() {
+            return Err(anyhow::anyhow!("{}", err_msg));
+        }
+
         Ok(())
     }
 }

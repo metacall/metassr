@@ -27,3 +27,4 @@ notify = { version = "8.0.0", features = ["serde"] }
 notify-debouncer-full = "0.6.0"
 walkdir = "2"
 metassr-api-handler = { path = "../metassr-api-handler" }
+regex = "1.12.3"

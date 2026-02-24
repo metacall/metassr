@@ -2,16 +2,16 @@ use std::env::current_dir;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use tokio::sync::broadcast;
-
 use anyhow::Result;
+use tokio::sync::broadcast;
 
 use metacall::initialize;
 use metassr_build::server::BuildingType;
+use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
 use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
-
+use regex::Regex;
 use tracing::{debug, error};
 
 use super::traits::AsyncExec;
@@ -93,13 +93,16 @@ impl Dev {
             let rebuilder = Arc::clone(&rebuilder);
 
             async move {
+                let ansi_regex = regex::Regex::new(r"\\u\{1b\}\[[0-9;]*m").unwrap();
                 while let Ok(rebuild_type) = rebuild_rx.recv().await {
                     if let Err(e) = rebuilder
                         .clone()
                         // .expect("Rebuild failed")
                         .rebuild(rebuild_type)
                     {
-                        error!("Rebuild failed: {}", e);
+                        let err_msg = e.to_string();
+                        let clean_log_msg = ansi_regex.replace_all(&err_msg, "");
+                        error!("Rebuild failed: {}", clean_log_msg);
                     }
                 }
             }
@@ -130,6 +133,41 @@ impl AsyncExec for Dev {
 
         let cache_dir = current.join("dist/cache/pages");
         debug!("Checking cache directory: {:?}", cache_dir);
+
+        // perform an initial build pass to catch any pre existing errors
+        let out_dir = self.rebuilder.out_dir().to_string_lossy().to_string();
+
+        // client build
+        if let Err(e) = ClientBuilder::new("", &out_dir)?.build() {
+            let bundling_err = metassr_bundler::BUNDLING_ERROR.lock().unwrap().clone();
+            let err_msg = if let Some(bundling_msg) = bundling_err {
+                format!("Client-side build failed: {}", bundling_msg)
+            } else {
+                format!("Client build failed: {}", e)
+            };
+            // Clean up the error message for the terminal
+            let ansi_regex = Regex::new(r"\\u\{1b\}\[[0-9;]*m").unwrap();
+            let clean_log_msg = ansi_regex.replace_all(&err_msg, "");
+
+            error!(
+                "Initial build failed, caching error for overlay: {}",
+                clean_log_msg
+            );
+            *self.rebuilder.last_errors.lock().unwrap() = Some(vec![err_msg]);
+        } else {
+            // server build
+            let stype = self.rebuilder.building_type();
+            if let Err(e) = ServerSideBuilder::new("", &out_dir, stype)?.build() {
+                let err_msg = format!("Server build failed: {}", e);
+                let ansi_regex = Regex::new(r"\\u\{1b\}\[[0-9;]*m").unwrap();
+                let clean_log_msg = ansi_regex.replace_all(&err_msg, "");
+                error!(
+                    "Initial build failed, caching error for overlay: {}",
+                    clean_log_msg
+                );
+                *self.rebuilder.last_errors.lock().unwrap() = Some(vec![err_msg]);
+            }
+        }
 
         self.handle_file_changes().await?;
 

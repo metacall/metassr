@@ -16,28 +16,46 @@ struct LiveReloadMessage {
     #[serde(rename = "type")]
     type_: String,
     path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    errors: Option<Vec<String>>,
 }
 
 impl RebuildType {
     fn as_message(&self) -> LiveReloadMessage {
-        let (type_, path) = match self {
-            RebuildType::Page(path) => {
-                ("page".to_string(), Some(path.to_string_lossy().to_string()))
-            }
-            _ => (self.to_string(), None),
-        };
-
-        LiveReloadMessage { type_, path }
+        match self {
+            RebuildType::Page(path) => LiveReloadMessage {
+                type_: "page".to_string(),
+                path: Some(path.to_string_lossy().to_string()),
+                errors: None,
+            },
+            RebuildType::BuildError { errors } => LiveReloadMessage {
+                type_: "build_error".to_string(),
+                path: None,
+                errors: Some(errors.clone()),
+            },
+            _ => LiveReloadMessage {
+                type_: self.to_string(),
+                path: None,
+                errors: None,
+            },
+        }
     }
 }
 
 pub struct LiveReloadServer {
     receiver: Receiver<RebuildType>,
+    last_errors: std::sync::Arc<std::sync::Mutex<Option<Vec<String>>>>,
 }
 
 impl LiveReloadServer {
-    pub fn new(receiver: Receiver<RebuildType>) -> Self {
-        Self { receiver }
+    pub fn new(
+        receiver: Receiver<RebuildType>,
+        last_errors: std::sync::Arc<std::sync::Mutex<Option<Vec<String>>>>,
+    ) -> Self {
+        Self {
+            receiver,
+            last_errors,
+        }
     }
 
     pub async fn handle_connection(mut self, stream: TcpStream) {
@@ -46,6 +64,17 @@ impl LiveReloadServer {
             .expect("Error during websocket handshake");
 
         let (mut ws_sender, _) = ws_stream.split();
+
+        // immediately send the last known error if there is one on handshake
+        let last_err_msgs = self.last_errors.lock().unwrap().clone();
+        if let Some(err_msgs) = last_err_msgs {
+            let message = RebuildType::BuildError { errors: err_msgs }.as_message();
+            if let Ok(message_json) = serde_json::to_string(&message) {
+                // Add a tiny delay to ensure the browser has attached the onmessage handler
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                let _ = ws_sender.send(Message::Text(message_json.into())).await;
+            }
+        }
 
         while let Ok(rebuild_type) = self.receiver.recv().await {
             let message = rebuild_type.as_message();

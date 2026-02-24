@@ -74,7 +74,7 @@
   - [ ] Style Rebuild
   - [ ] Static Asset Rebuild
   - [ ] **Big Feature:** Add debugging tools inside dev-mode. like Vue js
-    - [ ] Compile error overlay in browser (like Next.js/Vite)
+    - [x] Compile error overlay in browser (like Next.js/Vite)
       - Right now if a build fails, the user has to check the terminal. A red error overlay in the browser is a huge DX improvement.
 
 - [ ] Proper Documentation for most of the crates
