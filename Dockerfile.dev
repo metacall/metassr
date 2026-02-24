@@ -37,6 +37,9 @@ RUN cargo build
 # Unit test debug image
 FROM build_debug AS unit_test_debug
 
+RUN npm --prefix /root/crates/metassr-bundler/tests install
+ENV NODE_PATH="/root/crates/metassr-bundler/tests/node_modules"
+
 # Run tests in debug mode
 RUN cargo test --workspace --verbose
 
@@ -63,6 +66,9 @@ RUN cargo build --release
 
 # Unit test release image
 FROM build_release AS unit_test_release
+
+RUN npm --prefix /root/crates/metassr-bundler/tests install
+ENV NODE_PATH="/root/crates/metassr-bundler/tests/node_modules"
 
 # Run tests in release mode
 RUN cargo test --workspace --verbose --release
