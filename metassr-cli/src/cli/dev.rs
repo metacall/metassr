@@ -18,6 +18,7 @@ use super::traits::AsyncExec;
 
 pub struct Dev {
     port: u16,
+    ws_port: u16,
     // todo change this to a normal option, and edit impl asyncexec
     watcher: Arc<Mutex<Option<FileWatcher>>>,
     rebuilder: Arc<Rebuilder>,
@@ -26,7 +27,12 @@ pub struct Dev {
 }
 
 impl Dev {
-    pub fn new(port: u16, root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
+    pub fn new(
+        port: u16,
+        ws_port: u16,
+        root_path: PathBuf,
+        building_type: BuildingType,
+    ) -> Result<Self> {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
@@ -34,6 +40,7 @@ impl Dev {
 
         Ok(Self {
             port,
+            ws_port,
             watcher,
             rebuilder,
             root_path,
@@ -107,6 +114,7 @@ impl Dev {
 
         let server_configs = ServerConfigs {
             port: self.port,
+            ws_port: self.ws_port,
             _enable_http_logging: true,
             root_path: self.root_path.clone(),
             running_type: RunningType::ServerSideRendering,

@@ -57,6 +57,7 @@ impl std::fmt::Display for RunningType {
 
 pub struct ServerConfigs {
     pub port: u16,
+    pub ws_port: u16,
     pub _enable_http_logging: bool,
     pub root_path: PathBuf,
     pub running_type: RunningType,
@@ -90,25 +91,31 @@ impl Server {
 
         if let ServerMode::Development = self.configs.mode {
             info!("Configuring server for development mode");
-            let live_reload_script = include_str!("scripts/live-reload.js");
+            let ws_port = self.configs.ws_port;
+            // Inject the ws_port into the live-reload script at runtime
+            let live_reload_script =
+                include_str!("scripts/live-reload.js").replace("__WS_PORT__", &ws_port.to_string());
             base_router = base_router.route(
                 "/livereload/script.js",
-                get(|| async {
-                    info!("Serving live-reload.js");
-                    axum::response::Response::builder()
-                        .header("Content-Type", "application/javascript")
-                        .body(live_reload_script.to_string())
-                        .unwrap()
+                get(move || {
+                    let script = live_reload_script.clone();
+                    async move {
+                        info!("Serving live-reload.js");
+                        axum::response::Response::builder()
+                            .header("Content-Type", "application/javascript")
+                            .body(script)
+                            .unwrap()
+                    }
                 }),
             );
             // Apply live reload middleware
             base_router = base_router.layer(axum::middleware::from_fn(inject_live_reload_script));
 
             // Start the WebSocket server for live reload
-            let ws_listener = TcpListener::bind("127.0.0.1:3001")
+            let ws_listener = TcpListener::bind(format!("127.0.0.1:{ws_port}"))
                 .await
                 .map_err(|e| anyhow::anyhow!("WebSocket bind error: {}", e))?;
-            debug!(
+            info!(
                 "WebSocket server listening on {:?}",
                 ws_listener.local_addr()?
             );
