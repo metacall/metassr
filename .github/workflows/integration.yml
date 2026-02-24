@@ -49,6 +49,8 @@ jobs:
       - name: Integration Testing
         working-directory: ./tests/web-app
         shell: bash
+        env:
+          npm_config_script_shell: bash
         run: |
           npm install
           npm run build:debug
