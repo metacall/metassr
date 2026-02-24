@@ -48,6 +48,7 @@ jobs:
 
       - name: Integration Testing
         working-directory: ./tests/web-app
+        shell: bash
         run: |
           npm install
           npm run build:debug
