@@ -8,7 +8,7 @@ use tokio::sync::broadcast;
 pub struct FileWatcher {
     watcher: notify_debouncer_full::Debouncer<
         notify::RecommendedWatcher,
-        notify_debouncer_full::NoCache,
+        notify_debouncer_full::RecommendedCache,
     >,
     sender: broadcast::Sender<DebouncedEvent>,
 }
