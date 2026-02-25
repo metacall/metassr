@@ -90,7 +90,12 @@ pub enum Commands {
     },
 
     Dev {
+        /// port number on which the HTTP server will run
         #[arg(long, default_value_t = 8080)]
         port: u16,
+
+        /// port number for the WebSocket live reload server
+        #[arg(long, default_value_t = 3001)]
+        ws_port: u16,
     },
 }

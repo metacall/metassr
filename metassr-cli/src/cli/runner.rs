@@ -31,6 +31,7 @@ impl AsyncExec for Runner {
 
         let server_configs = ServerConfigs {
             port: self.port,
+            ws_port: 0, // not used in production mode
             _enable_http_logging: self.allow_http_debug,
             root_path: current_dir()?,
             running_type,
