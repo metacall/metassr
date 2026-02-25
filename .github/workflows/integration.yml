@@ -52,6 +52,14 @@ jobs:
         env:
           npm_config_script_shell: bash
         run: |
+          case "${RUNNER_OS}" in
+            Windows)
+              export PATH="/c/Users/runneradmin/AppData/Local/MetaCall/metacall/lib:$PATH"
+              ;;
+            macOS)
+              export PATH="/usr/local/Cellar/metacall/current/lib:$PATH"
+              ;;
+          esac
           npm install
           npm run build:debug
           npm run start:debug &
