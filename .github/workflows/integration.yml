@@ -1,10 +1,10 @@
 name: Integration Test
 
-on: 
+on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
   workflow_dispatch:
 
 concurrency:
@@ -16,22 +16,18 @@ jobs:
     name: Test
     runs-on: ${{ matrix.os }}
     strategy:
-        fail-fast: false
-        matrix:
-          os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install MetaCall Linux (debug)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install MetaCall UNIX (debug)
+        if: matrix.os == 'ubuntu-latest' || 'macos-latest'
         run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh -s -- --debug
-
-      - name: Install MetaCall MacOS
-        if: matrix.os == 'macos-latest'
-        run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
 
       - name: Install MetaCall Windows
         if: matrix.os == 'windows-latest'
@@ -48,6 +44,9 @@ jobs:
 
       - name: Integration Testing
         working-directory: ./tests/web-app
+        shell: bash
+        env:
+          npm_config_script_shell: bash
         run: |
           npm install
           npm run build:debug

@@ -26,19 +26,23 @@ fn main() {
         })
     {
         let path = entry.path();
-        let relative_path = path.strip_prefix(templates_dir).unwrap().to_str().unwrap();
-        let template_name = relative_path.split('/').next().unwrap();
-        let file_name = relative_path
-            .split('/')
-            .skip(1)
+        let relative_path = path.strip_prefix(templates_dir).unwrap();
+        let mut components = relative_path.components();
+        let template_name = components
+            .next()
+            .expect("template root dir should be present")
+            .as_os_str()
+            .to_string_lossy()
+            .into_owned();
+        let file_name = components
+            .map(|component| component.as_os_str().to_string_lossy())
             .collect::<Vec<_>>()
             .join("/");
+        let canonical_path = path.canonicalize().unwrap();
+        let canonical_path = canonical_path.to_string_lossy();
 
         generated_code.push_str(&format!(
-            "    templates.entry(\"{}\".to_string()).or_insert_with(HashMap::new).insert(\"{}\".to_string(), include_bytes!(r#\"{}\"#).to_vec());\n",
-            template_name,
-            file_name,
-            path.canonicalize().unwrap().display()
+            "    templates.entry({template_name:?}.to_string()).or_insert_with(HashMap::new).insert({file_name:?}.to_string(), include_bytes!({canonical_path:?}).to_vec());\n",
         ));
     }
 

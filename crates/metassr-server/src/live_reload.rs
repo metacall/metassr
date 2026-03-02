@@ -88,7 +88,7 @@ impl LiveReloadServer {
     }
 }
 
-/// middlware to indject the live-reload.js script
+/// middleware to inject the live-reload.js script
 pub async fn inject_live_reload_script(
     req: Request<Body>,
     next: Next,

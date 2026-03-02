@@ -195,7 +195,7 @@ mod tests {
     use metacall::initialize;
 
     fn clean() {
-        let dist = Path::new("test/dist");
+        let dist = Path::new("tests/dist");
         if dist.exists() {
             std::fs::remove_dir_all(dist).unwrap();
         }
@@ -222,7 +222,6 @@ mod tests {
     #[test]
     fn invalid_target_fails() {
         clean();
-        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("invalid_path.tsx".to_owned(), "invalid_path".to_owned())]);
 
         let bundler = WebBundler::new(&targets, "tests/dist");

@@ -48,13 +48,27 @@ impl Generate for ServerRender {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
     #[test]
     fn generate_render_file() {
-        println!(
-            "{:?}",
-            ServerRender::new("src/_app.tsx", "src/pages/home.jsx")
-                .generate()
-                .unwrap()
-        );
+        let temp_dir = TempDir::new().unwrap();
+        let app_path = temp_dir.path().join("_app.tsx");
+        let pages_dir = temp_dir.path().join("pages");
+        fs::create_dir_all(&pages_dir).unwrap();
+        let page_path = pages_dir.join("home.jsx");
+
+        fs::write(&app_path, "// app").unwrap();
+        fs::write(&page_path, "// page").unwrap();
+
+        let result =
+            ServerRender::new(app_path.to_str().unwrap(), page_path.to_str().unwrap()).generate();
+
+        assert!(result.is_ok());
+        let (func_id, content) = result.unwrap();
+        assert!(func_id != 0);
+        assert!(!content.is_empty());
+        println!("Generated: {:?}", (func_id, content));
     }
 }

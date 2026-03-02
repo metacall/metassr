@@ -57,7 +57,7 @@ impl Dev {
         watcher.watch(Path::new(&src_dir))?;
         watcher.watch(Path::new(&static_dir))?;
 
-        // store the watcher in the option, by modifing it with a lock on the mutex
+        // store the watcher in the option, by modifying it with a lock on the mutex
         let mut watcher_guard = self.watcher.lock().unwrap();
         *watcher_guard = Some(watcher);
         Ok(())

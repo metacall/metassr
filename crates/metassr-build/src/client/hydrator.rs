@@ -45,13 +45,30 @@ impl Generate for Hydrator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
     #[test]
     fn generate_hydrated_file() {
-        println!(
-            "{}",
-            Hydrator::new("src/_app.tsx", "src/pages/home.jsx", "root")
-                .generate()
-                .unwrap()
-        );
+        let temp_dir = TempDir::new().unwrap();
+        let app_path = temp_dir.path().join("_app.tsx");
+        let pages_dir = temp_dir.path().join("pages");
+        fs::create_dir_all(&pages_dir).unwrap();
+        let page_path = pages_dir.join("home.jsx");
+
+        fs::write(&app_path, "// app").unwrap();
+        fs::write(&page_path, "// page").unwrap();
+
+        let result = Hydrator::new(
+            app_path.to_str().unwrap(),
+            page_path.to_str().unwrap(),
+            "root",
+        )
+        .generate();
+
+        assert!(result.is_ok());
+        let content = result.unwrap();
+        assert!(!content.is_empty());
+        println!("Generated: {:?}", content);
     }
 }
