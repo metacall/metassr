@@ -129,13 +129,13 @@ async function webBundling(entry, dist) {
     return new Promise((resolve, reject) => {
         compiler.run((error, stats) => {
             if (error) {
-                return resolve(`ERROR: Bundling failed: ${error.message}`);
+                return reject(new Error(`Bundling failed: ${error.message}`));
             }
 
             if (stats && stats.hasErrors()) {
                 const info = stats.toJson();
                 const errors = info.errors ? info.errors.map(e => e.message).join('\n') : 'Unknown compilation errors';
-                return resolve(`ERROR: Compilation errors:\n${errors}`);
+                return reject(new Error(`Compilation errors:\n${errors}`));
             }
 
             resolve(0);

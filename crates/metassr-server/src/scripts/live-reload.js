@@ -113,7 +113,7 @@
 			const pre = document.createElement('pre');
 			// strip ANSI escape codes from terminal output including Rust escaped format like \u{1b}[31m
 			const cleanMessage = (msg || '').replace(/(\\u(?:\{1b}|001b)|[\u001b\u009b])[[\]()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-			pre.textContent = cleanMessage.replace('Client-side build failed: Bundling failed: "ERROR: Compilation errors:\n', '').replace('"\nFix the error and save the file — this overlay will disappear automatically.', '');
+			pre.textContent = cleanMessage;
 			pre.style.cssText = [
 				`margin: ${index === 0 ? '0' : '16px 0 0 0'}`,
 				'white-space: pre-wrap',
@@ -130,7 +130,7 @@
 		});
 
 		const hint = document.createElement('p');
-		hint.textContent = 'This error occurred during the build process and can only be dismissed by fixing the error.';
+		hint.textContent = 'This error occurred during the build process. Fix the error to make this overlay disappear automatically or close it manually to continue.';
 		hint.style.cssText = [
 			'margin: 24px 0 0',
 			'color: #6b7280',
@@ -153,6 +153,11 @@
     function connect() {
         if (ws) ws.close(); // Close old connection
         ws = new WebSocket('ws://localhost:__WS_PORT__')
+        ws.onopen = () => {
+            // signal to the server that the message handler is ready so it can
+            // immediately push any cached build errors without an arbitrary delay.
+            ws.send(JSON.stringify({ type: 'ready' }));
+        };
         ws.onmessage = (event) => {
             const update = JSON.parse(event.data)
             const currentPath = window.location.pathname; //current page path

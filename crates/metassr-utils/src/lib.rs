@@ -17,6 +17,7 @@
 /// ```
 pub mod cache_dir;
 
+pub mod ansi;
 /// This module contains a simple utility for managing a boolean state that can be toggled on or off.
 /// It allows for easy manipulation of the state with utility methods to set it to `true` or `false`.
 ///

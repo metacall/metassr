@@ -6,6 +6,8 @@ use std::{
     },
 };
 
+use metassr_utils::ansi::ansi_regex;
+
 use anyhow::{anyhow, Result};
 use metassr_build::{
     client::ClientBuilder,
@@ -60,7 +62,7 @@ pub struct Rebuilder {
     out_dir: PathBuf,
     building_type: BuildingType,
     is_rebuilding: Arc<AtomicBool>,
-    pub last_errors: Arc<std::sync::Mutex<Option<Vec<String>>>>,
+    last_errors: Arc<std::sync::Mutex<Option<Vec<String>>>>,
 }
 
 impl Rebuilder {
@@ -88,6 +90,18 @@ impl Rebuilder {
 
     pub fn out_dir(&self) -> &PathBuf {
         &self.out_dir
+    }
+
+    pub fn last_errors(&self) -> Arc<std::sync::Mutex<Option<Vec<String>>>> {
+        Arc::clone(&self.last_errors)
+    }
+
+    pub fn set_last_errors(&self, errors: Vec<String>) {
+        *self.last_errors.lock().unwrap() = Some(errors);
+    }
+
+    pub fn clear_last_errors(&self) {
+        *self.last_errors.lock().unwrap() = None;
     }
 
     pub fn handle_event(&self, event: DebouncedEvent) -> Result<RebuildType> {
@@ -135,7 +149,7 @@ impl Rebuilder {
 
                 if let Err(e) = self.rebuild_page(path.clone()) {
                     let err_msg = e.to_string();
-                    *self.last_errors.lock().unwrap() = Some(vec![err_msg.clone()]);
+                    self.set_last_errors(vec![err_msg.clone()]);
                     // Broadcast the error so the browser overlay can display it
                     let _ = self.sender.send(RebuildType::BuildError {
                         errors: vec![err_msg],
@@ -143,7 +157,7 @@ impl Rebuilder {
                     self.is_rebuilding.store(false, Ordering::SeqCst);
                     return Err(e);
                 } else {
-                    *self.last_errors.lock().unwrap() = None;
+                    self.clear_last_errors();
                 }
 
                 match self.sender.send(rebuild_type.clone()) {
@@ -199,10 +213,7 @@ impl Rebuilder {
 
             if let Err(e) = client_builder {
                 let msg = format!("Client-side build failed: {e}");
-
-                // strip ANSI escape codes for cleaner logs
-                let ansi_regex = regex::Regex::new(r"\\u\{1b\}\[[0-9;]*m").unwrap();
-                let clean_log_msg = ansi_regex.replace_all(&msg, "").to_string();
+                let clean_log_msg = ansi_regex().replace_all(&msg, "").to_string();
 
                 error!(target = "rebuilder", message = clean_log_msg);
                 return Err(anyhow!(msg));

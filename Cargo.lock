@@ -892,6 +892,7 @@ dependencies = [
  "metassr-bundler",
  "metassr-create",
  "metassr-server",
+ "metassr-utils",
  "metassr-watcher",
  "regex",
  "tokio",
@@ -958,6 +959,7 @@ name = "metassr-utils"
 version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
+ "regex",
  "serde",
  "walkdir",
 ]

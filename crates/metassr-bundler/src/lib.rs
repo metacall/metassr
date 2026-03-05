@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
-use metacall::{load, metacall, MetaCallFuture, MetaCallValue};
+use metacall::{load, match_metacall_value_ref, metacall, MetaCallFuture, MetaCallValue};
 use metassr_utils::checker::CheckerState;
 use std::{
     any::Any,
@@ -121,14 +121,14 @@ impl<'a> WebBundler<'a> {
             let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
-            let res_str = format!("{:?}", result);
-            if res_str.contains("ERROR:") {
-                let msg = res_str.replace("String(\"", "").replace("\")", "");
-                let msg = msg.replace("\\n", "\n");
-                *BUNDLING_ERROR.lock().unwrap() = Some(msg);
-            } else {
-                *BUNDLING_ERROR.lock().unwrap() = None;
-            }
+            // extract the returned JS value as a typed String (avoids fragile Debug-format parsing)
+            let msg: Option<String> = match_metacall_value_ref!(result, {
+                s: String => {
+                    if s.contains("ERROR:") { Some(s.clone()) } else { None }
+                },
+                _ => None
+            });
+            *BUNDLING_ERROR.lock().unwrap() = msg;
 
             // Mark the process as completed and notify waiting threads
             started.make_true();

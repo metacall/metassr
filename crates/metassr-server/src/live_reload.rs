@@ -63,15 +63,25 @@ impl LiveReloadServer {
             .await
             .expect("Error during websocket handshake");
 
-        let (mut ws_sender, _) = ws_stream.split();
+        let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
-        // immediately send the last known error if there is one on handshake
+        // immediately send the last known error if there is one on handshake,
+        // but wait for the client's ready signal first so that the
+        // onmessage handler is guaranteed to be in place before we push anything
         let last_err_msgs = self.last_errors.lock().unwrap().clone();
         if let Some(err_msgs) = last_err_msgs {
+            // drain incoming frames until the client sends {type:"ready"}
+            'ready: while let Some(msg_result) = ws_receiver.next().await {
+                if let Ok(Message::Text(text)) = msg_result {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&text) {
+                        if parsed.get("type").and_then(|t| t.as_str()) == Some("ready") {
+                            break 'ready;
+                        }
+                    }
+                }
+            }
             let message = RebuildType::BuildError { errors: err_msgs }.as_message();
             if let Ok(message_json) = serde_json::to_string(&message) {
-                // Add a tiny delay to ensure the browser has attached the onmessage handler
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                 let _ = ws_sender.send(Message::Text(message_json.into())).await;
             }
         }
