@@ -89,6 +89,7 @@ pub enum Commands {
         template: Option<Template>,
     },
 
+    /// Starts the development server with file watching and live reload.
     Dev {
         /// port number on which the HTTP server will run
         #[arg(long, default_value_t = 8080)]

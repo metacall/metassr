@@ -25,8 +25,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install MetaCall UNIX (debug)
-        if: matrix.os == 'ubuntu-latest' || 'macos-latest'
+      - name: Install MetaCall Unix (Debug)
+        if: matrix.os == 'ubuntu-latest' ||  matrix.os == 'macos-latest'
         run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh -s -- --debug
 
       - name: Install MetaCall Windows

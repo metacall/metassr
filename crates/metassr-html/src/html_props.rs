@@ -1,9 +1,6 @@
-use std::{
-    marker::Sized,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct HtmlProps {
     // TODO: getting html language from a config file stored in web application root.
     pub lang: String,
@@ -65,15 +62,15 @@ impl HtmlPropsBuilder {
             body: self.body.as_ref().unwrap_or(&String::new()).to_owned(),
             scripts: self
                 .scripts
-                .as_ref()
-                .unwrap()
+                .as_deref()
+                .unwrap_or(&[])
                 .iter()
                 .map(|p| Path::new(p).to_path_buf())
                 .collect(),
             styles: self
                 .styles
-                .as_ref()
-                .unwrap()
+                .as_deref()
+                .unwrap_or(&[])
                 .iter()
                 .map(|p| Path::new(p).to_path_buf())
                 .collect(),
