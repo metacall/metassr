@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use metassr_fs_analyzer::dist_dir::PageEntry;
 use metassr_utils::cache_dir::CacheDir;
@@ -23,10 +23,13 @@ impl PageRenderer {
         manifest_parent: &S,
         route: &str,
     ) -> Result<Self> {
-        let manifest = Manifest::from(manifest_parent);
+        let manifest = Manifest::load(manifest_parent)?;
 
         let cache = CacheDir::new(&manifest.global.cache)?;
-        let entry = manifest.get(route).unwrap().clone();
+        let entry = manifest
+            .get(route)
+            .ok_or_else(|| anyhow!("No manifest entry found for route: {:?}", route))?
+            .clone();
 
         let exec = RenderExec::new(entry.id, &entry.renderer)?;
         let body = exec.exec()?;
