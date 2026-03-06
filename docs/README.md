@@ -5,6 +5,7 @@ Welcome to the official documentation for MetaSSR Framework. This guide will hel
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Getting Started](#getting-started)
+- [Developer Documentation](#developer-documentation)
 - [Contributing](#contributing)
 
 ---
@@ -25,6 +26,14 @@ We welcome contributions from the community! Visit the [Contributing](../CONTRIB
 
 - [Contributing Guide](../CONTRIBUTING.md)
 - [Code of Conduct](../CODE_OF_CONDUCT.md)
+
+---
+
+## Developer Documentation
+
+Internal documentation for contributors who want to understand MetaSSR's internals.
+
+- [Architecture](./dev/Architecture.md) — High-level design, crate responsibilities, build pipeline, SSR request lifecycle, hot-reload flow, and MetaCall integration points.
 
 
 ---
