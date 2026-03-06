@@ -63,17 +63,25 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
 }
 
 /// Build the HTTP route path from the file path.
-/// Example: api/users/list.js -> /api/users/list
+///
+/// Files named `index.js` map to the route of their parent directory:
+/// - `api/users/index.js`  -> `/api/users`
+/// - `api/hello.js`        -> `/api/hello`
+/// - `api/users/list.js`   -> `/api/users/list`
 fn build_route_path(relative_path: &Path, full_path: &Path) -> String {
     let route_parts: Vec<&str> = relative_path.iter().filter_map(|s| s.to_str()).collect();
 
     let mut route_path = String::from("/api");
     for (i, part) in route_parts.iter().enumerate() {
         if i == route_parts.len() - 1 {
-            // Last part is the filename, remove extension
+            // Last part is the filename — remove extension.
+            // If the stem is "index", skip it so that e.g. `users/index.js`
+            // maps to `/api/users` rather than `/api/users/index`.
             if let Some(stem) = full_path.file_stem().and_then(|s| s.to_str()) {
-                route_path.push('/');
-                route_path.push_str(stem);
+                if stem != "index" {
+                    route_path.push('/');
+                    route_path.push_str(stem);
+                }
             }
         } else {
             // Directory name
@@ -83,4 +91,50 @@ fn build_route_path(relative_path: &Path, full_path: &Path) -> String {
     }
 
     route_path
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_route_path;
+    use std::path::Path;
+
+    #[test]
+    fn regular_file_maps_to_named_route() {
+        // api/hello.js -> /api/hello
+        let relative = Path::new("hello.js");
+        let full = Path::new("/project/src/api/hello.js");
+        assert_eq!(build_route_path(relative, full), "/api/hello");
+    }
+
+    #[test]
+    fn index_file_at_root_maps_to_api_root() {
+        // api/index.js -> /api
+        let relative = Path::new("index.js");
+        let full = Path::new("/project/src/api/index.js");
+        assert_eq!(build_route_path(relative, full), "/api");
+    }
+
+    #[test]
+    fn nested_regular_file_maps_to_full_path() {
+        // api/users/list.js -> /api/users/list
+        let relative = Path::new("users/list.js");
+        let full = Path::new("/project/src/api/users/list.js");
+        assert_eq!(build_route_path(relative, full), "/api/users/list");
+    }
+
+    #[test]
+    fn nested_index_file_maps_to_parent_directory_route() {
+        // api/users/index.js -> /api/users  (not /api/users/index)
+        let relative = Path::new("users/index.js");
+        let full = Path::new("/project/src/api/users/index.js");
+        assert_eq!(build_route_path(relative, full), "/api/users");
+    }
+
+    #[test]
+    fn deeply_nested_index_file_maps_to_parent_directory_route() {
+        // api/v1/users/index.js -> /api/v1/users
+        let relative = Path::new("v1/users/index.js");
+        let full = Path::new("/project/src/api/v1/users/index.js");
+        assert_eq!(build_route_path(relative, full), "/api/v1/users");
+    }
 }
