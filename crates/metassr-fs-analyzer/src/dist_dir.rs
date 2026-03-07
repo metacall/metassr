@@ -201,7 +201,11 @@ impl DirectoryAnalyzer for DistDir {
                 match e.ok() {
                     Some(e)
                         if e.path().is_file()
-                            && exts.contains(&e.path().extension().unwrap().to_str().unwrap()) =>
+                            && e.path()
+                                .extension()
+                                .and_then(|ext| ext.to_str())
+                                .map(|ext| exts.contains(&ext))
+                                .unwrap_or(false) =>
                     {
                         Some(e) // Include files that are either JS or CSS
                     }
@@ -393,6 +397,31 @@ mod tests {
 
         let dist_dir = DistDir::new(&test_dir).unwrap();
         let result = dist_dir.analyze().unwrap();
+
+        let root_page = result.pages.get("#root").expect("Root page should exist");
+        assert_eq!(root_page.scripts.len(), 1, "Expected 1 script file");
+        assert!(root_page.styles.is_empty(), "Expected no styles");
+
+        cleanup_test_dist_dir(test_dir);
+    }
+
+    #[test]
+    fn test_analyze_dist_dir_with_extension_less_files() {
+        // Previously panicked because .extension().unwrap() was called on
+        // files with no extension (e.g. README, Makefile, .gitkeep).
+        // This test verifies the fix: such files are safely skipped.
+        let test_dir = std::env::temp_dir()
+            .join(&Rand::new().val().to_string())
+            .join("extensionless-test-dist");
+        let pages_dir = test_dir.join("pages");
+
+        fs::create_dir_all(&pages_dir).unwrap();
+        fs::write(pages_dir.join("script.js"), "// JS file").unwrap();
+        fs::write(pages_dir.join("README"), "no extension file").unwrap();
+        fs::write(pages_dir.join("Makefile"), "no extension file").unwrap();
+
+        let dist_dir = DistDir::new(&test_dir).unwrap();
+        let result = dist_dir.analyze().unwrap(); // would panic before the fix
 
         let root_page = result.pages.get("#root").expect("Root page should exist");
         assert_eq!(root_page.scripts.len(), 1, "Expected 1 script file");

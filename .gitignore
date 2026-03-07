@@ -4,3 +4,4 @@ dist
 
 # benchmarking results
 .bench
+config.bat
