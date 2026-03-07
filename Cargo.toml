@@ -60,6 +60,9 @@ members = [
 [workspace.package]
 version = "1.0.0-alpha"
 
+[workspace.dependencies]
+tracing = "0.1.40"
+
 [[bin]]
 name = "metassr"
 path = "metassr-cli/src/main.rs"

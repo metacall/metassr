@@ -4,6 +4,7 @@ use notify::RecursiveMode;
 use notify_debouncer_full::{self, DebounceEventResult, DebouncedEvent};
 use std::{path::Path, time::Duration};
 use tokio::sync::broadcast;
+use tracing::error;
 
 pub struct FileWatcher {
     watcher: notify_debouncer_full::Debouncer<
@@ -31,7 +32,7 @@ impl FileWatcher {
                 }
                 Err(errors) => {
                     for err in errors {
-                        eprintln!("Watch Error: {err}");
+                        error!("Watch error: {err}");
                     }
                 }
             },
