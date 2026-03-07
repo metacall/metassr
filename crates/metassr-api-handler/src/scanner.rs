@@ -22,6 +22,23 @@ pub fn scan_api_dir(api_dir: &Path) -> Vec<ApiRouteFile> {
     }
 
     scan_api_dir_recursive(api_dir, api_dir, &mut routes);
+
+    // Deduplicate routes to prevent Axum from panicking on duplicate route registration.
+    let mut seen = std::collections::HashSet::new();
+    routes.retain(|r| {
+        if seen.contains(&r.route_path) {
+            tracing::warn!(
+                "Duplicate API route '{}' from file {:?} — skipping.",
+                r.route_path,
+                r.file_path,
+            );
+            false
+        } else {
+            seen.insert(r.route_path.clone());
+            true
+        }
+    });
+
     routes
 }
 
@@ -74,9 +91,7 @@ fn build_route_path(relative_path: &Path, full_path: &Path) -> String {
     let mut route_path = String::from("/api");
     for (i, part) in route_parts.iter().enumerate() {
         if i == route_parts.len() - 1 {
-            // Last part is the filename — remove extension.
-            // If the stem is "index", skip it so that e.g. `users/index.js`
-            // maps to `/api/users` rather than `/api/users/index`.
+            // Skip "index" stem so `users/index.js` maps to `/api/users`.
             if let Some(stem) = full_path.file_stem().and_then(|s| s.to_str()) {
                 if stem != "index" {
                     route_path.push('/');
@@ -84,7 +99,6 @@ fn build_route_path(relative_path: &Path, full_path: &Path) -> String {
                 }
             }
         } else {
-            // Directory name
             route_path.push('/');
             route_path.push_str(part);
         }
