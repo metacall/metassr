@@ -24,13 +24,13 @@ pub struct Creator {
     template: Template,
 }
 impl Creator {
-    pub fn new(project_name: &str, version: &str, desc: &str, template: &str) -> Self {
-        Self {
+    pub fn new(project_name: &str, version: &str, desc: &str, template: &str) -> Result<Self> {
+        Ok(Self {
             project_name: project_name.to_string(),
             version: version.to_string(),
             description: desc.to_string(),
-            template: Template::from(template),
-        }
+            template: Template::try_from(template)?,
+        })
     }
     pub fn generate(&self) -> Result<()> {
         let template = self.template.load(self)?;
@@ -99,14 +99,14 @@ mod test {
             "1.0.0",
             "Hello World!",
             "js",
-        )
+        )?
         .generate()?;
         Creator::new(
             &format!("{}-typescript", project_name),
             "1.0.0",
             "Hello World!",
             "ts",
-        )
+        )?
         .generate()?;
 
         Ok(())

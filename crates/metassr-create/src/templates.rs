@@ -7,12 +7,17 @@ pub enum Template {
     Typescript,
 }
 
-impl From<&str> for Template {
-    fn from(value: &str) -> Self {
-        match value.to_lowercase().as_str() {
-            "javascript" | "js" => Self::Javascript,
-            "typescript" | "ts" => Self::Typescript,
-            _ => unreachable!("Template isn't detected."),
+impl TryFrom<&str> for Template {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.trim().to_lowercase().as_str() {
+            "javascript" | "js" => Ok(Self::Javascript),
+            "typescript" | "ts" => Ok(Self::Typescript),
+            other => Err(anyhow::anyhow!(
+                "Unknown template {:?}. Valid options are: javascript, js, typescript, ts",
+                other
+            )),
         }
     }
 }

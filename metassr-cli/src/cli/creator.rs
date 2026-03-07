@@ -74,7 +74,7 @@ impl Exec for Creator {
             &self.description,
             self.template.as_str(),
         )
-        .generate()
+        .and_then(|creator| creator.generate())
         {
             Ok(_) => info!("Project has been created."),
             Err(e) => error!("Couldn't create your project: {e}"),
@@ -116,10 +116,13 @@ impl Display for Template {
 impl FromStr for Template {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
+        match s.trim().to_lowercase().as_str() {
             "js" | "javascript" => Ok(Self::Javascript),
             "ts" | "typescript" => Ok(Self::Typescript),
-            _ => unreachable!("Template isn't found."),
+            other => Err(format!(
+                "Unknown template {:?}. Valid options are: javascript, js, typescript, ts",
+                other
+            )),
         }
     }
 }
