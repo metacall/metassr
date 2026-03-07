@@ -24,17 +24,23 @@ pub fn scan_api_dir(api_dir: &Path) -> Vec<ApiRouteFile> {
     scan_api_dir_recursive(api_dir, api_dir, &mut routes);
 
     // Deduplicate routes to prevent Axum from panicking on duplicate route registration.
-    let mut seen = std::collections::HashSet::new();
+    // Note: read_dir order is nondeterministic, so we sort first to ensure the winner
+    // is always deterministic (shorter path wins; index.js naturally loses to a sibling
+    // flat file because its path component count is greater).
+    routes.sort_by(|a, b| a.file_path.cmp(&b.file_path));
+    let mut seen: std::collections::HashMap<String, std::path::PathBuf> =
+        std::collections::HashMap::new();
     routes.retain(|r| {
-        if seen.contains(&r.route_path) {
+        if let Some(kept) = seen.get(&r.route_path) {
             tracing::warn!(
-                "Duplicate API route '{}' from file {:?} — skipping.",
+                "Duplicate API route '{}': keeping {:?}, skipping {:?}.",
                 r.route_path,
+                kept,
                 r.file_path,
             );
             false
         } else {
-            seen.insert(r.route_path.clone());
+            seen.insert(r.route_path.clone(), r.file_path.clone());
             true
         }
     });
@@ -112,41 +118,41 @@ mod tests {
     use super::build_route_path;
     use std::path::Path;
 
+    /// Test case for a regular file mapping to a named route.
     #[test]
-    fn regular_file_maps_to_named_route() {
-        // api/hello.js -> /api/hello
+    fn test_regular_file_maps_to_named_route() {
         let relative = Path::new("hello.js");
         let full = Path::new("/project/src/api/hello.js");
         assert_eq!(build_route_path(relative, full), "/api/hello");
     }
 
+    /// Test case for an index.js at the api root mapping to /api.
     #[test]
-    fn index_file_at_root_maps_to_api_root() {
-        // api/index.js -> /api
+    fn test_index_file_at_root_maps_to_api_root() {
         let relative = Path::new("index.js");
         let full = Path::new("/project/src/api/index.js");
         assert_eq!(build_route_path(relative, full), "/api");
     }
 
+    /// Test case for a nested regular file mapping to its full path.
     #[test]
-    fn nested_regular_file_maps_to_full_path() {
-        // api/users/list.js -> /api/users/list
+    fn test_nested_regular_file_maps_to_full_path() {
         let relative = Path::new("users/list.js");
         let full = Path::new("/project/src/api/users/list.js");
         assert_eq!(build_route_path(relative, full), "/api/users/list");
     }
 
+    /// Test case for a nested index.js mapping to its parent directory route.
     #[test]
-    fn nested_index_file_maps_to_parent_directory_route() {
-        // api/users/index.js -> /api/users  (not /api/users/index)
+    fn test_nested_index_file_maps_to_parent_directory_route() {
         let relative = Path::new("users/index.js");
         let full = Path::new("/project/src/api/users/index.js");
         assert_eq!(build_route_path(relative, full), "/api/users");
     }
 
+    /// Test case for a deeply nested index.js mapping to its parent directory route.
     #[test]
-    fn deeply_nested_index_file_maps_to_parent_directory_route() {
-        // api/v1/users/index.js -> /api/v1/users
+    fn test_deeply_nested_index_file_maps_to_parent_directory_route() {
         let relative = Path::new("v1/users/index.js");
         let full = Path::new("/project/src/api/v1/users/index.js");
         assert_eq!(build_route_path(relative, full), "/api/v1/users");
