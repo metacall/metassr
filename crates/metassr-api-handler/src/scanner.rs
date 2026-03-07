@@ -1,5 +1,6 @@
 //! Directory scanner for API route files.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 /// Represents a discovered API route file.
@@ -25,11 +26,10 @@ pub fn scan_api_dir(api_dir: &Path) -> Vec<ApiRouteFile> {
 
     // Deduplicate routes to prevent Axum from panicking on duplicate route registration.
     // Note: read_dir order is nondeterministic, so we sort first to ensure the winner
-    // is always deterministic (shorter path wins; index.js naturally loses to a sibling
-    // flat file because its path component count is greater).
+    // is always deterministic. Lexicographic order puts `users/index.js` before `users.js`,
+    // so the index file is kept and the flat sibling is skipped.
     routes.sort_by(|a, b| a.file_path.cmp(&b.file_path));
-    let mut seen: std::collections::HashMap<String, std::path::PathBuf> =
-        std::collections::HashMap::new();
+    let mut seen: HashMap<String, PathBuf> = HashMap::new();
     routes.retain(|r| {
         if let Some(kept) = seen.get(&r.route_path) {
             tracing::warn!(
