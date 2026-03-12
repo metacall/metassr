@@ -967,6 +967,7 @@ dependencies = [
  "notify-debouncer-full",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
