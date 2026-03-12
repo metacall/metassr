@@ -92,15 +92,18 @@ impl Manifest {
     pub fn get(&self, route: &str) -> Option<&ManifestEntry> {
         self.routes.get(route)
     }
-}
 
-impl<S: AsRef<OsStr> + ?Sized> From<&S> for Manifest {
-    fn from(path: &S) -> Self {
-        let manifest_filename = "manifest.json";
-        let path = PathBuf::from(path).join(manifest_filename);
-        let content = read_to_string(path).unwrap();
-
-        serde_json::from_str(&content).unwrap()
+    /// Load manifest from path with proper error handling
+    pub fn load<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Self> {
+        let path = PathBuf::from(path).join("manifest.json");
+        let content = read_to_string(&path).map_err(|e| {
+            anyhow!(
+                "Could not read manifest.json at {:?}: {}. Did you run `metassr build` first?",
+                path,
+                e
+            )
+        })?;
+        serde_json::from_str(&content).map_err(|e| anyhow!("manifest.json is malformed: {}", e))
     }
 }
 
