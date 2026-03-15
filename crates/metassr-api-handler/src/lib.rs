@@ -39,19 +39,13 @@ use axum::{
 };
 use metacall::{load, metacall_handle};
 use scanner::{scan_api_dir, ApiRouteFile};
-use std::{
-    collections::HashMap,
+use std::{collections::HashMap, path::Path, sync::Arc};
+use tokio::{
     fs::read_to_string,
-    path::{Path, PathBuf},
-    sync::Arc,
+    sync::{mpsc, oneshot},
 };
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
-
-// `load::Handle` holds a raw `*mut c_void` and is not `Send` by default.
-// SAFETY: ScriptHandle is only ever accessed while holding the Mutex<ApiRoutes> lock.
-struct ScriptHandle(load::Handle);
-unsafe impl Send for ScriptHandle {}
 
 /// Stores loaded API route scripts, each in its own isolated MetaCall handle.
 pub struct ApiRoutes {
@@ -63,7 +57,7 @@ impl ApiRoutes {
     /// Create a new empty ApiRoutes instance.
     pub fn new() -> Self {
         Self {
-            loaded_scripts: HashMap::new(),
+            runtime: MetaCallRuntime::new(),
             routes: Vec::new(),
         }
     }
@@ -72,7 +66,7 @@ impl ApiRoutes {
     ///
     /// # Arguments
     /// * `api_dir` - Path to the API directory (typically `./src/api/`)
-    pub fn load_from_dir(&mut self, api_dir: &Path) -> Result<()> {
+    pub async fn load_from_dir(&mut self, api_dir: &Path) -> Result<()> {
         let route_files = scan_api_dir(api_dir);
 
         if route_files.is_empty() {
@@ -83,7 +77,7 @@ impl ApiRoutes {
         info!("Found {} API route(s)", route_files.len());
 
         for route_file in &route_files {
-            if let Err(e) = self.load_script(&route_file.file_path) {
+            if let Err(e) = self.load_script(&route_file.file_path).await {
                 warn!("Failed to load API route {:?}: {}", route_file.file_path, e);
             } else {
                 info!(
@@ -175,10 +169,10 @@ impl Default for ApiRoutes {
 /// # Arguments
 /// * `router` - The Axum router to add routes to
 /// * `root_path` - Root path of the project (to find `./src/api/`)
-pub fn register_api_routes(
+pub async fn register_api_routes(
     mut router: Router,
     root_path: &Path,
-) -> Result<(Router, Option<Arc<std::sync::Mutex<ApiRoutes>>>)> {
+) -> Result<(Router, Option<Arc<ApiRoutes>>)> {
     let api_dir = root_path.join("src").join("api");
 
     if !api_dir.exists() {
@@ -190,18 +184,14 @@ pub fn register_api_routes(
     }
 
     let mut api_routes = ApiRoutes::new();
-    api_routes.load_from_dir(&api_dir)?;
+    api_routes.load_from_dir(&api_dir).await?;
 
     if api_routes.routes().is_empty() {
         return Ok((router, None));
     }
 
-    let api_routes = Arc::new(std::sync::Mutex::new(api_routes));
-
     // Clone routes info before moving api_routes
     let routes_info: Vec<_> = api_routes
-        .lock()
-        .unwrap()
         .routes()
         .iter()
         .map(|r| {
@@ -211,6 +201,8 @@ pub fn register_api_routes(
             )
         })
         .collect();
+
+    let api_routes = Arc::new(api_routes);
 
     for (route_path, file_path) in routes_info {
         let api_routes_clone = Arc::clone(&api_routes);
@@ -236,6 +228,7 @@ pub fn register_api_routes(
                         file_path,
                         route_path,
                     )
+                    .await
                 }
             }
         })
@@ -257,10 +250,11 @@ pub fn register_api_routes(
                         file_path,
                         route_path,
                     )
+                    .await
                 }
             }
         });
-
+        // TODO: add PUT, DELETE ..etc
         router = router.route(&route_path, method_router);
         info!("Registered API route: {}", route_path);
     }
@@ -269,8 +263,8 @@ pub fn register_api_routes(
 }
 
 /// Handle an incoming API request.
-fn handle_api_request(
-    api_routes: Arc<std::sync::Mutex<ApiRoutes>>,
+async fn handle_api_request(
+    api_routes: Arc<ApiRoutes>,
     headers: HeaderMap,
     method: Method,
     query: HashMap<String, String>,
