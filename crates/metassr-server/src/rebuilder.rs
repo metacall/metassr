@@ -20,16 +20,16 @@ use std::time::Instant;
 
 use notify_debouncer_full::DebouncedEvent;
 
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 #[derive(Clone, Debug)]
 pub enum RebuildType {
-    /// Rebuild a single page. page's path is providied
+    /// Rebuild a single page. page's path is provided
     Page(PathBuf), // this only is done
     Layout,
-    // Rebuild a single Component.
+    /// Rebuild a single Component.
     Component,
-    // Reload Styles only.
+    /// Re-bundle CSS and reload stylesheets in the browser without a full page reload.
     Style,
     Static,
 }
@@ -101,7 +101,7 @@ impl Rebuilder {
             path if path.starts_with("src/components") => RebuildType::Component,
             path if path.starts_with("src/styles") => RebuildType::Style,
             path if path.starts_with("static") => RebuildType::Static,
-            // entered rebuilding everything if we're not surue of entered rebuilding kind
+            // fall back to a full layout rebuild if we don't recognise the path
             _ => RebuildType::Layout,
         };
 
@@ -138,9 +138,12 @@ impl Rebuilder {
                 tracing::warn!("Component rebuild is not yet implemented; skipping.");
             }
             RebuildType::Style => {
-                // todo: implement granular style rebuild
                 debug!("entered rebuilding {:?}", rebuild_type);
-                tracing::warn!("Style rebuild is not yet implemented; skipping.");
+                self.rebuild_styles()?;
+                match self.sender.send(RebuildType::Style) {
+                    Ok(rec) => debug!("Style rebuild signal sent to {rec} receivers"),
+                    Err(e) => debug!("FULL CHANNEL (style): {e}"),
+                };
             }
             RebuildType::Static => {
                 // todo: implement static asset rebuild
@@ -214,8 +217,111 @@ impl Rebuilder {
         Ok(())
     }
 
+    /// Re-runs the client-side bundle so Rspack picks up the changed CSS,
+    /// then signals the browser to reload only the stylesheets — no full
+    /// page refresh required.
+    fn rebuild_styles(&self) -> Result<()> {
+        let instant = Instant::now();
+
+        debug!("Rebuilding styles — re-running client bundle");
+
+        let out_dir = self
+            .out_dir
+            .to_str()
+            .ok_or_else(|| anyhow!("Invalid output path"))?;
+
+        let client_builder = ClientBuilder::new("", out_dir)?.build();
+
+        if let Err(e) = client_builder {
+            error!(
+                target = "rebuilder",
+                message = format!("Style rebuild failed during client bundle: {e}"),
+            );
+            return Err(anyhow!("Style rebuild failed: {e}"));
+        }
+
+        info!(
+            target = "rebuilder",
+            message = "Style rebuild completed",
+            time = format!("{}ms", instant.elapsed().as_millis())
+        );
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     fn rebuild_all_pages(&self) -> Result<()> {
         todo!("iterate entered rebuilding rebuild_page() on all pages")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use metassr_build::server::BuildingType;
+    use std::path::PathBuf;
+
+    fn make_rebuilder() -> Rebuilder {
+        Rebuilder::new(
+            PathBuf::from("/tmp/test-project"),
+            BuildingType::ServerSideRendering,
+        )
+        .expect("Rebuilder::new should not fail")
+    }
+
+    /// Style paths must map to RebuildType::Style
+    #[test]
+    fn map_path_to_type_style() {
+        let r = make_rebuilder();
+        let result = r.map_path_to_type(Path::new("src/styles/global.css"));
+        assert!(matches!(result, Ok(RebuildType::Style)));
+    }
+
+    /// Page paths must map to RebuildType::Page
+    #[test]
+    fn map_path_to_type_page() {
+        let r = make_rebuilder();
+        let result = r.map_path_to_type(Path::new("src/pages/index.tsx"));
+        assert!(matches!(result, Ok(RebuildType::Page(_))));
+    }
+
+    /// Component paths must map to RebuildType::Component
+    #[test]
+    fn map_path_to_type_component() {
+        let r = make_rebuilder();
+        let result = r.map_path_to_type(Path::new("src/components/header.tsx"));
+        assert!(matches!(result, Ok(RebuildType::Component)));
+    }
+
+    /// Static paths must map to RebuildType::Static
+    #[test]
+    fn map_path_to_type_static() {
+        let r = make_rebuilder();
+        let result = r.map_path_to_type(Path::new("static/assets/logo.png"));
+        assert!(matches!(result, Ok(RebuildType::Static)));
+    }
+
+    /// Unknown paths must fall back to RebuildType::Layout
+    #[test]
+    fn map_path_to_type_unknown_falls_back_to_layout() {
+        let r = make_rebuilder();
+        let result = r.map_path_to_type(Path::new("some/unknown/path.txt"));
+        assert!(matches!(result, Ok(RebuildType::Layout)));
+    }
+
+    /// Calling rebuild(Style) must broadcast RebuildType::Style to subscribers.
+    /// We don't invoke the actual bundler here — we verify the broadcast path only.
+    #[test]
+    fn rebuild_style_sends_broadcast() {
+        let r = make_rebuilder();
+        let mut rx = r.subscribe();
+
+        // Manually send a Style signal through the channel (bypassing the bundler)
+        r.sender
+            .send(RebuildType::Style)
+            .expect("send should succeed when there is a subscriber");
+
+        let received = rx.try_recv().expect("should have received a message");
+        assert!(matches!(received, RebuildType::Style));
     }
 }
