@@ -4,7 +4,7 @@
  * and updates the page accordingly.
  */
 
-(function() {
+(function () {
     let isReconnecting = false;
     let ws
 
@@ -71,8 +71,10 @@
         const links = document.querySelectorAll('link[rel="stylesheet"]');
         links.forEach(link => {
             const href = link.href.split('?')[0];
-            link.href = `$[href]?t=${Date.now()}`;
-        })
+            // Append a cache-busting timestamp to the stylesheet URL
+            // This forces the browser to fetch the new CSS instead of using the stale cached version
+            link.href = `${href}?t=${Date.now()}`;
+        });
     };
     // Start the live reload connection
     connect();
