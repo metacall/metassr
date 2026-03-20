@@ -1,8 +1,9 @@
 // Example API endpoint for MetaSSR
-// Test with: curl -X GET http://localhost:3000/api/hello
-// Test with: curl -X POST http://localhost:3000/api/hello -H "Content-Type: application/json" -d '{"name": "world"}'
+// Test with: curl -X GET http://localhost:8080/api/hello
+// Test with: curl -X POST http://localhost:8080/api/hello -H "Content-Type: application/json" -d '{"name": "world"}'
 
-function GET(req) {
+function GET(rawReq) {
+    const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
     return JSON.stringify({
         status: 200,
         body: {
@@ -12,12 +13,13 @@ function GET(req) {
     });
 }
 
-function POST(req) {
+function POST(rawReq) {
+    const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
     const data = req.body ? JSON.parse(req.body) : {};
     const name = data.name || "anonymous";
     
     return JSON.stringify({
-        status: 201,
+        status: 200,
         body: {
             message: `Hello, ${name}!`,
             received: data

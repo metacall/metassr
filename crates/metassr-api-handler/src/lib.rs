@@ -8,14 +8,16 @@
 //! Create a file at `./src/api/hello.js`:
 //!
 //! ```javascript
-//! function GET(req) {
+//! function GET(rawReq) {
+//!     const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
 //!     return JSON.stringify({
 //!         status: 200,
 //!         body: { message: "Hello from API!" }
 //!     });
 //! }
 //!
-//! function POST(req) {
+//! function POST(rawReq) {
+//!     const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
 //!     const data = JSON.parse(req.body || "{}");
 //!     return JSON.stringify({
 //!         status: 201,
