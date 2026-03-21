@@ -2,8 +2,7 @@
 // Test with: curl -X GET http://localhost:8080/api/hello
 // Test with: curl -X POST http://localhost:8080/api/hello -H "Content-Type: application/json" -d '{"name": "world"}'
 
-function GET(rawReq) {
-    const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
+function GET(req) {
     return JSON.stringify({
         status: 200,
         body: {
@@ -13,8 +12,7 @@ function GET(rawReq) {
     });
 }
 
-function POST(rawReq) {
-    const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
+function POST(req) {
     const data = req.body ? JSON.parse(req.body) : {};
     const name = data.name || "anonymous";
     

@@ -8,16 +8,14 @@
 //! Create a file at `./src/api/hello.js`:
 //!
 //! ```javascript
-//! function GET(rawReq) {
-//!     const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
+//! function GET(req) {
 //!     return JSON.stringify({
 //!         status: 200,
 //!         body: { message: "Hello from API!" }
 //!     });
 //! }
 //!
-//! function POST(rawReq) {
-//!     const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
+//! function POST(req) {
 //!     const data = JSON.parse(req.body || "{}");
 //!     return JSON.stringify({
 //!         status: 201,
@@ -125,13 +123,26 @@ impl ApiRoutes {
         method: &str,
         request: ApiRequest,
     ) -> Result<ApiResponse> {
-        let request_json = serde_json::to_string(&request)?;
+        let mut req_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
+        req_map.insert(String::from("url"), Box::new(request.url));
+        req_map.insert(String::from("method"), Box::new(request.method));
+        req_map.insert(String::from("headers"), Box::new(request.headers));
+        req_map.insert(String::from("query"), Box::new(request.query));
+        req_map.insert(String::from("params"), Box::new(request.params));
+        
+        match request.body {
+            Some(b) => {
+                req_map.insert(String::from("body"), Box::new(b));
+            }
+            None => {
+                req_map.insert(String::from("body"), Box::new(metacall::MetaCallNull()));
+            }
+        }
+        debug!("Calling {}() with: {:?}", method, req_map);
 
-        debug!("Calling {}() with request: {}", method, request_json);
-
-        // Call the handler function with the request JSON
+        // Call the handler function with the request map
         // MetaCall looks up the function by name in all loaded scripts
-        let result: String = metacall(method, [request_json])
+        let result: String = metacall(method, [req_map])
             .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 
         let response: ApiResponse = serde_json::from_str(&result)
