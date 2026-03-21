@@ -37,16 +37,19 @@ use axum::{
     routing::{get, MethodRouter},
     Router,
 };
-use metacall::{load, metacall};
+use metacall::{load};
 use scanner::{scan_api_dir, ApiRouteFile};
 use std::{
-    collections::HashMap,
-    fs::read_to_string,
-    path::{Path, PathBuf},
-    sync::Arc,
+    collections::HashMap, fs::read_to_string, path::{Path, PathBuf}, sync::Arc
 };
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
+
+use std::ffi::{CString, CStr};
+use metacall::bindings::{
+    metacall_deserialize, metacall_serial, metacall_function, metacallfv_s,
+    metacall_value_to_string, metacall_value_destroy
+};
 
 /// Stores loaded API route scripts.
 ///
@@ -123,45 +126,59 @@ impl ApiRoutes {
         method: &str,
         request: ApiRequest,
     ) -> Result<ApiResponse> {
-        let mut req_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
-        req_map.insert(String::from("url"), Box::new(request.url));
-        req_map.insert(String::from("method"), Box::new(request.method));
-        
-        let mut headers_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
-        for (k, v) in request.headers {
-            headers_map.insert(k, Box::new(v));
-        }
-        req_map.insert(String::from("headers"), Box::new(headers_map));
+        let json_payload = serde_json::to_string(&request)
+            .map_err(|e| anyhow!("Failed to serialize request: {}", e))?;
 
-        let mut query_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
-        for (k, v) in request.query {
-            query_map.insert(k, Box::new(v));
-        }
-        req_map.insert(String::from("query"), Box::new(query_map));
+        let c_payload = CString::new(json_payload)
+            .map_err(|e| anyhow!("Failed to create C string from request: {}", e))?;
 
-        let mut params_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
-        for (k, v) in request.params {
-            params_map.insert(k, Box::new(v));
-        }
-        req_map.insert(String::from("params"), Box::new(params_map));
-        
-        match request.body {
-            Some(b) => {
-                req_map.insert(String::from("body"), Box::new(b));
+        let c_method = CString::new(method)
+            .map_err(|e| anyhow!("Failed to create C string from method: {}", e))?;
+
+        let result_json = unsafe {
+            let c_func = metacall_function(c_method.as_ptr());
+            if c_func.is_null() {
+                return Err(anyhow!("Function {} not found in loaded scripts", method));
             }
-            None => {
-                req_map.insert(String::from("body"), Box::new(metacall::MetaCallNull()));
+
+            // Deserialize JSON string directly into a native C metacall_value
+            let val = metacall_deserialize(
+                metacall_serial(),
+                c_payload.as_ptr(),
+                c_payload.as_bytes_with_nul().len(),
+                std::ptr::null_mut(),
+            );
+
+            if val.is_null() {
+                return Err(anyhow!("metacall_deserialize failed to parse the request JSON"));
             }
-        }
-        debug!("Calling {}() with: {:?}", method, req_map);
 
-        // Call the handler function with the request map
-        // MetaCall looks up the function by name in all loaded scripts
-        let result: String = metacall(method, [req_map])
-            .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
+            let mut args = [val];
+            let ret = metacallfv_s(c_func, args.as_mut_ptr(), 1);
 
-        let response: ApiResponse = serde_json::from_str(&result)
-            .map_err(|e| anyhow!("Failed to parse response: {} (raw: {})", e, result))?;
+            metacall_value_destroy(val);
+
+            if ret.is_null() {
+                return Err(anyhow!("Function {} returned null", method));
+            }
+
+            // Convert return value to C string pointer
+            let ret_str_ptr = metacall_value_to_string(ret);
+            if ret_str_ptr.is_null() {
+                metacall_value_destroy(ret);
+                return Err(anyhow!("Function {} return value could not be converted to string", method));
+            }
+
+            let ret_string = CStr::from_ptr(ret_str_ptr).to_string_lossy().into_owned();
+            
+            metacall_value_destroy(ret);
+
+            ret_string
+        };
+
+        // Parse the returned JSON back into ApiResponse
+        let response: ApiResponse = serde_json::from_str(&result_json)
+            .map_err(|e| anyhow!("Failed to parse response: {} (raw: {})", e, result_json))?;
 
         Ok(response)
     }
