@@ -126,9 +126,24 @@ impl ApiRoutes {
         let mut req_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
         req_map.insert(String::from("url"), Box::new(request.url));
         req_map.insert(String::from("method"), Box::new(request.method));
-        req_map.insert(String::from("headers"), Box::new(request.headers));
-        req_map.insert(String::from("query"), Box::new(request.query));
-        req_map.insert(String::from("params"), Box::new(request.params));
+        
+        let mut headers_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
+        for (k, v) in request.headers {
+            headers_map.insert(k, Box::new(v));
+        }
+        req_map.insert(String::from("headers"), Box::new(headers_map));
+
+        let mut query_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
+        for (k, v) in request.query {
+            query_map.insert(k, Box::new(v));
+        }
+        req_map.insert(String::from("query"), Box::new(query_map));
+
+        let mut params_map = HashMap::<String, Box<dyn metacall::MetaCallValue>>::new();
+        for (k, v) in request.params {
+            params_map.insert(k, Box::new(v));
+        }
+        req_map.insert(String::from("params"), Box::new(params_map));
         
         match request.body {
             Some(b) => {
