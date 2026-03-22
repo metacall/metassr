@@ -1,6 +1,6 @@
 // Example API endpoint for MetaSSR
-// Test with: curl -X GET http://localhost:8080/api/hello
-// Test with: curl -X POST http://localhost:8080/api/hello -H "Content-Type: application/json" -d '{"name": "world"}'
+// Test with: curl -X GET http://localhost:3000/api/hello
+// Test with: curl -X POST http://localhost:3000/api/hello -H "Content-Type: application/json" -d '{"name": "world"}'
 
 function GET(req) {
     return JSON.stringify({

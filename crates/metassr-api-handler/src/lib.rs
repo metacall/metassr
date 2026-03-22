@@ -37,19 +37,22 @@ use axum::{
     routing::{get, MethodRouter},
     Router,
 };
-use metacall::{load};
+use metacall::load;
 use scanner::{scan_api_dir, ApiRouteFile};
 use std::{
-    collections::HashMap, fs::read_to_string, path::{Path, PathBuf}, sync::Arc
+    collections::HashMap,
+    fs::read_to_string,
+    path::{Path, PathBuf},
+    sync::Arc,
 };
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
-use std::ffi::{CString, CStr};
 use metacall::bindings::{
-    metacall_deserialize, metacall_serial, metacall_function, metacallfv_s,
-    metacall_value_to_string, metacall_value_destroy
+    metacall_deserialize, metacall_function, metacall_serial, metacall_value_destroy,
+    metacall_value_to_string, metacallfv_s,
 };
+use std::ffi::{CStr, CString};
 
 /// Stores loaded API route scripts.
 ///
@@ -150,7 +153,9 @@ impl ApiRoutes {
             );
 
             if val.is_null() {
-                return Err(anyhow!("metacall_deserialize failed to parse the request JSON"));
+                return Err(anyhow!(
+                    "metacall_deserialize failed to parse the request JSON"
+                ));
             }
 
             let mut args = [val];
@@ -166,11 +171,14 @@ impl ApiRoutes {
             let ret_str_ptr = metacall_value_to_string(ret);
             if ret_str_ptr.is_null() {
                 metacall_value_destroy(ret);
-                return Err(anyhow!("Function {} return value could not be converted to string", method));
+                return Err(anyhow!(
+                    "Function {} return value could not be converted to string",
+                    method
+                ));
             }
 
             let ret_string = CStr::from_ptr(ret_str_ptr).to_string_lossy().into_owned();
-            
+
             metacall_value_destroy(ret);
 
             ret_string
