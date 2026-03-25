@@ -34,9 +34,10 @@ impl RenderExec {
 impl Exec for RenderExec {
     type Output = String;
     fn exec(&self) -> Result<Self::Output> {
-        // let path = self.0.strip_prefix(current_dir()?)?;
-        // TODO: should the scope of this loading be a handle or None ?
-        if let Err(e) = load::from_single_file(load::Tag::NodeJS, &self.path, None) {
+        // Each RenderExec uses its own handle to isolate the loaded script
+        // in a separate scope, preventing function name collisions across pages.
+        let mut handle = load::Handle::default();
+        if let Err(e) = load::from_single_file(load::Tag::NodeJS, &self.path, Some(&mut handle)) {
             return Err(anyhow!(
                 "Cannot load render script: {e:?} \n  path: {:#?}",
                 self.path
