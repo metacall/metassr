@@ -1,0 +1,6 @@
+[toolchain]
+profile = "default"
+components = ["rustfmt", "clippy", "rust-src"]
+# Use nightly for better access to the latest Rust features.
+channel = "nightly-2025-11-13"
+targets = ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]

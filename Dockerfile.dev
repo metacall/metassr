@@ -1,4 +1,4 @@
-FROM rust:slim-trixie AS base
+FROM rustlang/rust:nightly-slim AS base
 
 # Image descriptor
 LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \

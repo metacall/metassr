@@ -1,63 +1,25 @@
 use anyhow::{anyhow, Result};
-use lazy_static::lazy_static;
-use metacall::{load, metacall, MetaCallFuture, MetaCallValue};
-use metassr_utils::{checker::CheckerState, js_path::to_js_path};
-use std::{
-    any::Any,
-    collections::HashMap,
-    ffi::OsStr,
-    marker::Sized,
-    path::Path,
-    sync::{Arc, Condvar, Mutex},
+use rspack::builder::{
+    Builder as _, Devtool, ModuleOptionsBuilder, OptimizationOptionsBuilder, OutputOptionsBuilder,
 };
-use tracing::error;
+use rspack_core::{
+    Compiler, EntryDescription, Experiments, Filename, LibraryOptions, LibraryType, Mode,
+    ModuleRule, ModuleRuleEffect, ModuleRuleUse, ModuleRuleUseLoader, ModuleType, PublicPath,
+    Resolve, RuleSetCondition, StatsOptions,
+};
+use rspack_fs::{NativeFileSystem, WritableFileSystem};
+use rspack_paths::Utf8PathBuf;
+use rspack_regex::RspackRegex;
+use serde_json::json;
+use std::{collections::HashMap, ffi::OsStr, marker::Sized, path::Path, sync::Arc, vec};
 
-lazy_static! {
-    /// A detector for if the bundling script `./bundle.js` is loaded or not. It is used to solve multiple loading script error in metacall.
-    static ref IS_BUNDLING_SCRIPT_LOADED: Mutex<CheckerState> = Mutex::new(CheckerState::default());
-
-    /// A simple checker to check if the bundling function is done or not. It is used to block the program until bundling done.
-    static ref IS_COMPILATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
-}
-static BUILD_SCRIPT: &str = include_str!("./bundle.js");
-const BUNDLING_FUNC: &str = "web_bundling";
-
-/// A simple struct for compilation wait of the bundling function.
-struct CompilationWait {
-    checker: Mutex<CheckerState>,
-    cond: Condvar,
-}
-
-impl Default for CompilationWait {
-    fn default() -> Self {
-        Self {
-            checker: Mutex::new(CheckerState::default()),
-            cond: Condvar::new(),
-        }
-    }
-}
-
-/// A web bundler that invokes the `web_bundling` function from the Node.js `bundle.js` script
-/// using MetaCall. It is designed to bundle web resources like JavaScript and TypeScript files
-/// by calling a custom `rspack` configuration.
-///
-/// The `exec` function blocks the execution until the bundling process completes.
 #[derive(Debug)]
 pub struct WebBundler<'a> {
-    /// A map containing the source entry points for bundling.
-    /// The key represents the entry name, and the value is the file path.
     pub targets: HashMap<String, &'a Path>,
-    /// The output directory where the bundled files will be stored.
     pub dist_path: &'a Path,
 }
 
 impl<'a> WebBundler<'a> {
-    /// Creates a new `WebBundler` instance.
-    ///
-    /// - `targets`: A HashMap where the key is a string representing an entry point, and the value is the file path.
-    /// - `dist_path`: The path to the directory where the bundled output should be saved.
-    ///
-    /// Returns a `WebBundler` struct.
     pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
@@ -87,83 +49,199 @@ impl<'a> WebBundler<'a> {
         })
     }
 
-    /// Executes the bundling process by invoking the `web_bundling` function from `bundle.js` via MetaCall.
-    ///
-    /// It checks if the bundling script has been loaded, then calls the function and waits for the
-    /// bundling to complete, either resolving successfully or logging an error.
-    ///
-    /// # Errors
-    ///
-    /// This function returns an `Err` if the bundling script cannot be loaded or if bundling fails.
     pub fn exec(&self) -> Result<()> {
-        // Lock the mutex to check if the bundling script is already loaded
-        let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
-        if !guard.is_true() {
-            // If not loaded, attempt to load the script into MetaCall
-            // println!("{:?}", BUILD_SCRIPT);
-            if let Err(e) = load::from_memory(load::Tag::NodeJS, BUILD_SCRIPT, None) {
-                return Err(anyhow!("Cannot load bundling script: {e:?}"));
+        let dist_path_utf8 = Utf8PathBuf::from_path_buf(self.dist_path.to_path_buf())
+            .map_err(|e| anyhow!("Failed to convert path to Utf8PathBuf: {:?}", e))?;
+
+        let native_fs = Arc::new(NativeFileSystem::new(false));
+
+        let mut compiler = Compiler::builder();
+        compiler
+            .output(
+                OutputOptionsBuilder::default()
+                    .filename(Filename::from("[name].js"))
+                    .library(LibraryOptions {
+                        library_type: LibraryType::from("commonjs2"),
+                        name: None,
+                        export: None,
+                        umd_named_define: None,
+                        auxiliary_comment: None,
+                        amd_container: None,
+                    })
+                    .path(dist_path_utf8.clone())
+                    .public_path(PublicPath::Filename(Filename::from(""))),
+            )
+            .resolve(Resolve {
+                extensions: Some(vec![
+                    ".js".to_string(),
+                    ".jsx".to_string(),
+                    ".tsx".to_string(),
+                    ".ts".to_string(),
+                ]),
+                ..Default::default()
+            })
+            .optimization(OptimizationOptionsBuilder::default().minimize(true))
+            .module(ModuleOptionsBuilder::default().rules(create_module_rules()))
+            .enable_loader_swc()
+            .name("Client".to_string())
+            .mode(Mode::Production)
+            .devtool(Devtool::SourceMap)
+            .experiments(Experiments::builder().css(true))
+            .stats(StatsOptions { colors: true })
+            .target(vec!["web".to_string()])
+            .output_filesystem(native_fs.clone());
+
+        for (entry_name, entry_path) in &self.targets {
+            let entry_path_str = entry_path
+                .to_str()
+                .ok_or_else(|| anyhow!("Invalid UTF-8 in entry path: {:?}", entry_path))?;
+
+            compiler.entry(entry_name.clone(), EntryDescription::from(entry_path_str));
+        }
+        let mut compiler = compiler
+            .build()
+            .map_err(|e| anyhow!("Failed to build rspack compiler: {}", e))?;
+
+        match tokio::runtime::Handle::try_current() {
+            Ok(handle) => {
+                // Tokio runtime exists (CLI) - use block_in_place
+                tokio::task::block_in_place(|| {
+                    handle.block_on(async {
+                        native_fs
+                            .create_dir_all(&dist_path_utf8)
+                            .await
+                            .map_err(|e| anyhow!("Failed to create directory: {}", e))?;
+                        compiler
+                            .run()
+                            .await
+                            .map_err(|e| anyhow!("Compilation failed: {}", e))?;
+                        Ok::<(), anyhow::Error>(())
+                    })
+                })
+                .map_err(|e| anyhow!("Block in place failed: {}", e))?
             }
-            // Mark the script as loaded
-            guard.make_true();
+            Err(_) => {
+                // No Tokio runtime (tests) - create new one
+                let rt = tokio::runtime::Runtime::new()
+                    .map_err(|e| anyhow!("Failed to create runtime: {}", e))?;
+
+                rt.block_on(async {
+                    native_fs
+                        .create_dir_all(&dist_path_utf8)
+                        .await
+                        .map_err(|e| anyhow!("Failed to create directory: {}", e))?;
+                    compiler
+                        .run()
+                        .await
+                        .map_err(|e| anyhow!("Compilation failed: {}", e))?;
+                    Ok::<(), anyhow::Error>(())
+                })
+                .map_err(|e| anyhow!("Runtime block failed: {}", e))?
+            }
         }
-        // Drop the lock on the mutex as it's no longer needed
-        drop(guard);
+        // Check for compilation errors
+        // Collect any errors from the compilation
+        let errors: Vec<_> = compiler.compilation.get_errors().collect();
 
-        // Resolve callback when the bundling process is completed successfully
-        fn resolve(
-            result: Box<dyn MetaCallValue>,
-            _: Option<Box<dyn Any>>,
-        ) -> Box<dyn MetaCallValue> {
-            let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
-            let mut started = compilation_wait.checker.lock().unwrap();
+        if !errors.is_empty() {
+            let error_messages: Vec<String> = errors.iter().map(|e| format!("{:#?}", e)).collect();
 
-            // Mark the process as completed and notify waiting threads
-            started.make_true();
-            compilation_wait.cond.notify_one();
-
-            result
-        }
-
-        // Reject callback for handling errors during the bundling process
-        fn reject(err: Box<dyn MetaCallValue>, _: Option<Box<dyn Any>>) -> Box<dyn MetaCallValue> {
-            let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
-            let mut started = compilation_wait.checker.lock().unwrap();
-
-            // Log the bundling error and mark the process as completed
-            error!("Bundling rejected: {err:?}");
-            started.make_true();
-            compilation_wait.cond.notify_one();
-
-            err
-        }
-
-        // Call the `web_bundling` function in the MetaCall script with targets and output path
-        let future = metacall::<MetaCallFuture>(
-            BUNDLING_FUNC,
-            [
-                serde_json::to_string(&self.targets)?,
-                to_js_path(self.dist_path),
-            ],
-        )
-        .unwrap();
-
-        // Set the resolve and reject handlers for the bundling future
-        future.then(resolve).catch(reject).await_fut();
-
-        // Lock the mutex and wait for the bundling process to complete
-        let compilation_wait = Arc::clone(&IS_COMPILATION_WAIT);
-        let mut started = compilation_wait.checker.lock().unwrap();
-
-        // Block the current thread until the bundling process signals completion
-        while !started.is_true() {
-            started = Arc::clone(&IS_COMPILATION_WAIT).cond.wait(started).unwrap();
+            return Err(anyhow!(
+                "Bundling failed with {} error(s): {}",
+                error_messages.len(),
+                error_messages.join("\n")
+            ));
         }
 
-        // Reset the checker state to false after the process completes
-        started.make_false();
         Ok(())
     }
+}
+
+fn create_module_rules() -> Vec<ModuleRule> {
+    let mut rules = Vec::new();
+
+    let js_regex = RspackRegex::new(r"\.(jsx|js)$").unwrap();
+    let js_exclude_regex = RspackRegex::new(r"node_modules").unwrap();
+    let js_rule = ModuleRule {
+        test: Some(RuleSetCondition::Regexp(js_regex)),
+        exclude: Some(RuleSetCondition::Regexp(js_exclude_regex)),
+        effect: ModuleRuleEffect {
+            r#use: ModuleRuleUse::Array(vec![ModuleRuleUseLoader {
+                loader: "builtin:swc-loader".to_string(),
+                options: Some(
+                    json!({
+                        "jsc": {
+                            "parser": {
+                                "syntax": "ecmascript",
+                                "jsx": true,
+                                "dynamicImport": true,
+                            },
+                            "transform": {
+                                "react": {
+                                    "runtime": "automatic",
+                                    "throwIfNamespace": true,
+                                }
+                            }
+                        }
+                    })
+                    .to_string(),
+                ),
+            }]),
+            r#type: Some(ModuleType::JsAuto),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    rules.push(js_rule);
+
+    let ts_regex = RspackRegex::new(r"\.(tsx|ts)$").unwrap();
+    let ts_exclude_regex = RspackRegex::new(r"node_modules").unwrap();
+    let ts_rule = ModuleRule {
+        test: Some(RuleSetCondition::Regexp(ts_regex)),
+        exclude: Some(RuleSetCondition::Regexp(ts_exclude_regex)),
+        effect: ModuleRuleEffect {
+            r#use: ModuleRuleUse::Array(vec![ModuleRuleUseLoader {
+                loader: "builtin:swc-loader".to_string(),
+                options: Some(
+                    json!({
+                        "jsc": {
+                            "parser": {
+                                "syntax": "typescript",
+                                "tsx": true,
+                                "decorators": true
+                            },
+                            "transform": {
+                                "react": {
+                                    "runtime": "automatic",
+                                    "throwIfNamespace": true,
+                                }
+                            }
+                        }
+                    })
+                    .to_string(),
+                ),
+            }]),
+            r#type: Some(ModuleType::JsAuto),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    rules.push(ts_rule);
+
+    let asset_regex =
+        RspackRegex::new(r"\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf|webp)$").unwrap();
+    let asset_rule = ModuleRule {
+        test: Some(RuleSetCondition::Regexp(asset_regex)),
+        effect: ModuleRuleEffect {
+            r#type: Some(ModuleType::AssetInline),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    rules.push(asset_rule);
+    rules
 }
 
 #[cfg(test)]

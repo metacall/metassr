@@ -51,14 +51,7 @@ jobs:
           echo "ARTIFACT_NAME=$name" >> $GITHUB_ENV
           echo "version: $version"
           echo "artifact: $name"
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-          target: ${{ matrix.target }}
-
+      
       - name: Setup cache
         uses: Swatinem/rust-cache@v1
 
