@@ -28,7 +28,7 @@ impl Targets {
     /// Returns bundling targets with entry names that output to `dist/server/pages/`.
     /// e.g. source `dist/cache/pages/home/index.server.js` => entry `server/pages/home`
     ///      => esbuild output `dist/server/pages/home.js` (no collision with source)
-    pub fn ready_for_bundling(&self, dist_path: &PathBuf) -> HashMap<String, String> {
+    pub fn ready_for_bundling(&self, dist_path: &Path) -> HashMap<String, String> {
         let cache_pages = dist_path.join("cache").join("pages");
         self.0
             .keys()
@@ -42,7 +42,7 @@ impl Targets {
 
     /// Returns the expected bundle output paths for execution (SSG/SSR).
     /// e.g. route `home` => `dist/server/pages/home.js`
-    pub fn ready_for_exec(&self, dist_path: &PathBuf) -> HashMap<String, i64> {
+    pub fn ready_for_exec(&self, dist_path: &Path) -> HashMap<String, i64> {
         let cache_pages = dist_path.join("cache").join("pages");
         self.0
             .iter()
@@ -57,7 +57,7 @@ impl Targets {
             .collect()
     }
 
-    fn route_from_source<'a>(&self, source: &'a Path, cache_pages: &Path) -> String {
+    fn route_from_source(&self, source: &Path, cache_pages: &Path) -> String {
         let rel = source.strip_prefix(cache_pages).unwrap();
         match rel.parent().unwrap() {
             p if p == Path::new("") => "root".to_string(),
