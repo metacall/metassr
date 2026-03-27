@@ -36,11 +36,15 @@ impl HeadRenderer {
                 self.bundle()?;
             }
 
-            let _ = load::from_single_file(
-                load::Tag::NodeJS,
-                format!("{}/head.js", self.cache_dir.path().display()),
-                None,
-            );
+            // Load the bundled head from dist/server/head.js (esbuild output location)
+            let bundle_path = self.cache_dir
+                .path()
+                .parent()
+                .ok_or_else(|| anyhow!("Cannot resolve dist path from cache dir"))?
+                .join("server")
+                .join("head.js");
+
+            let _ = load::from_single_file(load::Tag::NodeJS, &bundle_path, None);
             guard.make_true()
         }
         drop(guard);
@@ -112,6 +116,7 @@ export function render_head() {{
         let path = cache_dir.insert("head.js", script.as_bytes())?;
         let fullpath = to_js_path(&dunce::canonicalize(&path)?);
 
-        Ok(HashMap::from([("cache/head".to_string(), fullpath)]))
+        // Entry name "server/head" => esbuild outputs to dist/server/head.js (no collision)
+        Ok(HashMap::from([("server/head".to_string(), fullpath)]))
     }
 }

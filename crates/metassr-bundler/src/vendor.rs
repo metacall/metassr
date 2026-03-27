@@ -38,7 +38,7 @@ fn detect_package_manager() -> Result<String> {
     ))
 }
 
-/// Ensures the vendored `@rspack/core` is installed in `~/.metassr/vendor/bundler/`.
+/// Ensures the vendored `esbuild` is installed in `~/.metassr/vendor/bundler/`.
 ///
 /// On first run, writes `bundle.js` and `package.json` to the vendor directory
 /// and runs `npm install` (or pnpm/yarn/bun if npm is not available).
@@ -51,12 +51,20 @@ pub fn ensure_vendor_setup() -> Result<PathBuf> {
     let dir = vendor_dir()?;
     let bundle_path = dir.join("bundle.js");
     let package_json_path = dir.join("package.json");
-    let rspack_marker = dir.join("node_modules").join("@rspack").join("core");
+    let esbuild_marker = dir.join("node_modules").join("esbuild");
 
-    // Check if we need to (re-)install: missing node_modules or version changed
-    let needs_install = if rspack_marker.exists() && package_json_path.exists() {
+    // Check if we need to (re-)install: missing node_modules or package.json version changed
+    let needs_install = if esbuild_marker.exists() && package_json_path.exists() {
         let existing = std::fs::read_to_string(&package_json_path).unwrap_or_default();
         existing.trim() != PACKAGE_JSON.trim()
+    } else {
+        true
+    };
+
+    // Check if bundle.js needs updating independently of a full reinstall
+    let bundle_outdated = if bundle_path.exists() {
+        let existing = std::fs::read_to_string(&bundle_path).unwrap_or_default();
+        existing.trim() != BUNDLE_SCRIPT.trim()
     } else {
         true
     };
@@ -79,9 +87,9 @@ pub fn ensure_vendor_setup() -> Result<PathBuf> {
             return Err(anyhow!("{pm} install failed in {}", dir.display()));
         }
 
-        info!("Vendored @rspack/core installed successfully.");
-    } else if !bundle_path.exists() {
-        // node_modules exists but bundle.js was deleted — restore it
+        info!("Vendored esbuild installed successfully.");
+    } else if bundle_outdated {
+        // package.json unchanged but bundle.js was updated — just overwrite it
         std::fs::write(&bundle_path, BUNDLE_SCRIPT)?;
     }
 

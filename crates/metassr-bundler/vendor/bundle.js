@@ -1,4 +1,4 @@
-const { rspack } = require('@rspack/core');
+const esbuild = require('esbuild');
 const { join } = require('path');
 
 /**
@@ -14,151 +14,57 @@ function safelyParseJSON(json) {
     }
 }
 
-// Default configuration object for rspack bundling process
-const defaultConfig = {
-    output: {
-        filename: '[name].js', // Output filename with the entry name
-        library: {
-            type: 'commonjs2', // Set library type to CommonJS2 (Node.js modules)
-        },
-        publicPath: '' // Specify the base path for all assets within the application
-    },
-    resolve: {
-        extensions: ['.js', '.jsx', '.tsx', '.ts'] // Extensions that will be resolved
-    },
-    optimization: {
-        minimize: true, // You can disable minimization for easier debugging
-    },
-    module: {
-        rules: [
-            {
-                test: /\.(jsx|js)$/, // Rule for JavaScript and JSX files
-                exclude: /node_modules/, // Exclude node_modules directory
-                use: {
-                    loader: 'builtin:swc-loader', // Use the SWC loader to transpile ES6+ and JSX
-                    options: {
-                        jsc: {
-                            parser: {
-                                syntax: 'ecmascript', // Set parser syntax to ECMAScript
-                                jsx: true, // Enable parsing JSX syntax
-                                dynamicImport: true, // Enable parsing dynamic imports
-                            },
-                            transform: {
-                                react: {
-                                    runtime: 'automatic', // Use React's automatic JSX runtime
-                                    throwIfNamespace: true, // Throw error if namespace is used
-                                },
-                            },
-                        },
-                    },
-                },
-                type: 'javascript/auto', // Specify the type as auto (for backward compatibility)
-            },
-            {
-                test: /\.(tsx|ts)$/, // Rule for TypeScript and TSX files
-                exclude: /node_modules/, // Exclude node_modules directory
-                use: {
-                    loader: 'builtin:swc-loader', // Use the SWC loader to transpile TS and TSX
-                    options: {
-                        jsc: {
-                            parser: {
-                                syntax: 'typescript', // Set parser syntax to TypeScript
-                                tsx: true, // Enable parsing TSX syntax
-                                decorators: true
-                            },
-                            transform: {
-                                react: {
-                                    runtime: 'automatic', // Use React's automatic JSX runtime
-                                    throwIfNamespace: true, // Throw error if namespace is used
-                                },
-                            },
-                        },
-                    },
-                },
-                type: 'javascript/auto', // Specify the type as auto
-            },
-            {
-                test: /\.(png|svg|jpg|jpeg|gif|woff|woff2|eot|ttf|otf|webp)$/,
-                type: 'asset/inline', // Inline assets as Base64 strings
-            },
-        ],
-    }
-};
-
-function createBundlerConfig(entry, dist, devMode) {
-    const outputPath = dist ? join(process.cwd(), dist) : undefined;
-    return {
-        ...defaultConfig, // Merge with the default config
-        entry: safelyParseJSON(entry) || entry,
-        output: outputPath ? {
-            ...defaultConfig.output,
-            path: outputPath
-        } : defaultConfig.output,
-        cache: {
-            type: 'filesystem',
-            cacheDirectory: join(process.cwd(), 'node_modules/.cache/rspack'),
-        },
-        optimization: {
-            minimize: !devMode,
-        },
-        name: 'Client',
-        mode: devMode ? 'development' : 'production',
-        devtool: devMode ? 'eval' : 'source-map',
-        experiments: {
-            css: true
-        },
-        stats: {
-            preset: 'errors-warnings',
-            timings: true,
-            colors: true,
-            modules: true
-        },
-        target: 'web',
-        performance: devMode ? false : {
-            hints: 'warning',
-            maxAssetSize: 250000,
-            maxEntrypointSize: 400000
-        }
-    };
-}
-
-
 /**
- * Bundles web resources using rspack.
- * @param {Object|string} entry - The entry point(s) for the bundling process (can be a string or JSON object).
+ * Bundles web resources using esbuild (synchronous).
+ * @param {Object|string} entry - The entry point(s) as JSON: {"name": "path", ...}
  * @param {string} dist - The distribution path where bundled files will be output.
- * @returns {Promise} - Resolves when bundling is successful, rejects if there is an error.
+ * @param {string} devMode - "true" for development mode (no minification, no sourcemaps).
+ * @returns {number} 0 on success.
  */
-async function webBundling(entry, dist, devMode) {
-    // Create a bundler instance using the config and parameters
-    const compiler = rspack(createBundlerConfig(entry, dist, devMode === 'true'));
+function webBundling(entry, dist, devMode) {
+    const isDev = devMode === 'true';
+    const entries = safelyParseJSON(entry) || entry;
 
-    // Return a promise that runs the bundling process and resolves or rejects based on the result
-    return new Promise((resolve, reject) => {
-        compiler.run((error, stats) => {
-            if (error) {
-                compiler.close(() => {});
-                return reject(new Error(`Bundling failed: ${error.message}`));
-            }
+    // esbuild expects entryPoints as { outName: inputPath }
+    // Our entries are already in that format: {"pages/home": "/abs/path/to/file.js"}
+    const entryPoints = typeof entries === 'object' ? entries : { main: entries };
 
-            if (stats && stats.hasErrors()) {
-                const info = stats.toJson();
-                const errors = info.errors ? info.errors.map(e => e.message).join('\n') : 'Unknown compilation errors';
-                compiler.close(() => {});
-                return reject(new Error(`Compilation errors:\n${errors}`));
-            }
-
-            compiler.close((closeErr) => {
-                if (closeErr) {
-                    return reject(new Error(`Compiler close failed: ${closeErr.message}`));
-                }
-                compiler.purgeInputFileSystem();
-                resolve(0);
-            });
-        });
+    const result = esbuild.buildSync({
+        entryPoints,
+        outdir: join(process.cwd(), dist),
+        bundle: true,
+        allowOverwrite: true,
+        format: 'cjs',
+        platform: 'browser',
+        target: 'es2020',
+        minify: !isDev,
+        sourcemap: isDev ? false : true,
+        jsx: 'automatic',
+        resolveExtensions: ['.js', '.jsx', '.tsx', '.ts'],
+        loader: {
+            '.js': 'jsx',
+            '.png': 'dataurl',
+            '.svg': 'dataurl',
+            '.jpg': 'dataurl',
+            '.jpeg': 'dataurl',
+            '.gif': 'dataurl',
+            '.woff': 'dataurl',
+            '.woff2': 'dataurl',
+            '.eot': 'dataurl',
+            '.ttf': 'dataurl',
+            '.otf': 'dataurl',
+            '.webp': 'dataurl',
+        },
+        logLevel: 'error',
     });
+
+    if (result.errors && result.errors.length > 0) {
+        throw new Error(`Compilation errors:\n${result.errors.map(e => e.text).join('\n')}`);
+    }
+
+    return 0;
 }
 
 module.exports = {
-    web_bundling: webBundling // Export the web_bundling function to call it via metacall
+    web_bundling: webBundling
 };

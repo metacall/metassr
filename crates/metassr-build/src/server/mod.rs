@@ -111,7 +111,7 @@ impl ServerSideBuilder {
         let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
         let manifest =
-            ManifestGenerator::new(state.targets.clone(), state.cache_dir.clone(), dist)
+            ManifestGenerator::new(state.targets.clone(), state.cache_dir.clone(), dist, self.dist_path.clone())
                 .generate(&state.head)?;
         manifest.write(&self.dist_path.clone())?;
 
