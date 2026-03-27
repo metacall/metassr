@@ -1,0 +1,89 @@
+use anyhow::{anyhow, Result};
+use std::{
+    path::PathBuf,
+    process::{Command, Stdio},
+};
+use tracing::info;
+
+static BUNDLE_SCRIPT: &str = include_str!("../vendor/bundle.js");
+static PACKAGE_JSON: &str = include_str!("../vendor/package.json");
+
+const PACKAGE_MANAGERS: &[&str] = &["npm", "pnpm", "yarn", "bun"];
+
+fn vendor_dir() -> Result<PathBuf> {
+    let home =
+        std::env::var("HOME").map_err(|_| anyhow!("HOME environment variable not set"))?;
+    Ok(PathBuf::from(home)
+        .join(".metassr")
+        .join("vendor")
+        .join("bundler"))
+}
+
+fn detect_package_manager() -> Result<String> {
+    for pm in PACKAGE_MANAGERS {
+        if Command::new(pm)
+            .arg("--version")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .is_ok()
+        {
+            return Ok(pm.to_string());
+        }
+    }
+    Err(anyhow!(
+        "No JavaScript package manager found.\n\
+         Install one of: npm, pnpm, yarn, or bun.\n\
+         npm comes with Node.js: https://nodejs.org"
+    ))
+}
+
+/// Ensures the vendored `@rspack/core` is installed in `~/.metassr/vendor/bundler/`.
+///
+/// On first run, writes `bundle.js` and `package.json` to the vendor directory
+/// and runs `npm install` (or pnpm/yarn/bun if npm is not available).
+///
+/// On subsequent runs, only re-installs if the `package.json` version has changed
+/// (e.g., after a metassr update).
+///
+/// Returns the path to `bundle.js` for loading via MetaCall.
+pub fn ensure_vendor_setup() -> Result<PathBuf> {
+    let dir = vendor_dir()?;
+    let bundle_path = dir.join("bundle.js");
+    let package_json_path = dir.join("package.json");
+    let rspack_marker = dir.join("node_modules").join("@rspack").join("core");
+
+    // Check if we need to (re-)install: missing node_modules or version changed
+    let needs_install = if rspack_marker.exists() && package_json_path.exists() {
+        let existing = std::fs::read_to_string(&package_json_path).unwrap_or_default();
+        existing.trim() != PACKAGE_JSON.trim()
+    } else {
+        true
+    };
+
+    if needs_install {
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(&bundle_path, BUNDLE_SCRIPT)?;
+        std::fs::write(&package_json_path, PACKAGE_JSON)?;
+
+        let pm = detect_package_manager()?;
+        info!("Installing vendored packages using {pm}...");
+
+        let status = Command::new(&pm)
+            .arg("install")
+            .current_dir(&dir)
+            .status()
+            .map_err(|e| anyhow!("Failed to run {pm}: {e}"))?;
+
+        if !status.success() {
+            return Err(anyhow!("{pm} install failed in {}", dir.display()));
+        }
+
+        info!("Vendored @rspack/core installed successfully.");
+    } else if !bundle_path.exists() {
+        // node_modules exists but bundle.js was deleted — restore it
+        std::fs::write(&bundle_path, BUNDLE_SCRIPT)?;
+    }
+
+    Ok(bundle_path)
+}

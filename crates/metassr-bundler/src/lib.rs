@@ -1,3 +1,5 @@
+mod vendor;
+
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use metacall::{load, metacall, MetaCallFuture, MetaCallValue};
@@ -19,7 +21,6 @@ lazy_static! {
     /// A simple checker to check if the bundling function is done or not. It is used to block the program until bundling done.
     static ref IS_COMPILATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
 }
-static BUILD_SCRIPT: &str = include_str!("./bundle.js");
 const BUNDLING_FUNC: &str = "web_bundling";
 
 /// A simple struct for compilation wait of the bundling function.
@@ -99,9 +100,18 @@ impl<'a> WebBundler<'a> {
         // Lock the mutex to check if the bundling script is already loaded
         let mut guard = IS_BUNDLING_SCRIPT_LOADED.lock().unwrap();
         if !guard.is_true() {
-            // If not loaded, attempt to load the script into MetaCall
-            // println!("{:?}", BUILD_SCRIPT);
-            if let Err(e) = load::from_memory(load::Tag::NodeJS, BUILD_SCRIPT, None) {
+            // Ensure vendored @rspack/core is installed in ~/.metassr/vendor/bundler/
+            let bundle_path = vendor::ensure_vendor_setup()?;
+
+            // Load via from_single_file so require('@rspack/core') resolves
+            // from the vendored node_modules, not the user's project
+            if let Err(e) = load::from_single_file(
+                load::Tag::NodeJS,
+                bundle_path
+                    .to_str()
+                    .ok_or_else(|| anyhow!("Invalid vendor path"))?,
+                None,
+            ) {
                 return Err(anyhow!("Cannot load bundling script: {e:?}"));
             }
             // Mark the script as loaded

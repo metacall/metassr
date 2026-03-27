@@ -1,0 +1,9 @@
+{
+  "name": "metassr-bundler-vendor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vendored bundler for metassr bundler",
+  "dependencies": {
+    "@rspack/core": "1.5.5"
+  }
+}
