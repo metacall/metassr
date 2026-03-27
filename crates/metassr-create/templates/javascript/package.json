@@ -3,7 +3,7 @@
   "version": "%VER%",
   "description": "%DESC%",
   "scripts": {
-    "run": "metassr --debug-mode=http run",
+    "start:ssr": "metassr --debug-mode=http run",
     "serve": "metassr --debug-mode=http run --serve",
     "build:ssr": "metassr --debug-mode=metacall build -t ssr",
     "build:ssg": "metassr --debug-mode=metacall build -t ssg"
