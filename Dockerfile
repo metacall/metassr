@@ -48,4 +48,4 @@ RUN npm install \
 # Exposing Port
 EXPOSE 8080
 
-CMD ["npm", "start:ssr"]
+CMD ["npm", "run", "start:ssr"]
