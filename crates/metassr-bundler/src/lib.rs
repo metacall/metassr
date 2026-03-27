@@ -22,7 +22,11 @@ pub struct WebBundler<'a> {
 }
 
 impl<'a> WebBundler<'a> {
-    pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S, dev_mode: bool) -> Result<Self>
+    pub fn new<S>(
+        targets: &'a HashMap<String, String>,
+        dist_path: &'a S,
+        dev_mode: bool,
+    ) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {

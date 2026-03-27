@@ -11,8 +11,7 @@ static PACKAGE_JSON: &str = include_str!("../vendor/package.json");
 const PACKAGE_MANAGERS: &[&str] = &["npm", "pnpm", "yarn", "bun"];
 
 fn vendor_dir() -> Result<PathBuf> {
-    let home =
-        std::env::var("HOME").map_err(|_| anyhow!("HOME environment variable not set"))?;
+    let home = std::env::var("HOME").map_err(|_| anyhow!("HOME environment variable not set"))?;
     Ok(PathBuf::from(home)
         .join(".metassr")
         .join("vendor")

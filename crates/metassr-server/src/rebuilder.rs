@@ -193,7 +193,8 @@ impl Rebuilder {
     fn rebuild_page(&self, path: PathBuf) -> Result<()> {
         debug!("Rebuilding page {:?}", path);
 
-        let out_dir = self.out_dir
+        let out_dir = self
+            .out_dir
             .to_str()
             .ok_or_else(|| anyhow!("Invalid output path"))?;
 
@@ -212,7 +213,10 @@ impl Rebuilder {
             let instant = Instant::now();
             let bundler = WebBundler::new(&combined_targets, out_dir, true)?;
             if let Err(e) = bundler.exec() {
-                error!(target = "rebuilder", message = format!("Bundling failed: {e}"));
+                error!(
+                    target = "rebuilder",
+                    message = format!("Bundling failed: {e}")
+                );
                 return Err(anyhow!("Couldn't continue rebuilding process."));
             }
             debug!(

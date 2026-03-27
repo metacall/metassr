@@ -34,12 +34,18 @@ impl Exec for Builder {
 
         // Generate targets for both client and server
         let client_targets = client_builder.generate_targets().map_err(|e| {
-            error!(target = "builder", message = format!("Client target generation failed: {e}"));
+            error!(
+                target = "builder",
+                message = format!("Client target generation failed: {e}")
+            );
             anyhow!("Couldn't continue building process.")
         })?;
 
         let server_state = server_builder.generate_targets().map_err(|e| {
-            error!(target = "builder", message = format!("Server target generation failed: {e}"));
+            error!(
+                target = "builder",
+                message = format!("Server target generation failed: {e}")
+            );
             anyhow!("Couldn't continue building process.")
         })?;
 
@@ -51,7 +57,10 @@ impl Exec for Builder {
             let instant = Instant::now();
             let bundler = WebBundler::new(&combined_targets, &self.out_dir, false)?;
             if let Err(e) = bundler.exec() {
-                error!(target = "builder", message = format!("Bundling failed: {e}"));
+                error!(
+                    target = "builder",
+                    message = format!("Bundling failed: {e}")
+                );
                 return Err(anyhow!("Couldn't continue building process."));
             }
             info!(
@@ -65,7 +74,10 @@ impl Exec for Builder {
         {
             let instant = Instant::now();
             server_builder.finish_build(server_state).map_err(|e| {
-                error!(target = "builder", message = format!("Server post-processing failed: {e}"));
+                error!(
+                    target = "builder",
+                    message = format!("Server post-processing failed: {e}")
+                );
                 anyhow!("Couldn't continue building process.")
             })?;
             info!(

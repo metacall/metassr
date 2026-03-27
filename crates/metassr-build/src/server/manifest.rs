@@ -113,7 +113,12 @@ pub struct ManifestGenerator {
 }
 
 impl ManifestGenerator {
-    pub fn new(targets: Targets, cache: CacheDir, dist: DistDirContainer, dist_path: PathBuf) -> Self {
+    pub fn new(
+        targets: Targets,
+        cache: CacheDir,
+        dist: DistDirContainer,
+        dist_path: PathBuf,
+    ) -> Self {
         Self {
             targets,
             dist,
@@ -136,7 +141,8 @@ impl ManifestGenerator {
             let route_key = if route == "#root" { "root" } else { route };
 
             // Point to the esbuild bundle output, not the source file
-            let renderer = self.dist_path
+            let renderer = self
+                .dist_path
                 .join("server")
                 .join("pages")
                 .join(format!("{route_key}.js"));

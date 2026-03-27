@@ -48,7 +48,10 @@ impl Targets {
             .iter()
             .map(|(path, &id)| {
                 let route = self.route_from_source(path, &cache_pages);
-                let bundle = dist_path.join("server").join("pages").join(format!("{route}.js"));
+                let bundle = dist_path
+                    .join("server")
+                    .join("pages")
+                    .join(format!("{route}.js"));
                 (bundle.to_str().unwrap().to_string(), id)
             })
             .collect()

@@ -44,7 +44,12 @@ pub struct ServerSideBuilder {
 }
 
 impl ServerSideBuilder {
-    pub fn new<S>(root: &S, dist_dir: &str, building_type: BuildingType, dev_mode: bool) -> Result<Self>
+    pub fn new<S>(
+        root: &S,
+        dist_dir: &str,
+        building_type: BuildingType,
+        dev_mode: bool,
+    ) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -110,15 +115,22 @@ impl ServerSideBuilder {
     pub fn finish_build(&self, state: ServerBuildState) -> Result<()> {
         let dist = DistDir::new(&self.dist_path)?.analyze()?;
 
-        let manifest =
-            ManifestGenerator::new(state.targets.clone(), state.cache_dir.clone(), dist, self.dist_path.clone())
-                .generate(&state.head)?;
+        let manifest = ManifestGenerator::new(
+            state.targets.clone(),
+            state.cache_dir.clone(),
+            dist,
+            self.dist_path.clone(),
+        )
+        .generate(&state.head)?;
         manifest.write(&self.dist_path.clone())?;
 
         // Head was already bundled in the combined rspack call, just load it
-        if let Err(e) =
-            HeadRenderer::new(&manifest.global.head, state.cache_dir.clone(), self.dev_mode)
-                .render(false)
+        if let Err(e) = HeadRenderer::new(
+            &manifest.global.head,
+            state.cache_dir.clone(),
+            self.dev_mode,
+        )
+        .render(false)
         {
             return Err(anyhow!("Couldn't render head: {e}"));
         }
@@ -145,8 +157,7 @@ impl Build for ServerSideBuilder {
     fn build(&self) -> Result<Self::Output> {
         let state = self.generate_targets()?;
 
-        let bundler =
-            WebBundler::new(&state.bundling_targets, &self.dist_path, self.dev_mode)?;
+        let bundler = WebBundler::new(&state.bundling_targets, &self.dist_path, self.dev_mode)?;
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }

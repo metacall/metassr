@@ -37,7 +37,8 @@ impl HeadRenderer {
             }
 
             // Load the bundled head from dist/server/head.js (esbuild output location)
-            let bundle_path = self.cache_dir
+            let bundle_path = self
+                .cache_dir
                 .path()
                 .parent()
                 .ok_or_else(|| anyhow!("Cannot resolve dist path from cache dir"))?
@@ -99,7 +100,10 @@ export function render_head() {{
     /// Generates the head bundling target for inclusion in a combined build.
     /// The returned entry uses a `cache/` prefix so it outputs to `dist/cache/head.js`
     /// when bundled with the main dist output directory.
-    pub fn generate_target(head_path: &PathBuf, cache_dir: &mut CacheDir) -> Result<HashMap<String, String>> {
+    pub fn generate_target(
+        head_path: &PathBuf,
+        cache_dir: &mut CacheDir,
+    ) -> Result<HashMap<String, String>> {
         let script = format!(
             r#"
 import Head from "{}"
