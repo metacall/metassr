@@ -39,10 +39,11 @@ pub struct ServerSideBuilder {
     src_path: PathBuf,
     dist_path: PathBuf,
     building_type: BuildingType,
+    dev_mode: bool,
 }
 
 impl ServerSideBuilder {
-    pub fn new<S>(root: &S, dist_dir: &str, building_type: BuildingType) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str, building_type: BuildingType, dev_mode: bool) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -60,6 +61,7 @@ impl ServerSideBuilder {
             src_path,
             dist_path,
             building_type,
+            dev_mode,
         })
     }
 }
@@ -79,7 +81,7 @@ impl Build for ServerSideBuilder {
         };
 
         let bundling_targets = targets.ready_for_bundling(&self.dist_path);
-        let bundler = WebBundler::new(&bundling_targets, &self.dist_path)?;
+        let bundler = WebBundler::new(&bundling_targets, &self.dist_path, self.dev_mode)?;
 
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
@@ -91,13 +93,13 @@ impl Build for ServerSideBuilder {
             ManifestGenerator::new(targets.clone(), cache_dir.clone(), dist).generate(&head)?;
         manifest.write(&self.dist_path.clone())?;
 
-        if let Err(e) = HeadRenderer::new(&manifest.global.head, cache_dir.clone()).render(true) {
+        if let Err(e) = HeadRenderer::new(&manifest.global.head, cache_dir.clone(), self.dev_mode).render(true) {
             return Err(anyhow!("Couldn't render head: {e}"));
         }
 
         if self.building_type == BuildingType::StaticSiteGeneration {
             if let Err(e) =
-                PagesGenerator::new(targets, &head, &self.dist_path, cache_dir)?.generate()
+                PagesGenerator::new(targets, &head, &self.dist_path, cache_dir, self.dev_mode)?.generate()
             {
                 return Err(anyhow!("Couldn't generate pages: {e}"));
             }

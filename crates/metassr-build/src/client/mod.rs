@@ -23,10 +23,11 @@ pub mod hydrator;
 pub struct ClientBuilder {
     src_path: PathBuf,
     dist_path: PathBuf,
+    dev_mode: bool,
 }
 
 impl ClientBuilder {
-    pub fn new<S>(root: &S, dist_dir: &str) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str, dev_mode: bool) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -43,6 +44,7 @@ impl ClientBuilder {
         Ok(Self {
             src_path,
             dist_path,
+            dev_mode,
         })
     }
 }
@@ -73,7 +75,7 @@ impl Build for ClientBuilder {
             })
             .collect::<HashMap<String, String>>();
 
-        let bundler = WebBundler::new(&targets, &self.dist_path)?;
+        let bundler = WebBundler::new(&targets, &self.dist_path, self.dev_mode)?;
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }

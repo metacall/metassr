@@ -14,16 +14,18 @@ lazy_static! {
 pub struct HeadRenderer {
     path: PathBuf,
     cache_dir: CacheDir,
+    dev_mode: bool,
 }
 
 impl HeadRenderer {
-    pub fn new<S>(path: &S, cache_dir: CacheDir) -> Self
+    pub fn new<S>(path: &S, cache_dir: CacheDir, dev_mode: bool) -> Self
     where
         S: AsRef<OsStr> + ?Sized,
     {
         Self {
             path: PathBuf::from(path),
             cache_dir,
+            dev_mode,
         }
     }
 
@@ -51,7 +53,7 @@ impl HeadRenderer {
 
     fn bundle(&mut self) -> Result<()> {
         let bundling_targets = self.bundling_target()?;
-        let bundler = WebBundler::new(&bundling_targets, self.cache_dir.path())?;
+        let bundler = WebBundler::new(&bundling_targets, self.cache_dir.path(), self.dev_mode)?;
 
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Cannot bundling head: {e}"));

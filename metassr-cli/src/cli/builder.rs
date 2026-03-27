@@ -31,7 +31,7 @@ impl Exec for Builder {
         {
             let instant = Instant::now();
 
-            if let Err(e) = ClientBuilder::new("", &self.out_dir)?.build() {
+            if let Err(e) = ClientBuilder::new("", &self.out_dir, false)?.build() {
                 error!(
                     target = "builder",
                     message = format!("Couldn't build for the client side:  {e}"),
@@ -48,7 +48,7 @@ impl Exec for Builder {
         {
             let instant = Instant::now();
 
-            if let Err(e) = ServerSideBuilder::new("", &self.out_dir, self._type.into())?.build() {
+            if let Err(e) = ServerSideBuilder::new("", &self.out_dir, self._type.into(), false)?.build() {
                 error!(
                     target = "builder",
                     message = format!("Couldn't build for the server side: {e}"),

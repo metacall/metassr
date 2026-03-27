@@ -50,6 +50,8 @@ pub struct WebBundler<'a> {
     pub targets: HashMap<String, &'a Path>,
     /// The output directory where the bundled files will be stored.
     pub dist_path: &'a Path,
+    /// When true, skips minification and uses cheap source maps for faster builds.
+    pub dev_mode: bool,
 }
 
 impl<'a> WebBundler<'a> {
@@ -59,7 +61,7 @@ impl<'a> WebBundler<'a> {
     /// - `dist_path`: The path to the directory where the bundled output should be saved.
     ///
     /// Returns a `WebBundler` struct.
-    pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S) -> Result<Self>
+    pub fn new<S>(targets: &'a HashMap<String, String>, dist_path: &'a S, dev_mode: bool) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -85,6 +87,7 @@ impl<'a> WebBundler<'a> {
         Ok(Self {
             targets,
             dist_path: Path::new(dist_path),
+            dev_mode,
         })
     }
 
@@ -154,6 +157,7 @@ impl<'a> WebBundler<'a> {
             [
                 serde_json::to_string(&self.targets)?,
                 to_js_path(self.dist_path),
+                self.dev_mode.to_string(),
             ],
         )
         .unwrap();
@@ -195,7 +199,7 @@ mod tests {
         let _metacall = initialize().unwrap();
         let targets = HashMap::from([("pages/home".to_owned(), "./tests/home.js".to_owned())]);
 
-        match WebBundler::new(&targets, "tests/dist") {
+        match WebBundler::new(&targets, "tests/dist", false) {
             Ok(bundler) => {
                 assert!(bundler.exec().is_ok());
                 assert!(Path::new("tests/dist/pages/home.js").exists());
@@ -212,7 +216,7 @@ mod tests {
         clean();
         let targets = HashMap::from([("invalid_path.tsx".to_owned(), "invalid_path".to_owned())]);
 
-        let bundler = WebBundler::new(&targets, "tests/dist");
+        let bundler = WebBundler::new(&targets, "tests/dist", false);
         assert!(bundler.is_err());
     }
 }

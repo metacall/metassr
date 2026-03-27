@@ -85,7 +85,7 @@ const defaultConfig = {
     }
 };
 
-function createBundlerConfig(entry, dist) {
+function createBundlerConfig(entry, dist, devMode) {
     return {
         ...defaultConfig, // Merge with the default config
         entry: safelyParseJSON(entry) || entry,
@@ -93,9 +93,12 @@ function createBundlerConfig(entry, dist) {
             ...defaultConfig.output,
             path: join(process.cwd(), dist)
         } : defaultConfig.output,
+        optimization: {
+            minimize: !devMode,
+        },
         name: 'Client',
-        mode: 'production',
-        devtool: 'source-map',
+        mode: devMode ? 'development' : 'production',
+        devtool: devMode ? 'eval' : 'source-map',
         experiments: {
             css: true
         },
@@ -106,7 +109,7 @@ function createBundlerConfig(entry, dist) {
             modules: true
         },
         target: 'web',
-        performance: {
+        performance: devMode ? false : {
             hints: 'warning',
             maxAssetSize: 250000,
             maxEntrypointSize: 400000
@@ -121,9 +124,9 @@ function createBundlerConfig(entry, dist) {
  * @param {string} dist - The distribution path where bundled files will be output.
  * @returns {Promise} - Resolves when bundling is successful, rejects if there is an error.
  */
-async function webBundling(entry, dist) {
+async function webBundling(entry, dist, devMode) {
     // Create a bundler instance using the config and parameters
-    const compiler = rspack(createBundlerConfig(entry, dist));
+    const compiler = rspack(createBundlerConfig(entry, dist, devMode === 'true'));
 
     // Return a promise that runs the bundling process and resolves or rejects based on the result
     return new Promise((resolve, reject) => {

@@ -203,6 +203,7 @@ impl Rebuilder {
                 self.out_dir
                     .to_str()
                     .ok_or_else(|| anyhow!("couldn't find out dir path"))?,
+                true,
             )?
             .build();
 
@@ -231,6 +232,7 @@ impl Rebuilder {
                     .to_str()
                     .ok_or_else(|| anyhow!("Invalid output path"))?,
                 self.building_type,
+                true,
             )?;
 
             if let Err(e) = server_builder.build() {

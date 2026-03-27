@@ -31,9 +31,10 @@ impl PagesGenerator {
         head_path: &S,
         dist_path: &S,
         cache_dir: CacheDir,
+        dev_mode: bool,
     ) -> Result<Self> {
         let dist = DistDir::new(dist_path)?.analyze()?;
-        let head = HeadRenderer::new(&head_path, cache_dir.clone()).render(true)?;
+        let head = HeadRenderer::new(&head_path, cache_dir.clone(), dev_mode).render(true)?;
         let cache = cache_dir.path().to_path_buf();
 
         let output = MultiRenderExec::new(targets.ready_for_exec())?.exec()?;
