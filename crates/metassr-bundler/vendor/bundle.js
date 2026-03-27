@@ -86,13 +86,18 @@ const defaultConfig = {
 };
 
 function createBundlerConfig(entry, dist, devMode) {
+    const outputPath = dist ? join(process.cwd(), dist) : undefined;
     return {
         ...defaultConfig, // Merge with the default config
         entry: safelyParseJSON(entry) || entry,
-        output: dist ? {
+        output: outputPath ? {
             ...defaultConfig.output,
-            path: join(process.cwd(), dist)
+            path: outputPath
         } : defaultConfig.output,
+        cache: {
+            type: 'filesystem',
+            cacheDirectory: join(process.cwd(), 'node_modules/.cache/rspack'),
+        },
         optimization: {
             minimize: !devMode,
         },

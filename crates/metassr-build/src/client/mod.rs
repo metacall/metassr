@@ -49,9 +49,10 @@ impl ClientBuilder {
     }
 }
 
-impl Build for ClientBuilder {
-    type Output = ();
-    fn build(&self) -> Result<Self::Output> {
+impl ClientBuilder {
+    /// Generates client-side hydrator scripts and returns the bundling targets
+    /// without running the bundler. Use with `WebBundler` to combine with server targets.
+    pub fn generate_targets(&self) -> Result<HashMap<String, String>> {
         let mut cache_dir = CacheDir::new(&format!("{}/cache", self.dist_path.display()))?;
         let src = SourceDir::new(&self.src_path).analyze()?;
 
@@ -70,16 +71,22 @@ impl Build for ClientBuilder {
             .iter()
             .map(|(entry_name, path)| {
                 let fullpath = dunce::canonicalize(path).unwrap();
-
                 (entry_name.to_owned(), format!("{}", fullpath.display()))
             })
             .collect::<HashMap<String, String>>();
 
+        Ok(targets)
+    }
+}
+
+impl Build for ClientBuilder {
+    type Output = ();
+    fn build(&self) -> Result<Self::Output> {
+        let targets = self.generate_targets()?;
         let bundler = WebBundler::new(&targets, &self.dist_path, self.dev_mode)?;
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }
-
         Ok(())
     }
 }

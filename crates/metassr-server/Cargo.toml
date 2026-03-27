@@ -11,6 +11,7 @@ axum = "0.7.5"
 chrono = "0.4.38"
 metacall = "0.5.8"
 metassr-build = { path = "../metassr-build" }
+metassr-bundler = { path = "../metassr-bundler" }
 metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
 metassr-utils = { path = "../metassr-utils" }
 metassr-watcher = { path = "../metassr-watcher" }

@@ -60,6 +60,7 @@ impl HeadRenderer {
         }
         Ok(())
     }
+
     fn script(&self) -> Result<String> {
         let script = format!(
             r#"
@@ -69,8 +70,8 @@ import React from "react"
 
 export function render_head() {{
     return renderToString(<Head />);
-}}            
-                
+}}
+
                 "#,
             to_js_path(&dunce::canonicalize(&self.path)?)
         );
@@ -89,5 +90,28 @@ export function render_head() {{
         let fullpath = to_js_path(&dunce::canonicalize(&path)?);
 
         Ok(HashMap::from([(name, fullpath)]))
+    }
+
+    /// Generates the head bundling target for inclusion in a combined build.
+    /// The returned entry uses a `cache/` prefix so it outputs to `dist/cache/head.js`
+    /// when bundled with the main dist output directory.
+    pub fn generate_target(head_path: &PathBuf, cache_dir: &mut CacheDir) -> Result<HashMap<String, String>> {
+        let script = format!(
+            r#"
+import Head from "{}"
+import {{ renderToString }} from "react-dom/server"
+import React from "react"
+
+export function render_head() {{
+    return renderToString(<Head />);
+}}
+                "#,
+            to_js_path(&dunce::canonicalize(head_path)?)
+        );
+
+        let path = cache_dir.insert("head.js", script.as_bytes())?;
+        let fullpath = to_js_path(&dunce::canonicalize(&path)?);
+
+        Ok(HashMap::from([("cache/head".to_string(), fullpath)]))
     }
 }

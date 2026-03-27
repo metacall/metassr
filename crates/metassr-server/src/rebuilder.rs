@@ -11,8 +11,8 @@ use metassr_api_handler::ApiRoutes;
 use metassr_build::{
     client::ClientBuilder,
     server::{BuildingType, ServerSideBuilder},
-    traits::Build,
 };
+use metassr_bundler::WebBundler;
 use metassr_watcher::utils::*;
 use tokio::sync::broadcast;
 
@@ -193,61 +193,42 @@ impl Rebuilder {
     fn rebuild_page(&self, path: PathBuf) -> Result<()> {
         debug!("Rebuilding page {:?}", path);
 
-        debug!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
+        let out_dir = self.out_dir
+            .to_str()
+            .ok_or_else(|| anyhow!("Invalid output path"))?;
 
-        // Build client-side bundle
+        let client_builder = ClientBuilder::new("", out_dir, true)?;
+        let server_builder = ServerSideBuilder::new("", out_dir, self.building_type, true)?;
+
+        // Generate targets for both client and server
+        let client_targets = client_builder.generate_targets()?;
+        let server_state = server_builder.generate_targets()?;
+
+        // Combine all targets into a single rspack compilation
+        let mut combined_targets = client_targets;
+        combined_targets.extend(server_state.bundling_targets.clone());
+
         {
             let instant = Instant::now();
-            let client_builder = ClientBuilder::new(
-                "",
-                self.out_dir
-                    .to_str()
-                    .ok_or_else(|| anyhow!("couldn't find out dir path"))?,
-                true,
-            )?
-            .build();
-
-            if let Err(e) = client_builder {
-                error!(
-                    target = "rebuilder",
-                    message = format!("Couldn't build for the client side:  {e}"),
-                );
+            let bundler = WebBundler::new(&combined_targets, out_dir, true)?;
+            if let Err(e) = bundler.exec() {
+                error!(target = "rebuilder", message = format!("Bundling failed: {e}"));
                 return Err(anyhow!("Couldn't continue rebuilding process."));
             }
-
             debug!(
                 target = "rebuilder",
-                message = "Client building is completed",
+                message = "Bundling is completed",
                 time = format!("{}ms", instant.elapsed().as_millis())
             );
         }
 
-        // Build server-side bundle
-        {
-            let instant = Instant::now();
-
-            let server_builder = ServerSideBuilder::new(
-                "",
-                self.out_dir
-                    .to_str()
-                    .ok_or_else(|| anyhow!("Invalid output path"))?,
-                self.building_type,
-                true,
-            )?;
-
-            if let Err(e) = server_builder.build() {
-                error!(
-                    target = "rebuilder",
-                    message = format!("Failed to build server-side for {}: {}", path.display(), e)
-                );
-                return Err(anyhow!("Server-side build failed"));
-            }
-
-            debug!(
-                target = "rel_path",
-                message = "Server building is completed",
-                time = format!("{}ms", instant.elapsed().as_millis())
+        // Server post-processing
+        if let Err(e) = server_builder.finish_build(server_state) {
+            error!(
+                target = "rebuilder",
+                message = format!("Failed to build server-side for {}: {}", path.display(), e)
             );
+            return Err(anyhow!("Server-side build failed"));
         }
 
         Ok(())
