@@ -101,7 +101,7 @@ impl Rebuilder {
             path if path.starts_with("src/components") => RebuildType::Component,
             path if path.starts_with("src/styles") => RebuildType::Style,
             path if path.starts_with("static") => RebuildType::Static,
-            // entered rebuilding everything if we're not surue of entered rebuilding kind
+            // entered rebuilding everything if we're not sure of entered rebuilding kind
             _ => RebuildType::Layout,
         };
 

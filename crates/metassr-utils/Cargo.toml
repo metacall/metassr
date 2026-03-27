@@ -2,7 +2,7 @@
 name = "metassr-utils"
 version.workspace = true
 edition = "2021"
-description = "Important utilites for MetaSSR"
+description = "Important utilities for MetaSSR"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

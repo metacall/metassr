@@ -149,7 +149,7 @@ impl DistDir {
     {
         let path = PathBuf::from(path);
 
-        // Check if the path exists, and return an error if not foundd
+        // Check if the path exists, and return an error if not found
         if !path.exists() {
             return Err(anyhow!("Dist directory not found: {path:#?}"));
         }
