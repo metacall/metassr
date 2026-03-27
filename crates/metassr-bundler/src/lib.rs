@@ -18,6 +18,9 @@ lazy_static! {
 
     /// A simple checker to check if the bundling function is done or not. It is used to block the program until bundling done.
     static ref IS_COMPILATION_WAIT: Arc<CompilationWait> = Arc::new(CompilationWait::default());
+
+    /// Tracks whether the most recent bundling invocation was rejected (failed).
+    static ref IS_BUNDLING_FAILED: Mutex<bool> = Mutex::new(false);
 }
 static BUILD_SCRIPT: &str = include_str!("./bundle.js");
 const BUNDLING_FUNC: &str = "web_bundling";
@@ -130,8 +133,8 @@ impl<'a> WebBundler<'a> {
             let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
 
-            // Log the bundling error and mark the process as completed
             error!("Bundling rejected: {err:?}");
+            *IS_BUNDLING_FAILED.lock().unwrap() = true;
             started.make_true();
             compilation_wait.cond.notify_one();
 
@@ -162,6 +165,13 @@ impl<'a> WebBundler<'a> {
 
         // Reset the checker state to false after the process completes
         started.make_false();
+
+        let mut failed = IS_BUNDLING_FAILED.lock().unwrap();
+        if *failed {
+            *failed = false;
+            return Err(anyhow!("Bundling failed"));
+        }
+
         Ok(())
     }
 }
@@ -204,5 +214,21 @@ mod tests {
 
         let bundler = WebBundler::new(&targets, "tests/dist");
         assert!(bundler.is_err());
+    }
+
+    #[test]
+    fn bundling_failure_returns_err() {
+        clean();
+        let _metacall = initialize().unwrap();
+        let targets =
+            HashMap::from([("pages/broken".to_owned(), "./tests/broken.js".to_owned())]);
+
+        let bundler = WebBundler::new(&targets, "tests/dist")
+            .expect("WebBundler::new() should succeed for an existing file");
+        assert!(
+            bundler.exec().is_err(),
+            "exec() must return Err when rspack fails to bundle"
+        );
+        clean();
     }
 }
