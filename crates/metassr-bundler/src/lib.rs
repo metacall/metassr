@@ -185,6 +185,15 @@ mod tests {
 
     use super::*;
     use metacall::initialize;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn ensure_metacall_initialized() {
+        INIT.call_once(|| {
+            initialize().expect("Failed to initialize MetaCall");
+        });
+    }
 
     fn clean() {
         let dist = Path::new("tests/dist");
@@ -195,8 +204,8 @@ mod tests {
 
     #[test]
     fn bundling_works() {
+        ensure_metacall_initialized();
         clean();
-        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("pages/home".to_owned(), "./tests/home.js".to_owned())]);
 
         match WebBundler::new(&targets, "tests/dist") {
@@ -222,8 +231,8 @@ mod tests {
 
     #[test]
     fn bundling_with_broken_syntax_fails() {
+        ensure_metacall_initialized();
         clean();
-        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("pages/broken".to_owned(), "./tests/broken.js".to_owned())]);
 
         match WebBundler::new(&targets, "tests/dist") {
