@@ -109,8 +109,8 @@ impl FromStr for BuildingType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "ssr" | "server-side rendering" => Ok(BuildingType::Ssg),
-            "ssg" | "static-site generation" => Ok(BuildingType::Ssr),
+            "ssr" | "server-side rendering" => Ok(BuildingType::Ssr),
+            "ssg" | "static-site generation" => Ok(BuildingType::Ssg),
             _ => Err("unsupported option.".to_string()),
         }
     }
