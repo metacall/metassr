@@ -181,6 +181,17 @@ mod tests {
 
     use super::*;
     use metacall::initialize;
+    use std::sync::{Mutex, MutexGuard, Once};
+
+    static METACALL_ONCE: Once = Once::new();
+    static LOCK: Mutex<()> = Mutex::new(());
+
+    fn setup() -> MutexGuard<'static, ()> {
+        METACALL_ONCE.call_once(|| {
+            std::mem::forget(initialize().unwrap());
+        });
+        LOCK.lock().unwrap()
+    }
 
     fn clean() {
         let dist = Path::new("tests/dist");
@@ -191,8 +202,8 @@ mod tests {
 
     #[test]
     fn bundling_works() {
+        let _lock = setup();
         clean();
-        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("pages/home".to_owned(), "./tests/home.js".to_owned())]);
 
         match WebBundler::new(&targets, "tests/dist") {
@@ -218,8 +229,8 @@ mod tests {
 
     #[test]
     fn bundling_failure_returns_err() {
+        let _lock = setup();
         clean();
-        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("pages/broken".to_owned(), "./tests/broken.js".to_owned())]);
 
         let bundler = WebBundler::new(&targets, "tests/dist")
