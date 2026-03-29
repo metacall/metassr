@@ -220,8 +220,7 @@ mod tests {
     fn bundling_failure_returns_err() {
         clean();
         let _metacall = initialize().unwrap();
-        let targets =
-            HashMap::from([("pages/broken".to_owned(), "./tests/broken.js".to_owned())]);
+        let targets = HashMap::from([("pages/broken".to_owned(), "./tests/broken.js".to_owned())]);
 
         let bundler = WebBundler::new(&targets, "tests/dist")
             .expect("WebBundler::new() should succeed for an existing file");
