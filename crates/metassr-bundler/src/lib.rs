@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
-use metacall::{load, metacall, MetaCallFuture, MetaCallValue};
+use metacall::{load, metacall, MetaCallFuture, MetaCallNull, MetaCallValue};
 use metassr_utils::{checker::CheckerState, js_path::to_js_path};
 use std::{
     any::Any,
@@ -138,7 +138,7 @@ impl<'a> WebBundler<'a> {
             started.make_true();
             compilation_wait.cond.notify_one();
 
-            err
+            Box::new(MetaCallNull())
         }
 
         // Call the `web_bundling` function in the MetaCall script with targets and output path
@@ -169,6 +169,7 @@ impl<'a> WebBundler<'a> {
         let mut failed = IS_BUNDLING_FAILED.lock().unwrap();
         if *failed {
             *failed = false;
+            // Keep IS_BUNDLING_SCRIPT_LOADED true: reloading would redefine `web_bundling` in MetaCall.
             return Err(anyhow!("Bundling failed"));
         }
 
