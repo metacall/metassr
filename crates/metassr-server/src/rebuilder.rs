@@ -240,7 +240,10 @@ impl Rebuilder {
                 Ok(())
             }
             None => {
-                warn!("API routes not registered; cannot hot-reload {:?}", rel_path);
+                warn!(
+                    "API routes not registered; cannot hot-reload {:?}",
+                    rel_path
+                );
                 Ok(())
             }
         }
