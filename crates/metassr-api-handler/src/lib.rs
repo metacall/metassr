@@ -37,7 +37,7 @@ use axum::{
     routing::{get, MethodRouter},
     Router,
 };
-use metacall::{load, metacall};
+use metacall::{load, metacall_handle};
 use scanner::{scan_api_dir, ApiRouteFile};
 use std::{
     collections::HashMap,
@@ -48,15 +48,14 @@ use std::{
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
-/// Stores loaded API route scripts.
-///
-/// NOTE: Currently uses the shared global MetaCall context.
-/// This is a testing behavior that might change in the future to use
-/// a dedicated MetaCall runtime thread for better isolation.
+// `load::Handle` holds a raw `*mut c_void` and is not `Send` by default.
+// SAFETY: ScriptHandle is only ever accessed while holding the Mutex<ApiRoutes> lock.
+struct ScriptHandle(load::Handle);
+unsafe impl Send for ScriptHandle {}
+
+/// Stores loaded API route scripts, each in its own isolated MetaCall handle.
 pub struct ApiRoutes {
-    /// Set of loaded script paths (to avoid reloading).
-    loaded_scripts: HashMap<String, PathBuf>,
-    /// List of discovered route files.
+    loaded_scripts: HashMap<String, (PathBuf, ScriptHandle)>,
     routes: Vec<ApiRouteFile>,
 }
 
@@ -98,28 +97,46 @@ impl ApiRoutes {
         Ok(())
     }
 
-    /// Load a single JavaScript file into MetaCall.
+    /// Load a single JavaScript file into its own MetaCall handle.
     fn load_script(&mut self, file_path: &Path) -> Result<()> {
         let code = read_to_string(file_path)?;
         let path_str = file_path.to_string_lossy().to_string();
+        let mut handle = load::Handle::new();
 
-        // NOTE: Using shared global MetaCall context.
-        // This is a testing behavior that might change to use a dedicated
-        // MetaCall runtime thread for better async handling and isolation.
-        // Passing None as handle to use the global context.
-        load::from_memory(load::Tag::NodeJS, &code, None)
+        // Each script gets its own handle so symbols can be cleared independently on reload.
+        load::from_memory(load::Tag::NodeJS, &code, Some(&mut handle))
             .map_err(|e| anyhow!("Failed to load script {:?}: {:?}", file_path, e))?;
 
         self.loaded_scripts
-            .insert(path_str, file_path.to_path_buf());
+            .insert(path_str, (file_path.to_path_buf(), ScriptHandle(handle)));
+        Ok(())
+    }
+
+    /// Reload a changed script: drops the old handle (clearing its symbols) then reloads.
+    pub fn reload_script(&mut self, file_path: &Path) -> Result<()> {
+        let path_str = file_path.to_string_lossy().to_string();
+
+        // Dropping the entry calls metacall_clear, unregistering the old symbols.
+        self.loaded_scripts.remove(&path_str);
+
+        let code = read_to_string(file_path)?;
+        let mut handle = load::Handle::new();
+
+        load::from_memory(load::Tag::NodeJS, &code, Some(&mut handle))
+            .map_err(|e| anyhow!("Failed to reload script {:?}: {:?}", file_path, e))?;
+
+        self.loaded_scripts
+            .insert(path_str, (file_path.to_path_buf(), ScriptHandle(handle)));
+
+        info!("Reloaded API script: {:?}", file_path);
         Ok(())
     }
 
     /// Call a handler function (GET, POST) on a loaded script.
     /// The function name should match the HTTP method (GET, POST, etc.)
     pub fn call_handler(
-        &self,
-        _file_path: &str,
+        &mut self,
+        file_path: &str,
         method: &str,
         request: ApiRequest,
     ) -> Result<ApiResponse> {
@@ -127,9 +144,12 @@ impl ApiRoutes {
 
         debug!("Calling {}() with request: {}", method, request_json);
 
-        // Call the handler function with the request JSON
-        // MetaCall looks up the function by name in all loaded scripts
-        let result: String = metacall(method, [request_json])
+        let (_, script_handle) = self
+            .loaded_scripts
+            .get_mut(file_path)
+            .ok_or_else(|| anyhow!("Script not loaded: {}", file_path))?;
+
+        let result: String = metacall_handle(&mut script_handle.0, method, [request_json])
             .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 
         let response: ApiResponse = serde_json::from_str(&result)
@@ -277,7 +297,7 @@ fn handle_api_request(
         params: HashMap::new(),
     };
 
-    let routes = api_routes.lock().unwrap();
+    let mut routes = api_routes.lock().unwrap();
     match routes.call_handler(&file_path, method.as_str(), request) {
         Ok(response) => (
             StatusCode::from_u16(response.status).unwrap_or(StatusCode::OK),
@@ -292,5 +312,104 @@ fn handle_api_request(
                 format!("{{\"error\": \"{}\"}}", error),
             )
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    // MetaCall must be initialized exactly once per process — Node.js aborts on double-init.
+    fn init_metacall() {
+        static INIT: std::sync::Once = std::sync::Once::new();
+        INIT.call_once(|| {
+            Box::leak(Box::new(
+                metacall::initialize().expect("MetaCall init failed"),
+            ));
+        });
+    }
+
+    fn write_script(path: &Path, message: &str) {
+        fs::write(
+            path,
+            format!(
+                r#"
+function GET(req) {{
+    return JSON.stringify({{
+        status: 200,
+        body: {{ message: "{message}" }}
+    }});
+}}
+module.exports = {{ GET }};
+"#
+            ),
+        )
+        .unwrap();
+    }
+
+    fn make_get_request() -> ApiRequest {
+        ApiRequest {
+            url: "/api/test".to_string(),
+            headers: HashMap::new(),
+            method: "GET".to_string(),
+            query: HashMap::new(),
+            body: None,
+            params: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn test_api_hot_reload_returns_updated_response() {
+        init_metacall();
+
+        let tmp = std::env::temp_dir().join("metassr_api_reload_test");
+        fs::create_dir_all(&tmp).unwrap();
+        let script = tmp.join("reload_test.js");
+
+        write_script(&script, "original");
+        let mut api = ApiRoutes::new();
+        api.load_script(&script).unwrap();
+
+        let resp = api
+            .call_handler(&script.to_string_lossy(), "GET", make_get_request())
+            .unwrap();
+        assert_eq!(resp.body["message"].as_str().unwrap(), "original");
+
+        write_script(&script, "updated");
+        api.reload_script(&script).unwrap();
+
+        let resp = api
+            .call_handler(&script.to_string_lossy(), "GET", make_get_request())
+            .unwrap();
+        assert_eq!(resp.body["message"].as_str().unwrap(), "updated");
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn test_api_hot_reload_multiple_times() {
+        init_metacall();
+
+        let tmp = std::env::temp_dir().join("metassr_api_reload_multi_test");
+        fs::create_dir_all(&tmp).unwrap();
+        let script = tmp.join("multi_reload.js");
+
+        write_script(&script, "v1");
+        let mut api = ApiRoutes::new();
+        api.load_script(&script).unwrap();
+
+        for version in ["v2", "v3", "v4"] {
+            write_script(&script, version);
+            api.reload_script(&script)
+                .unwrap_or_else(|e| panic!("reload to {version} failed: {e}"));
+
+            let resp = api
+                .call_handler(&script.to_string_lossy(), "GET", make_get_request())
+                .unwrap();
+            assert_eq!(resp.body["message"].as_str().unwrap(), version);
+        }
+
+        let _ = fs::remove_dir_all(&tmp);
     }
 }
