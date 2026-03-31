@@ -65,7 +65,7 @@ impl PagesGenerator {
                 }
                 None => {
                     return Err(anyhow!(
-                    "ssg: No Entries founded for this page: route = {route:#?}, path = {path:#?}",
+                    "ssg: No entries found for this page: route = {route:#?}, path = {path:#?}",
                 ))
                 }
             }

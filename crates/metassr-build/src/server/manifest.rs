@@ -137,7 +137,7 @@ impl ManifestGenerator {
             let page_entry = match self.dist.pages.get(route) {
                 Some(e) => e,
                 None => {
-                    return Err(anyhow!("manifest: No Entries founded for: {:#?}", route));
+                    return Err(anyhow!("manifest: No entries found for: {:#?}", route));
                 }
             };
             manifest.insert(route, id, page_entry, dunce::canonicalize(path)?);
