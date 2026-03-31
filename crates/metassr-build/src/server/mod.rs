@@ -92,7 +92,7 @@ impl Build for ServerSideBuilder {
         manifest.write(&self.dist_path.clone())?;
 
         if let Err(e) = HeadRenderer::new(&manifest.global.head, cache_dir.clone()).render(true) {
-            return Err(anyhow!("Coludn't render head: {e}"));
+            return Err(anyhow!("Couldn't render head: {e}"));
         }
 
         if self.building_type == BuildingType::StaticSiteGeneration {
