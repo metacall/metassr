@@ -51,6 +51,20 @@ jobs:
         if: runner.os != 'macOS'
         run: cargo build
 
+      - name: Cache metassr vendor (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~/.metassr/vendor
+          key: metassr-vendor-${{ runner.os }}-${{ hashFiles('crates/metassr-bundler/vendor/package.json') }}
+
+      - name: Cache metassr vendor (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Roaming\metassr\vendor
+          key: metassr-vendor-${{ runner.os }}-${{ hashFiles('crates/metassr-bundler/vendor/package.json') }}
+
       - name: Integration Testing (macOS)
         if: runner.os == 'macOS'
         timeout-minutes: 10
