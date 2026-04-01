@@ -70,7 +70,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: actions/cache@v4
         with:
-          path: ~\AppData\Roaming\metassr\vendor
+          path: C:\Users\X\AppData\Roaming\metassr\vendor
           key: metassr-vendor-${{ runner.os }}-${{ hashFiles('crates/metassr-bundler/vendor/package.json') }}
 
       - name: Install web-app dependencies

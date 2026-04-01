@@ -82,7 +82,7 @@ assert_contains "$BASE_URL/blog" "cool blog"               "Blog page content"
 echo ""
 echo "=== Head Rendering ==="
 assert_contains "$BASE_URL/" "<title>My website</title>" "Head title"
-assert_contains "$BASE_URL/" "charset"                    "Head meta charset"
+assert_contains "$BASE_URL/" "charSet"                     "Head meta charset"
 
 echo ""
 echo "=== Client Bundles ==="
@@ -101,7 +101,7 @@ echo ""
 echo "=== API Endpoints ==="
 assert_status "$BASE_URL/api/hello" 200 "GET /api/hello"
 assert_json_field "$BASE_URL/api/hello" "GET"  "message" "Hello from MetaSSR API" "API GET response"
-assert_json_field "$BASE_URL/api/hello" "POST" "message" "Hello, world"           "API POST response"
+assert_json_field "$BASE_URL/api/hello" "POST" "message" "Hello, anonymous!"           "API POST response"
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then

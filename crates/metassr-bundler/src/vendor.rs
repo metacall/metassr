@@ -11,22 +11,46 @@ static PACKAGE_JSON: &str = include_str!("../vendor/package.json");
 const PACKAGE_MANAGERS: &[&str] = &["npm", "pnpm", "yarn", "bun"];
 
 fn vendor_dir() -> Result<PathBuf> {
-    let home = std::env::var("HOME").map_err(|_| anyhow!("HOME environment variable not set"))?;
-    Ok(PathBuf::from(home)
-        .join(".metassr")
-        .join("vendor")
-        .join("bundler"))
+    // Windows: use APPDATA (e.g. C:\Users\X\AppData\Roaming\metassr\vendor\bundler)
+    // Unix: use HOME (e.g. ~/.metassr/vendor/bundler)
+    if cfg!(windows) {
+        let appdata = std::env::var("APPDATA")
+            .map_err(|_| anyhow!("APPDATA environment variable not set"))?;
+        Ok(PathBuf::from(appdata)
+            .join("metassr")
+            .join("vendor")
+            .join("bundler"))
+    } else {
+        let home =
+            std::env::var("HOME").map_err(|_| anyhow!("HOME environment variable not set"))?;
+        Ok(PathBuf::from(home)
+            .join(".metassr")
+            .join("vendor")
+            .join("bundler"))
+    }
 }
 
 fn detect_package_manager() -> Result<String> {
     for pm in PACKAGE_MANAGERS {
-        if Command::new(pm)
-            .arg("--version")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .is_ok()
-        {
+        // On Windows, package managers are .cmd scripts (npm.cmd, pnpm.cmd, etc.)
+        // Using `cmd /C` ensures they are found via PATHEXT resolution.
+        let found = if cfg!(windows) {
+            Command::new("cmd")
+                .args(["/C", pm, "--version"])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false)
+        } else {
+            Command::new(pm)
+                .arg("--version")
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .is_ok()
+        };
+        if found {
             return Ok(pm.to_string());
         }
     }
@@ -76,11 +100,15 @@ pub fn ensure_vendor_setup() -> Result<PathBuf> {
         let pm = detect_package_manager()?;
         info!("Installing vendored packages using {pm}...");
 
-        let status = Command::new(&pm)
-            .arg("install")
-            .current_dir(&dir)
-            .status()
-            .map_err(|e| anyhow!("Failed to run {pm}: {e}"))?;
+        let status = if cfg!(windows) {
+            Command::new("cmd")
+                .args(["/C", &pm, "install"])
+                .current_dir(&dir)
+                .status()
+        } else {
+            Command::new(&pm).arg("install").current_dir(&dir).status()
+        }
+        .map_err(|e| anyhow!("Failed to run {pm}: {e}"))?;
 
         if !status.success() {
             return Err(anyhow!("{pm} install failed in {}", dir.display()));
