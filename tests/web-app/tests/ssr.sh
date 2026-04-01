@@ -14,7 +14,7 @@ assert_status() {
         echo "[PASS] $label -> $actual"
     else
         echo "[FAIL] $label -> expected $expected, got $actual"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 }
 
@@ -29,7 +29,7 @@ assert_contains() {
     else
         echo "[FAIL] $label missing \"$needle\""
         echo "       Body (first 300 chars): $(echo "$body" | head -c 300)"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 }
 
@@ -41,7 +41,7 @@ assert_not_contains() {
     body=$(curl --silent "$url")
     if echo "$body" | grep -q "$needle"; then
         echo "[FAIL] $label should not contain \"$needle\""
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     else
         echo "[PASS] $label does not contain \"$needle\""
     fi
@@ -64,7 +64,7 @@ assert_json_field() {
     else
         echo "[FAIL] $label -> expected \"$expected\" in response"
         echo "       Body: $body"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 }
 

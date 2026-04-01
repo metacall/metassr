@@ -19,6 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      npm_config_cache: ${{ github.workspace }}/.npm-cache
+      npm_config_script_shell: bash
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -100,7 +103,7 @@ jobs:
         working-directory: ./tests/web-app
         shell: bash
         env:
-          npm_config_script_shell: bash
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
         run: |
           npm run start:debug &
           SERVER_PID=$!
@@ -110,14 +113,13 @@ jobs:
           done
           bash tests/ssr.sh
           kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
 
       - name: SSR server tests (non-macOS)
         if: runner.os != 'macOS'
         timeout-minutes: 5
         working-directory: ./tests/web-app
         shell: bash
-        env:
-          npm_config_script_shell: bash
         run: |
           npm run start:debug &
           SERVER_PID=$!
@@ -127,6 +129,7 @@ jobs:
           done
           bash tests/ssr.sh
           kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
 
       - name: Clean dist for SSG
         working-directory: ./tests/web-app
@@ -154,7 +157,6 @@ jobs:
         shell: bash
         env:
           METACALL_INSTALL_PATH: /opt/homebrew/lib
-          npm_config_script_shell: bash
         run: |
           npm run start:debug:ssg &
           SERVER_PID=$!
@@ -164,14 +166,13 @@ jobs:
           done
           bash tests/ssg.sh
           kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
 
       - name: SSG server tests (non-macOS)
         if: runner.os != 'macOS'
         timeout-minutes: 5
         working-directory: ./tests/web-app
         shell: bash
-        env:
-          npm_config_script_shell: bash
         run: |
           npm run start:debug:ssg &
           SERVER_PID=$!
@@ -181,3 +182,4 @@ jobs:
           done
           bash tests/ssg.sh
           kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true

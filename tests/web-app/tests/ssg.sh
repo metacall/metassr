@@ -14,7 +14,7 @@ assert_status() {
         echo "[PASS] $label -> $actual"
     else
         echo "[FAIL] $label -> expected $expected, got $actual"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 }
 
@@ -29,7 +29,7 @@ assert_contains() {
     else
         echo "[FAIL] $label missing \"$needle\""
         echo "       Body (first 300 chars): $(echo "$body" | head -c 300)"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 }
 
@@ -68,7 +68,7 @@ for page in home blog _notfound; do
         echo "[PASS] Pre-rendered HTML exists: pages/$page/index.html"
     else
         echo "[FAIL] Missing pre-rendered HTML: pages/$page/index.html"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 done
 

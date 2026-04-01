@@ -143,7 +143,7 @@ echo ""
 echo "=== Checking expected directories ==="
 for dir in "${EXPECTED_DIRECTORIES[@]}"; do
     if ! check_exists "$DIST_DIR/$dir" "directory"; then
-        ((FAILED_TESTS++))
+        FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
 done
 
@@ -151,7 +151,7 @@ echo ""
 echo "=== Checking expected files ==="
 for file in "${EXPECTED_FILES[@]}"; do
     if ! check_exists "$DIST_DIR/$file" "file"; then
-        ((FAILED_TESTS++))
+        FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
 done
 
@@ -159,7 +159,7 @@ echo ""
 echo "=== Checking file patterns ==="
 for pattern in "${EXPECTED_PATTERNS[@]}"; do
     if ! check_pattern "$pattern" "$pattern"; then
-        ((FAILED_TESTS++))
+        FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
 done
 
