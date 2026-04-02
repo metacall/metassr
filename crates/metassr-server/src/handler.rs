@@ -64,3 +64,68 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::{to_bytes, Body},
+        http::{Request, StatusCode},
+        Router,
+    };
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use tower_service::Service;
+
+    fn test_dir(prefix: &str) -> PathBuf {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time went backwards")
+            .as_nanos();
+        std::env::temp_dir().join(format!("metassr-{prefix}-{now}"))
+    }
+
+    #[tokio::test]
+    async fn build_registers_root_and_nested_routes() {
+        let dist_dir = test_dir("pages-handler");
+        let root_pages = dist_dir.join("pages");
+        let home_page = root_pages.join("home");
+
+        fs::create_dir_all(&home_page).unwrap();
+        fs::write(root_pages.join("index.js"), "// root script").unwrap();
+        fs::write(root_pages.join("index.html"), "<html><body>root</body></html>").unwrap();
+        fs::write(home_page.join("index.js"), "// home script").unwrap();
+        fs::write(home_page.join("index.html"), "<html><body>home</body></html>").unwrap();
+
+        let mut router = RouterMut::from(Router::new());
+        let mut handler = PagesHandler::new(
+            &mut router,
+            dist_dir.to_str().unwrap(),
+            RunningType::StaticSiteGeneration,
+        )
+        .unwrap();
+        handler.build().unwrap();
+
+        let mut app = router.app();
+
+        let root_response =
+            Service::call(&mut app, Request::builder().uri("/").body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+        assert_eq!(root_response.status(), StatusCode::OK);
+        let root_body = to_bytes(root_response.into_body(), usize::MAX).await.unwrap();
+        assert!(String::from_utf8_lossy(&root_body).contains("root"));
+
+        let home_response = Service::call(
+            &mut app,
+            Request::builder().uri("/home").body(Body::empty()).unwrap(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(home_response.status(), StatusCode::OK);
+        let home_body = to_bytes(home_response.into_body(), usize::MAX).await.unwrap();
+        assert!(String::from_utf8_lossy(&home_body).contains("home"));
+
+        fs::remove_dir_all(dist_dir).unwrap();
+    }
+}
