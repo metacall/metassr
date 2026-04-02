@@ -847,6 +847,7 @@ dependencies = [
  "anyhow",
  "axum",
  "metacall",
+ "metacall-sys",
  "serde",
  "serde_json",
  "tokio",
