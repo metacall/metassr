@@ -942,6 +942,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "metacall",
+ "metacall-sys",
  "metassr-api-handler",
  "metassr-build",
  "metassr-fs-analyzer",
