@@ -93,9 +93,17 @@ mod tests {
 
         fs::create_dir_all(&home_page).unwrap();
         fs::write(root_pages.join("index.js"), "// root script").unwrap();
-        fs::write(root_pages.join("index.html"), "<html><body>root</body></html>").unwrap();
+        fs::write(
+            root_pages.join("index.html"),
+            "<html><body>root</body></html>",
+        )
+        .unwrap();
         fs::write(home_page.join("index.js"), "// home script").unwrap();
-        fs::write(home_page.join("index.html"), "<html><body>home</body></html>").unwrap();
+        fs::write(
+            home_page.join("index.html"),
+            "<html><body>home</body></html>",
+        )
+        .unwrap();
 
         let mut router = RouterMut::from(Router::new());
         let mut handler = PagesHandler::new(
@@ -108,12 +116,16 @@ mod tests {
 
         let mut app = router.app();
 
-        let root_response =
-            Service::call(&mut app, Request::builder().uri("/").body(Body::empty()).unwrap())
-                .await
-                .unwrap();
+        let root_response = Service::call(
+            &mut app,
+            Request::builder().uri("/").body(Body::empty()).unwrap(),
+        )
+        .await
+        .unwrap();
         assert_eq!(root_response.status(), StatusCode::OK);
-        let root_body = to_bytes(root_response.into_body(), usize::MAX).await.unwrap();
+        let root_body = to_bytes(root_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         assert!(String::from_utf8_lossy(&root_body).contains("root"));
 
         let home_response = Service::call(
@@ -123,7 +135,9 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(home_response.status(), StatusCode::OK);
-        let home_body = to_bytes(home_response.into_body(), usize::MAX).await.unwrap();
+        let home_body = to_bytes(home_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         assert!(String::from_utf8_lossy(&home_body).contains("home"));
 
         fs::remove_dir_all(dist_dir).unwrap();

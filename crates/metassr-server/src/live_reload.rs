@@ -167,10 +167,7 @@ mod tests {
         let mut app = app;
         let response = Service::call(
             &mut app,
-            Request::builder()
-                .uri("/json")
-                .body(Body::empty())
-                .unwrap(),
+            Request::builder().uri("/json").body(Body::empty()).unwrap(),
         )
         .await
         .unwrap();
