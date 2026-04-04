@@ -17,9 +17,5 @@ metassr-bundler = { path = "../metassr-bundler" }
 metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
 dunce = "1.0"
 
-
-[build-dependencies]
-metacall-sys = "0.1.4"
-
 [dev-dependencies]
 tempfile = "3"
