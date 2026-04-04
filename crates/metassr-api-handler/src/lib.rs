@@ -8,14 +8,16 @@
 //! Create a file at `./src/api/hello.js`:
 //!
 //! ```javascript
-//! function GET(req) {
+//! function GET(rawReq) {
+//!     const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
 //!     return JSON.stringify({
 //!         status: 200,
 //!         body: { message: "Hello from API!" }
 //!     });
 //! }
 //!
-//! function POST(req) {
+//! function POST(rawReq) {
+//!     const req = typeof rawReq === 'string' ? JSON.parse(rawReq) : rawReq;
 //!     const data = JSON.parse(req.body || "{}");
 //!     return JSON.stringify({
 //!         status: 201,
@@ -37,7 +39,7 @@ use axum::{
     routing::{get, MethodRouter},
     Router,
 };
-use metacall::load;
+use metacall::{load, metacall};
 use scanner::{scan_api_dir, ApiRouteFile};
 use std::{
     collections::HashMap,
@@ -47,12 +49,6 @@ use std::{
 };
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
-
-use metacall::bindings::{
-    metacall_deserialize, metacall_function, metacall_serial, metacall_value_destroy,
-    metacall_value_to_string, metacallfv_s,
-};
-use std::ffi::{CStr, CString};
 
 /// Stores loaded API route scripts.
 ///
@@ -129,64 +125,17 @@ impl ApiRoutes {
         method: &str,
         request: ApiRequest,
     ) -> Result<ApiResponse> {
-        let json_payload = serde_json::to_string(&request)
-            .map_err(|e| anyhow!("Failed to serialize request: {}", e))?;
+        let request_json = serde_json::to_string(&request)?;
 
-        let c_payload = CString::new(json_payload)
-            .map_err(|e| anyhow!("Failed to create C string from request: {}", e))?;
+        debug!("Calling {}() with request: {}", method, request_json);
 
-        let c_method = CString::new(method)
-            .map_err(|e| anyhow!("Failed to create C string from method: {}", e))?;
+        // Call the handler function with the request JSON
+        // MetaCall looks up the function by name in all loaded scripts
+        let result: String = metacall(method, [request_json])
+            .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 
-        let result_json = unsafe {
-            let c_func = metacall_function(c_method.as_ptr());
-            if c_func.is_null() {
-                return Err(anyhow!("Function {} not found in loaded scripts", method));
-            }
-
-            // Deserialize JSON string directly into a native C metacall_value
-            let val = metacall_deserialize(
-                metacall_serial(),
-                c_payload.as_ptr(),
-                c_payload.as_bytes_with_nul().len(),
-                std::ptr::null_mut(),
-            );
-
-            if val.is_null() {
-                return Err(anyhow!(
-                    "metacall_deserialize failed to parse the request JSON"
-                ));
-            }
-
-            let mut args = [val];
-            let ret = metacallfv_s(c_func, args.as_mut_ptr(), 1);
-
-            metacall_value_destroy(val);
-
-            if ret.is_null() {
-                return Err(anyhow!("Function {} returned null", method));
-            }
-
-            // Convert return value to C string pointer
-            let ret_str_ptr = metacall_value_to_string(ret);
-            if ret_str_ptr.is_null() {
-                metacall_value_destroy(ret);
-                return Err(anyhow!(
-                    "Function {} return value could not be converted to string",
-                    method
-                ));
-            }
-
-            let ret_string = CStr::from_ptr(ret_str_ptr).to_string_lossy().into_owned();
-
-            metacall_value_destroy(ret);
-
-            ret_string
-        };
-
-        // Parse the returned JSON back into ApiResponse
-        let response: ApiResponse = serde_json::from_str(&result_json)
-            .map_err(|e| anyhow!("Failed to parse response: {} (raw: {})", e, result_json))?;
+        let response: ApiResponse = serde_json::from_str(&result)
+            .map_err(|e| anyhow!("Failed to parse response: {} (raw: {})", e, result))?;
 
         Ok(response)
     }
