@@ -30,3 +30,6 @@ metassr-api-handler = { path = "../metassr-api-handler" }
 
 [build-dependencies]
 metacall-sys = "0.1.4"
+
+[dev-dependencies]
+tempfile = "3"

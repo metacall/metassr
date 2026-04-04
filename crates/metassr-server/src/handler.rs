@@ -74,20 +74,12 @@ mod tests {
         Router,
     };
     use std::fs;
-    use std::time::{SystemTime, UNIX_EPOCH};
     use tower_service::Service;
-
-    fn test_dir(prefix: &str) -> PathBuf {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("time went backwards")
-            .as_nanos();
-        std::env::temp_dir().join(format!("metassr-{prefix}-{now}"))
-    }
 
     #[tokio::test]
     async fn build_registers_root_and_nested_routes() {
-        let dist_dir = test_dir("pages-handler");
+        let tmp = tempfile::TempDir::new().unwrap();
+        let dist_dir = tmp.path();
         let root_pages = dist_dir.join("pages");
         let home_page = root_pages.join("home");
 
@@ -139,7 +131,5 @@ mod tests {
             .await
             .unwrap();
         assert!(String::from_utf8_lossy(&home_body).contains("home"));
-
-        fs::remove_dir_all(dist_dir).unwrap();
     }
 }

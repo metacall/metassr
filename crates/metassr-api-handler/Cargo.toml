@@ -15,3 +15,6 @@ tracing = "0.1.40"
 
 [build-dependencies]
 metacall-sys = "0.1.4"
+
+[dev-dependencies]
+tempfile = "3"

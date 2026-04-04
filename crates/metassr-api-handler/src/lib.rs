@@ -300,39 +300,28 @@ mod tests {
     use super::*;
     use axum::Router;
     use std::fs;
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    fn test_dir(prefix: &str) -> PathBuf {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("time went backwards")
-            .as_nanos();
-        std::env::temp_dir().join(format!("metassr-{prefix}-{now}"))
-    }
 
     #[test]
     fn register_api_routes_skips_when_api_dir_missing() {
-        let root = test_dir("api-missing");
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
         fs::create_dir_all(root.join("src")).unwrap();
 
         let base_router = Router::new();
-        let (_router, routes) = register_api_routes(base_router, &root).unwrap();
+        let (_router, routes) = register_api_routes(base_router, root).unwrap();
 
         assert!(routes.is_none());
-
-        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
     fn register_api_routes_skips_when_api_dir_empty() {
-        let root = test_dir("api-empty");
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
         fs::create_dir_all(root.join("src/api")).unwrap();
 
-        let (router, routes) = register_api_routes(Router::new(), &root).unwrap();
+        let (router, routes) = register_api_routes(Router::new(), root).unwrap();
         let _ = router;
         assert!(routes.is_none());
-
-        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
