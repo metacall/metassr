@@ -12,7 +12,7 @@ use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use super::traits::AsyncExec;
 
@@ -75,14 +75,17 @@ impl Dev {
         tokio::spawn(async move {
             while let Ok(event) = rx.recv().await {
                 match rebuilder.handle_event(event) {
-                    Ok(rebuild_type) => {
+                    Ok(Some(rebuild_type)) => {
                         // Notify the server about what needs rebuilding
                         if let Err(err) = rebuild_tx.send(rebuild_type) {
                             error!("Error sending rebuild notification: {}", err);
                         }
                     }
+                    Ok(None) => {
+                        debug!("Skipping irrelevant watcher event");
+                    }
                     Err(err) => {
-                        error!("Error handling file change: {}", err)
+                        warn!("Could not map file-change event to a rebuild type: {}", err);
                     }
                 }
             }
