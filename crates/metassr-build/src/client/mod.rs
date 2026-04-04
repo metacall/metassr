@@ -84,8 +84,6 @@ impl Build for ClientBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     #[ignore = "requires full bundling infrastructure and test fixtures"]
     fn client_builder() {

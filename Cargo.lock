@@ -850,6 +850,7 @@ dependencies = [
  "metacall-sys",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
 ]
@@ -952,6 +953,7 @@ dependencies = [
  "notify-debouncer-full",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tokio-tungstenite",
  "tower-http",
