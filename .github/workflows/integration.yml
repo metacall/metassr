@@ -19,48 +19,19 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install MetaCall Linux
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install MetaCall Unix (Debug)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh -s -- --debug
 
-      - name: Set library path for metacall
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "LIBRARY_PATH=/opt/homebrew/lib" >> $GITHUB_ENV
-          echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/opt/homebrew/lib" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-L /opt/homebrew/lib" >> $GITHUB_ENV
-
-      - name: Install MetaCall macOS
-        if: matrix.os == 'macos-latest'
-        run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh -s --
-
       - name: Install MetaCall Windows
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         run: powershell -NoProfile -ExecutionPolicy Unrestricted -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; &([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/metacall/install/master/install.ps1')))"
-
-      - name: Debug MetaCall installation
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "Searching for metacall libraries.."
-          find /usr -name "libmetacall*" 2>/dev/null || true
-          find /opt -name "libmetacall*" 2>/dev/null || true
-          find $HOME -name "libmetacall*" 2>/dev/null || true
-
-          echo "Listing /opt/homebrew/lib"
-          ls -la /opt/homebrew/lib || true
-
-          echo "Environment variables:"
-          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
-          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-          echo "PATH=$PATH"
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -68,45 +39,70 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Build
-        run: cargo build --verbose
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
+        run: cargo build
 
       - name: Fix npm cache permissions (macOS only)
         if: matrix.os == 'macos-latest'
         run: sudo chown -R $(id -u):$(id -g) ~/.npm
 
-      - name: Build Web App
+      - name: Build (non-macOS)
+        if: runner.os != 'macOS'
+        run: cargo build
+
+      - name: Integration Testing (macOS)
+        if: runner.os == 'macOS'
+        timeout-minutes: 10
+        working-directory: ./tests/web-app
+        shell: bash
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
+          npm_config_script_shell: bash
+          npm_config_cache: ${{ github.workspace }}/.npm-cache
+        run: |
+          npm install
+          npm run build:debug
+          npm run start:debug &
+          sleep 10
+          response=$(curl --write-out "%{http_code}" --silent --output /dev/null http://localhost:8080)
+          if [ "$response" -ne 200 ]; then
+            echo "Server did not respond with status 200"
+            exit 1
+          fi
+          exit 0
+
+      - name: Integration Testing (non-macOS)
+        if: runner.os != 'macOS'
+        timeout-minutes: 10
         working-directory: ./tests/web-app
         shell: bash
         env:
           npm_config_script_shell: bash
+          npm_config_cache: ${{ github.workspace }}/.npm-cache
         run: |
           npm install
-          npm run build:debug > build.log 2>&1 &
-          BUILD_PID=$!
+          npm run build:debug
+          npm run start:debug &
+          sleep 10
+          response=$(curl --write-out "%{http_code}" --silent --output /dev/null http://localhost:8080)
+          if [ "$response" -ne 200 ]; then
+            echo "Server did not respond with status 200"
+            exit 1
+          fi
+          exit 0
 
-          echo "Watching build logs..."
-
-          for i in {1..60}; do
-            if grep -q "Building is completed" build.log; then
-              echo "Build completed detected"
-              kill $BUILD_PID || true
-              break
-            fi
-
-            if ! kill -0 $BUILD_PID 2>/dev/null; then
-              echo "Build process exited"
-              break
-            fi
-
-            sleep 1
-          done
+      - name: Fix npm cache permissions before Playwright install (macOS)
+        if: runner.os == 'macOS'
+        run: sudo chown -R $(id -u):$(id -g) ~/.npm
 
       - name: Install Playwright
         working-directory: ./tests/web-app
         run: |
           npm install playwright
-          npx playwright install chromium
+          npx playwright install --with-deps chromium
 
       - name: Start Server
         working-directory: ./tests/web-app
@@ -137,50 +133,4 @@ jobs:
       - name: Run Playwright test
         working-directory: ./tests/web-app
         shell: bash
-        run: |
-          node -e "
-            const { chromium } = require('playwright');
-
-            (async () => {
-              console.log('Launching browser...');
-              const browser = await chromium.launch();
-
-              try {
-                const page = await browser.newPage();
-
-                console.log('Opening...');
-                const response = await page.goto('http://localhost:8080', {
-                  waitUntil: 'domcontentloaded',
-                  timeout: 30000
-                });
-                console.log('Response status:', response ? response.status() : 'none');
-
-                const html = await page.content();
-                console.log('Page loaded. Checking HTML Content...');
-
-                if (!html.includes('<title>My website</title>')) {
-                  throw new Error('Missing or incorrect <title>My website</title>');
-                }
-
-                if (!html.includes('<div id=\"root\">')) {
-                  throw new Error('Missing root div');
-                }
-
-                if (!html.includes('/dist/pages/index.js.js')) {
-                  throw new Error('Missing main script');
-                }
-
-                if (!html.includes('/dist/pages/index.js.css')) {
-                  throw new Error('Missing stylesheet');
-                }
-
-                if (!html.includes('lang=\"en\"')) {
-                  throw new Error('HTML lang attribute not set to en');
-                }
-
-                console.log('All HTML checks passed!');
-              } finally {
-                await browser.close();
-              }
-            })();
-          "
+        run: node tests/playwright-test.js
