@@ -34,14 +34,12 @@ async function runTests() {
     if (failed > 0) process.exit(1);
 }
 
-// --- Index page: static structure + SSR content ---
 async function testIndexPage() {
     console.log('\n[Suite] Index page (/)');
     const page = await browser.newPage();
     await page.goto(BASE_URL);
     const html = await page.content();
 
-    // Normalize backslashes to forward slashes for cross-platform path checks
     const normalizedHtml = html.replace(/\\/g, '/');
 
     await assert(html.includes('<title>My website</title>'), 'Has correct <title>');
@@ -56,7 +54,6 @@ async function testIndexPage() {
         'Has page CSS bundle reference'
     );
 
-    // SSR-rendered dynamic content
     await assert(
         html.includes('Hello from index page'),
         'SSR: index page content rendered'
@@ -68,7 +65,6 @@ async function testIndexPage() {
     await page.close();
 }
 
-// --- Home page: SSR content + initial counter state ---
 async function testHomePage() {
     console.log('\n[Suite] Home page (/home)');
     const page = await browser.newPage();
@@ -79,7 +75,6 @@ async function testHomePage() {
         html.includes('This is a simple home page contains a counter'),
         'SSR: home page heading rendered'
     );
-    // Counter initial value should be 0 in SSR output
     await assert(
         html.includes('>0<') || html.includes('>0 <'),
         'SSR: counter initial value is 0'
@@ -88,7 +83,6 @@ async function testHomePage() {
     await page.close();
 }
 
-// --- Blog page: SSR content ---
 async function testBlogPage() {
     console.log('\n[Suite] Blog page (/blog)');
     const page = await browser.newPage();
@@ -103,13 +97,11 @@ async function testBlogPage() {
     await page.close();
 }
 
-// --- Navigation: clicking header links changes content ---
 async function testNavigation() {
     console.log('\n[Suite] Navigation');
     const page = await browser.newPage();
     await page.goto(BASE_URL);
 
-    // Click "home" nav link
     await page.click('a[href="/home"]');
     await page.waitForLoadState('networkidle');
     const homeHtml = await page.content();
@@ -118,7 +110,6 @@ async function testNavigation() {
         'Navigation: clicking /home renders home page content'
     );
 
-    // Click "blog" nav link
     await page.click('a[href="/blog"]');
     await page.waitForLoadState('networkidle');
     const blogHtml = await page.content();
@@ -127,7 +118,6 @@ async function testNavigation() {
         'Navigation: clicking /blog renders blog page content'
     );
 
-    // Click "index" nav link back
     await page.click('a[href="/"]');
     await page.waitForLoadState('networkidle');
     const indexHtml = await page.content();
@@ -139,7 +129,6 @@ async function testNavigation() {
     await page.close();
 }
 
-// --- Footer counter: client-side interactivity ---
 async function testFooterCounter() {
     console.log('\n[Suite] Footer counter (client-side interactivity)');
     const page = await browser.newPage();
@@ -170,7 +159,6 @@ async function testFooterCounter() {
     await page.close();
 }
 
-// --- Home counter: client-side interactivity ---
 async function testHomeCounter() {
     console.log('\n[Suite] Home page counter (client-side interactivity)');
     const page = await browser.newPage();
@@ -191,12 +179,10 @@ async function testHomeCounter() {
     await page.close();
 }
 
-// --- API endpoint: dynamic JSON data ---
 async function testApiEndpoint() {
     console.log('\n[Suite] API endpoint (/api/hello)');
     const page = await browser.newPage();
 
-    // GET request
     const getResponse = await page.request.get(`${BASE_URL}/api/hello`);
     await assert(getResponse.ok(), `GET /api/hello returns 2xx status (got: ${getResponse.status()})`);
 
@@ -211,7 +197,6 @@ async function testApiEndpoint() {
             'GET /api/hello body has dynamic timestamp field'
         );
     } else {
-        // If response wraps body in a status envelope
         const raw = await getResponse.text();
         await assert(
             raw.includes('Hello from MetaSSR API!'),
@@ -219,7 +204,6 @@ async function testApiEndpoint() {
         );
     }
 
-    // POST request with dynamic name
     const postResponse = await page.request.post(`${BASE_URL}/api/hello`, {
         headers: { 'Content-Type': 'application/json' },
         data: JSON.stringify({ name: 'MetaSSR' }),
