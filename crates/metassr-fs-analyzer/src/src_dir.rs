@@ -115,9 +115,14 @@ impl DirectoryAnalyzer for SourceDir {
                 _ => None,
             })
             .skip_while(|e| {
-                // Check if the entry is a js/ts file.
-                let exts: Vec<&str> = vec!["js", "jsx", "tsx", "ts"];
-                !exts.contains(&e.path().extension().unwrap().to_str().unwrap())
+                let exts: &[&str] = &["js", "jsx", "tsx", "ts"];
+                let is_js_ts = e
+                    .path()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|ext| exts.contains(&ext))
+                    .unwrap_or(false);
+                !is_js_ts
             })
         {
             let path = entry.path();
@@ -219,5 +224,32 @@ mod tests {
         // Cleanup
         fs::remove_file(&page_path).unwrap();
         fs::remove_dir_all(source_dir.0).unwrap();
+    }
+
+    #[test]
+    fn test_extensionless_file_in_src_does_not_panic() {
+        let source_dir = create_temp_source_dir().unwrap();
+        let root = &source_dir.0;
+
+        fs::write(root.join("README"), b"no extension").unwrap();
+        fs::write(root.join("Makefile"), b"all:\n").unwrap();
+
+        let page_path = root.join("pages/page1.jsx");
+        fs::create_dir_all(page_path.parent().unwrap()).unwrap();
+        fs::write(&page_path, b"export default function Page() {}").unwrap();
+
+        for special in ["_app.jsx", "_head.tsx"] {
+            fs::write(root.join(special), b"dummy").unwrap();
+        }
+
+        let result = source_dir.analyze();
+        assert!(
+            result.is_ok(),
+            "analyze should succeed, not panic: {:?}",
+            result.as_ref().err()
+        );
+        assert_eq!(result.unwrap().pages().len(), 1);
+
+        fs::remove_dir_all(root).unwrap();
     }
 }
