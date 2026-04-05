@@ -129,16 +129,24 @@ async function webBundling(entry, dist) {
     return new Promise((resolve, reject) => {
         compiler.run((error, stats) => {
             if (error) {
+                compiler.close(() => {});
                 return reject(new Error(`Bundling failed: ${error.message}`));
             }
 
             if (stats && stats.hasErrors()) {
                 const info = stats.toJson();
                 const errors = info.errors ? info.errors.map(e => e.message).join('\n') : 'Unknown compilation errors';
+                compiler.close(() => {});
                 return reject(new Error(`Compilation errors:\n${errors}`));
             }
 
-            resolve(0);
+            compiler.close((closeErr) => {
+                if (closeErr) {
+                    return reject(new Error(`Compiler close failed: ${closeErr.message}`));
+                }
+                compiler.purgeInputFileSystem();
+                resolve(0);
+            });
         });
     });
 }

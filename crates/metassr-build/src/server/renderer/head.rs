@@ -1,7 +1,8 @@
 use anyhow::{anyhow, Result};
+use dunce;
 use lazy_static::lazy_static;
 use metacall::{load, metacall_no_arg};
-use metassr_utils::{cache_dir::CacheDir, checker::CheckerState};
+use metassr_utils::{cache_dir::CacheDir, checker::CheckerState, js_path::to_js_path};
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Mutex};
 
 use metassr_bundler::WebBundler;
@@ -69,7 +70,7 @@ export function render_head() {{
 }}            
                 
                 "#,
-            self.path.canonicalize()?.display()
+            to_js_path(&dunce::canonicalize(&self.path)?)
         );
         Ok(script)
     }
@@ -83,7 +84,7 @@ export function render_head() {{
             .to_str()
             .unwrap()
             .to_string();
-        let fullpath = path.canonicalize()?.to_str().unwrap().to_string();
+        let fullpath = to_js_path(&dunce::canonicalize(&path)?);
 
         Ok(HashMap::from([(name, fullpath)]))
     }

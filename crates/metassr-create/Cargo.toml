@@ -8,6 +8,7 @@ build = "build.rs"
 
 [build-dependencies]
 walkdir = "2.5.0"
+dunce = "1.0"
 
 [dependencies]
 anyhow = "1.0.86"

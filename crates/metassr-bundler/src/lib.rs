@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use metacall::{load, metacall, MetaCallFuture, MetaCallValue};
-use metassr_utils::checker::CheckerState;
+use metassr_utils::{checker::CheckerState, js_path::to_js_path};
 use std::{
     any::Any,
     collections::HashMap,
@@ -142,10 +142,8 @@ impl<'a> WebBundler<'a> {
         let future = metacall::<MetaCallFuture>(
             BUNDLING_FUNC,
             [
-                // Serialize the targets map to a string format
                 serde_json::to_string(&self.targets)?,
-                // Get the distribution path as a string
-                self.dist_path.to_str().unwrap().to_owned(),
+                to_js_path(self.dist_path),
             ],
         )
         .unwrap();

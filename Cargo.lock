@@ -371,6 +371,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dunce"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -808,6 +814,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
+ "dunce",
  "inquire",
  "lazy_static",
  "logger",
@@ -851,6 +858,7 @@ name = "metassr-build"
 version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
+ "dunce",
  "lazy_static",
  "metacall",
  "metacall-sys",
@@ -902,6 +910,7 @@ name = "metassr-create"
 version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
+ "dunce",
  "walkdir",
 ]
 
@@ -910,6 +919,7 @@ name = "metassr-fs-analyzer"
 version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
+ "dunce",
  "metassr-utils",
  "serde",
  "walkdir",
@@ -954,6 +964,7 @@ name = "metassr-utils"
 version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
+ "dunce",
  "serde",
  "walkdir",
 ]
@@ -1429,7 +1440,7 @@ dependencies = [
  "getrandom",
  "once_cell",
  "rustix",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

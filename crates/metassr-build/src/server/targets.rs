@@ -4,9 +4,10 @@ use std::{
 };
 
 use anyhow::Result;
+use dunce;
 
 use metassr_fs_analyzer::src_dir::PagesEntriesType;
-use metassr_utils::cache_dir::CacheDir;
+use metassr_utils::{cache_dir::CacheDir, js_path::to_js_path};
 
 use crate::{traits::Generate, utils::setup_page_path};
 
@@ -39,8 +40,8 @@ impl Targets {
                 .to_path_buf();
                 name.set_extension("");
                 (
-                    name.to_str().unwrap().to_string(),
-                    path.canonicalize().unwrap().to_str().unwrap().to_string(),
+                    to_js_path(&name),
+                    to_js_path(&dunce::canonicalize(path).unwrap()),
                 )
             })
             .collect()

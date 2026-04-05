@@ -1,4 +1,5 @@
 use anyhow::Result;
+use dunce;
 use std::{
     collections::HashMap,
     ffi::OsStr,
@@ -88,34 +89,29 @@ impl CacheDir {
     /// cache.insert("data.txt", "Some data".as_bytes()).unwrap();
     /// ```
     pub fn insert(&mut self, pathname: &str, buf: &[u8]) -> Result<PathBuf> {
-        // Set the path
-        let path = format!("{}/{}", self.path.to_str().unwrap(), pathname);
-        let path = Path::new(&path);
+        let path = self.path.join(pathname);
 
-        // Create file path if it doesn't exist
         if !path.exists() {
             let parent = path.parent().unwrap();
             fs::create_dir_all(parent)?;
 
-            let mut file = File::create(path)?;
+            let mut file = File::create(&path)?;
             file.write_all(buf)?;
         } else {
-            let mut file = File::options().read(true).write(true).open(path)?;
+            let mut file = File::options().read(true).write(true).open(&path)?;
             let mut current_buf = Vec::new();
 
-            // Check if the file buffer is changed or not to rewrite it
             file.read_to_end(&mut current_buf)?;
             if current_buf != buf {
-                let mut file = File::create(path)?;
+                let mut file = File::create(&path)?;
                 file.write_all(buf)?;
             }
         }
 
-        // Add the new file path to the cache entries
         self.entries_in_scope
-            .insert(pathname.to_string(), path.canonicalize()?);
+            .insert(pathname.to_string(), dunce::canonicalize(&path)?);
 
-        Ok(path.to_path_buf())
+        Ok(path)
     }
 
     /// Returns the path to the cache directory.
