@@ -346,7 +346,7 @@ mod tests {
 
     #[test]
     fn call_handler_returns_error_when_method_is_missing() {
-        let routes = ApiRoutes::new();
+        let mut routes = ApiRoutes::new();
         let request = ApiRequest {
             url: "/api/hello".to_string(),
             headers: HashMap::new(),
