@@ -26,11 +26,11 @@ jobs:
           fetch-depth: 0
 
       - name: Install MetaCall Unix (Debug)
-        if: matrix.os == 'ubuntu-latest' ||  matrix.os == 'macos-latest'
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh -s -- --debug
 
       - name: Install MetaCall Windows
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         run: powershell -NoProfile -ExecutionPolicy Unrestricted -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; &([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/metacall/install/master/install.ps1')))"
 
       - name: Install Rust
@@ -39,14 +39,45 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Build
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
         run: cargo build
 
-      - name: Integration Testing
+      - name: Build (non-macOS)
+        if: runner.os != 'macOS'
+        run: cargo build
+
+      - name: Integration Testing (macOS)
+        if: runner.os == 'macOS'
+        timeout-minutes: 10
+        working-directory: ./tests/web-app
+        shell: bash
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
+          npm_config_script_shell: bash
+          npm_config_cache: ${{ github.workspace }}/.npm-cache
+        run: |
+          npm install
+          npm run build:debug
+          npm run start:debug &
+          sleep 10
+          response=$(curl --write-out "%{http_code}" --silent --output /dev/null http://localhost:8080)
+          if [ "$response" -ne 200 ]; then
+            echo "Server did not respond with status 200"
+            exit 1
+          fi
+          exit 0
+
+      - name: Integration Testing (non-macOS)
+        if: runner.os != 'macOS'
+        timeout-minutes: 10
         working-directory: ./tests/web-app
         shell: bash
         env:
           npm_config_script_shell: bash
+          npm_config_cache: ${{ github.workspace }}/.npm-cache
         run: |
           npm install
           npm run build:debug

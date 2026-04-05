@@ -11,3 +11,4 @@ anyhow = "1.0.89"
 metassr-utils = { path = "../metassr-utils" }
 serde = "1.0.210"
 walkdir = "2.5.0"
+dunce = "1.0"

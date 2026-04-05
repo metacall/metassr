@@ -38,7 +38,7 @@ fn main() {
             .map(|component| component.as_os_str().to_string_lossy())
             .collect::<Vec<_>>()
             .join("/");
-        let canonical_path = path.canonicalize().unwrap();
+        let canonical_path = dunce::canonicalize(path).unwrap();
         let canonical_path = canonical_path.to_string_lossy();
 
         generated_code.push_str(&format!(

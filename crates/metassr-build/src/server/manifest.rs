@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use dunce;
 
 use metassr_fs_analyzer::dist_dir::{DistDirContainer, PageEntry};
 use metassr_utils::cache_dir::CacheDir;
@@ -45,7 +46,7 @@ impl GlobalEntry {
         C: AsRef<OsStr> + ?Sized,
     {
         Ok(Self {
-            head: PathBuf::from(head).canonicalize()?,
+            head: dunce::canonicalize(PathBuf::from(head))?,
             cache: PathBuf::from(cache),
         })
     }
@@ -136,10 +137,10 @@ impl ManifestGenerator {
             let page_entry = match self.dist.pages.get(route) {
                 Some(e) => e,
                 None => {
-                    return Err(anyhow!("manifest: No Entries founded for: {:#?}", route));
+                    return Err(anyhow!("manifest: No entries found for: {:#?}", route));
                 }
             };
-            manifest.insert(route, id, page_entry, path.canonicalize()?);
+            manifest.insert(route, id, page_entry, dunce::canonicalize(path)?);
             // dbg!(&route, &page_entry);
         }
         Ok(manifest)

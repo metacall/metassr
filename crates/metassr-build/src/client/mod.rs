@@ -1,6 +1,7 @@
 use crate::traits::{Build, Generate};
 use crate::utils::setup_page_path;
 use anyhow::{anyhow, Result};
+use dunce;
 use hydrator::Hydrator;
 
 use metassr_bundler::WebBundler;
@@ -66,7 +67,7 @@ impl Build for ClientBuilder {
             .entries_in_scope()
             .iter()
             .map(|(entry_name, path)| {
-                let fullpath = path.canonicalize().unwrap();
+                let fullpath = dunce::canonicalize(path).unwrap();
 
                 (entry_name.to_owned(), format!("{}", fullpath.display()))
             })
