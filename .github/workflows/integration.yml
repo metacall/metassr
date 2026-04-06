@@ -2,7 +2,7 @@ name: Integration Test
 
 on:
   push:
-    branches: ["master", "test-222"]
+    branches: ["master"]
   pull_request:
     branches: ["master"]
   workflow_dispatch:
