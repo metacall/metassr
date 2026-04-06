@@ -24,4 +24,4 @@ metassr-create = { path = "../crates/metassr-create" }
 metassr-watcher = { path = "../crates/metassr-watcher" }
 
 [build-dependencies]
-metacall-sys = "0.1.4"
+metacall-sys = "0.1.5"

@@ -41,7 +41,7 @@ metassr-watcher = { path = "crates/metassr-watcher" }
 dunce = "1.0.5"
 
 [build-dependencies]
-metacall-sys = "0.1.4"
+metacall-sys = "0.1.5"
 
 [workspace]
 members = [
