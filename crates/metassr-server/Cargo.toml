@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.82"
 axum = "0.7.5"
 chrono = "0.4.38"
-metacall = "0.5.6"
+metacall = "0.5.8"
 metassr-build = { path = "../metassr-build" }
 metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
 metassr-utils = { path = "../metassr-utils" }
