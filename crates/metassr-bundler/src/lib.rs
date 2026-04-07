@@ -26,6 +26,7 @@ const BUNDLING_FUNC: &str = "web_bundling";
 struct CompilationWait {
     checker: Mutex<CheckerState>,
     cond: Condvar,
+    error: Mutex<Option<String>>,
 }
 
 impl Default for CompilationWait {
@@ -33,6 +34,7 @@ impl Default for CompilationWait {
         Self {
             checker: Mutex::new(CheckerState::default()),
             cond: Condvar::new(),
+            error: Mutex::new(None),
         }
     }
 }
@@ -129,9 +131,13 @@ impl<'a> WebBundler<'a> {
         fn reject(err: Box<dyn MetaCallValue>, _: Option<Box<dyn Any>>) -> Box<dyn MetaCallValue> {
             let compilation_wait = &*Arc::clone(&IS_COMPILATION_WAIT);
             let mut started = compilation_wait.checker.lock().unwrap();
+            let err_msg = format!("{err:?}");
 
-            // Log the bundling error and mark the process as completed
+            // Store the error message and mark the process as completed
             error!("Bundling rejected: {err:?}");
+            if let Ok(mut error_lock) = compilation_wait.error.lock() {
+                *error_lock = Some(err_msg);
+            }
             started.make_true();
             compilation_wait.cond.notify_one();
 
@@ -162,6 +168,14 @@ impl<'a> WebBundler<'a> {
 
         // Reset the checker state to false after the process completes
         started.make_false();
+
+        // Check if there was an error during bundling
+        if let Ok(error_lock) = compilation_wait.error.lock() {
+            if let Some(error_msg) = error_lock.as_ref() {
+                return Err(anyhow!("Bundling failed: {}", error_msg));
+            }
+        }
+
         Ok(())
     }
 }
@@ -171,6 +185,15 @@ mod tests {
 
     use super::*;
     use metacall::initialize;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn ensure_metacall_initialized() {
+        INIT.call_once(|| {
+            initialize().expect("Failed to initialize MetaCall");
+        });
+    }
 
     fn clean() {
         let dist = Path::new("tests/dist");
@@ -181,8 +204,8 @@ mod tests {
 
     #[test]
     fn bundling_works() {
+        ensure_metacall_initialized();
         clean();
-        let _metacall = initialize().unwrap();
         let targets = HashMap::from([("pages/home".to_owned(), "./tests/home.js".to_owned())]);
 
         match WebBundler::new(&targets, "tests/dist") {
@@ -204,5 +227,26 @@ mod tests {
 
         let bundler = WebBundler::new(&targets, "tests/dist");
         assert!(bundler.is_err());
+    }
+
+    #[test]
+    fn bundling_with_broken_syntax_fails() {
+        ensure_metacall_initialized();
+        clean();
+        let targets = HashMap::from([("pages/broken".to_owned(), "./tests/broken.js".to_owned())]);
+
+        match WebBundler::new(&targets, "tests/dist") {
+            Ok(bundler) => {
+                // This should now fail because broken.js has invalid syntax
+                assert!(
+                    bundler.exec().is_err(),
+                    "Expected bundling to fail with broken syntax"
+                );
+            }
+            Err(err) => {
+                panic!("WebBundler::new() failed unexpectedly: {err:?}",)
+            }
+        }
+        clean();
     }
 }
