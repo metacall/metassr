@@ -15,7 +15,8 @@ RUN apt-get update \
         git \
 		wget \
 		npm \
-		nodejs
+		nodejs \
+		libclang-dev
 
 # Set working directory to root
 WORKDIR /root
