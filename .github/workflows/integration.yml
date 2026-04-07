@@ -41,8 +41,6 @@ jobs:
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
-        env:
-          METACALL_INSTALL_PATH: /opt/homebrew/lib
         run: cargo build
 
       - name: Build (non-macOS)
@@ -55,7 +53,6 @@ jobs:
         working-directory: ./tests/web-app
         shell: bash
         env:
-          METACALL_INSTALL_PATH: /opt/homebrew/lib
           npm_config_script_shell: bash
           npm_config_cache: ${{ github.workspace }}/.npm-cache
         run: |
