@@ -85,16 +85,137 @@ impl Build for ClientBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    /// Sets up a minimal project layout that ClientBuilder expects:
+    ///   root/src/_app.tsx
+    ///   root/src/_head.tsx
+    ///   root/src/pages/index.tsx
+    fn scaffold_project(root: &Path) {
+        let src = root.join("src");
+        let pages = src.join("pages");
+        fs::create_dir_all(&pages).unwrap();
+
+        fs::write(
+            src.join("_app.tsx"),
+            "export default function App({ Component }) { return <Component /> }",
+        )
+        .unwrap();
+        fs::write(
+            src.join("_head.tsx"),
+            "export default function Head() { return <title>Test</title> }",
+        )
+        .unwrap();
+        fs::write(
+            pages.join("index.tsx"),
+            "export default function Index() { return <h1>Home</h1> }",
+        )
+        .unwrap();
+    }
 
     #[test]
-    #[ignore = "requires full bundling infrastructure and test fixtures"]
-    fn client_builder() {
-        // This test requires:
-        // 1. A valid project structure with package.json
-        // 2. Node.js/bundler available
-        // 3. Proper test fixtures
-        //
-        // Run with: cargo test client_builder -- --ignored
-        todo!("Set up proper test fixtures for client builder")
+    fn new_succeeds_with_valid_src() {
+        let tmp = TempDir::new().unwrap();
+        scaffold_project(tmp.path());
+
+        let builder = ClientBuilder::new(tmp.path(), "dist");
+        assert!(builder.is_ok());
+    }
+
+    #[test]
+    fn new_creates_dist_dir_if_missing() {
+        let tmp = TempDir::new().unwrap();
+        scaffold_project(tmp.path());
+
+        let dist = tmp.path().join("dist");
+        assert!(!dist.exists());
+
+        let _builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
+        assert!(dist.exists());
+    }
+
+    #[test]
+    fn new_fails_without_src_dir() {
+        let tmp = TempDir::new().unwrap();
+        // No src/ created — should fail.
+        let result = ClientBuilder::new(tmp.path(), "dist");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn new_works_when_dist_already_exists() {
+        let tmp = TempDir::new().unwrap();
+        scaffold_project(tmp.path());
+        fs::create_dir_all(tmp.path().join("dist")).unwrap();
+
+        let builder = ClientBuilder::new(tmp.path(), "dist");
+        assert!(builder.is_ok());
+    }
+
+    #[test]
+    fn hydration_cache_is_populated_for_each_page() {
+        let tmp = TempDir::new().unwrap();
+        scaffold_project(tmp.path());
+
+        // Add a second page so we can verify multiple entries.
+        let about = tmp.path().join("src/pages/about.tsx");
+        fs::write(&about, "export default function About() { return <p>About</p> }").unwrap();
+
+        let builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
+
+        // Reproduce the cache-generation part of build() without invoking the
+        // bundler, which requires the full MetaCall/Node runtime.
+        let mut cache_dir =
+            CacheDir::new(&format!("{}/cache", builder.dist_path.display())).unwrap();
+        let src = SourceDir::new(&builder.src_path).analyze().unwrap();
+
+        let pages = src.pages();
+        let (special_entries::App(app_path), _) = src.specials().unwrap();
+
+        for (page, page_path) in pages.iter() {
+            let hydrator = Hydrator::new(&app_path, page_path, "root").generate().unwrap();
+            let page = setup_page_path(page, "js");
+            cache_dir
+                .insert(&format!("pages/{}", page.display()), hydrator.as_bytes())
+                .unwrap();
+        }
+
+        let entries = cache_dir.entries_in_scope();
+        assert_eq!(entries.len(), 2, "expected one cache entry per page");
+
+        // Each generated file should contain the hydration template markers
+        // replaced with real paths.
+        for (_name, path) in &entries {
+            let content = fs::read_to_string(path).unwrap();
+            assert!(
+                content.contains("hydrateRoot"),
+                "hydration snippet missing in {path:?}"
+            );
+            assert!(
+                !content.contains("%APP_PATH%"),
+                "template tag was not replaced"
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "requires MetaCall runtime and Node.js bundler infrastructure"]
+    fn full_build_produces_output() {
+        let tmp = TempDir::new().unwrap();
+        scaffold_project(tmp.path());
+
+        let builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
+        let result = builder.build();
+        assert!(result.is_ok(), "build() failed: {:?}", result.err());
+
+        // After a successful build the dist directory should contain bundled JS.
+        let dist = tmp.path().join("dist");
+        let has_js = fs::read_dir(&dist)
+            .unwrap()
+            .flatten()
+            .any(|e| e.path().extension().map_or(false, |ext| ext == "js"));
+
+        assert!(has_js, "dist/ should contain at least one JS bundle");
     }
 }
