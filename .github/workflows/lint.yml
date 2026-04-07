@@ -25,6 +25,9 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Install MetaCall
+        run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
       - name: Cache Rust Dependencies
         uses: actions/cache@v4
         with:
