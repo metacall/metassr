@@ -160,7 +160,11 @@ mod tests {
 
         // Add a second page so we can verify multiple entries.
         let about = tmp.path().join("src/pages/about.tsx");
-        fs::write(&about, "export default function About() { return <p>About</p> }").unwrap();
+        fs::write(
+            &about,
+            "export default function About() { return <p>About</p> }",
+        )
+        .unwrap();
 
         let builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
 
@@ -174,7 +178,9 @@ mod tests {
         let (special_entries::App(app_path), _) = src.specials().unwrap();
 
         for (page, page_path) in pages.iter() {
-            let hydrator = Hydrator::new(&app_path, page_path, "root").generate().unwrap();
+            let hydrator = Hydrator::new(&app_path, page_path, "root")
+                .generate()
+                .unwrap();
             let page = setup_page_path(page, "js");
             cache_dir
                 .insert(&format!("pages/{}", page.display()), hydrator.as_bytes())
