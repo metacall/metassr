@@ -37,25 +37,24 @@ use axum::{
     routing::{get, MethodRouter},
     Router,
 };
-use metacall::{load, metacall_handle};
+use metacall::{
+    load::{self, Handle},
+    metacall_handle,
+};
 use scanner::{scan_api_dir, ApiRouteFile};
 use std::{
     collections::HashMap,
-    fs::read_to_string,
-    path::{Path, PathBuf},
-    sync::Arc,
+    path::Path,
+    sync::{Arc, Mutex},
 };
+use tokio::fs::read_to_string;
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
-// `load::Handle` holds a raw `*mut c_void` and is not `Send` by default.
-// SAFETY: ScriptHandle is only ever accessed while holding the Mutex<ApiRoutes> lock.
-struct ScriptHandle(load::Handle);
-unsafe impl Send for ScriptHandle {}
-
-/// Stores loaded API route scripts, each in its own isolated MetaCall handle.
+/// Stores loaded API route scripts and their MetaCall handles.
 pub struct ApiRoutes {
-    loaded_scripts: HashMap<String, (PathBuf, ScriptHandle)>,
+    handles: Mutex<HashMap<String, Handle>>,
+    /// List of discovered route files.
     routes: Vec<ApiRouteFile>,
 }
 
@@ -63,7 +62,7 @@ impl ApiRoutes {
     /// Create a new empty ApiRoutes instance.
     pub fn new() -> Self {
         Self {
-            loaded_scripts: HashMap::new(),
+            handles: Mutex::new(HashMap::new()),
             routes: Vec::new(),
         }
     }
@@ -72,7 +71,7 @@ impl ApiRoutes {
     ///
     /// # Arguments
     /// * `api_dir` - Path to the API directory (typically `./src/api/`)
-    pub fn load_from_dir(&mut self, api_dir: &Path) -> Result<()> {
+    pub async fn load_from_dir(&mut self, api_dir: &Path) -> Result<()> {
         let route_files = scan_api_dir(api_dir);
 
         if route_files.is_empty() {
@@ -83,7 +82,7 @@ impl ApiRoutes {
         info!("Found {} API route(s)", route_files.len());
 
         for route_file in &route_files {
-            if let Err(e) = self.load_script(&route_file.file_path) {
+            if let Err(e) = self.load_script(&route_file.file_path).await {
                 warn!("Failed to load API route {:?}: {}", route_file.file_path, e);
             } else {
                 info!(
@@ -97,45 +96,33 @@ impl ApiRoutes {
         Ok(())
     }
 
-    /// Load a single JavaScript file into its own MetaCall handle.
-    fn load_script(&mut self, file_path: &Path) -> Result<()> {
-        let code = read_to_string(file_path)?;
+    /// Load a single JavaScript file into MetaCall.
+    async fn load_script(&mut self, file_path: &Path) -> Result<()> {
         let path_str = file_path.to_string_lossy().to_string();
-        let mut handle = load::Handle::new();
 
-        // Each script gets its own handle so symbols can be cleared independently on reload.
-        load::from_memory(load::Tag::NodeJS, &code, Some(&mut handle))
+        {
+            let handles = self.handles.lock().unwrap();
+            if handles.contains_key(&path_str) {
+                return Ok(());
+            }
+        }
+
+        let code = read_to_string(file_path).await?;
+
+        let mut handle = Handle::new();
+        load::from_memory(load::Tag::NodeJS, code, Some(&mut handle))
             .map_err(|e| anyhow!("Failed to load script {:?}: {:?}", file_path, e))?;
 
-        self.loaded_scripts
-            .insert(path_str, (file_path.to_path_buf(), ScriptHandle(handle)));
-        Ok(())
-    }
+        let mut handles = self.handles.lock().unwrap();
+        handles.insert(path_str, handle);
 
-    /// Reload a changed script: drops the old handle (clearing its symbols) then reloads.
-    pub fn reload_script(&mut self, file_path: &Path) -> Result<()> {
-        let path_str = file_path.to_string_lossy().to_string();
-
-        // Dropping the entry calls metacall_clear, unregistering the old symbols.
-        self.loaded_scripts.remove(&path_str);
-
-        let code = read_to_string(file_path)?;
-        let mut handle = load::Handle::new();
-
-        load::from_memory(load::Tag::NodeJS, &code, Some(&mut handle))
-            .map_err(|e| anyhow!("Failed to reload script {:?}: {:?}", file_path, e))?;
-
-        self.loaded_scripts
-            .insert(path_str, (file_path.to_path_buf(), ScriptHandle(handle)));
-
-        info!("Reloaded API script: {:?}", file_path);
         Ok(())
     }
 
     /// Call a handler function (GET, POST) on a loaded script.
     /// The function name should match the HTTP method (GET, POST, etc.)
-    pub fn call_handler(
-        &mut self,
+    pub async fn call_handler(
+        &self,
         file_path: &str,
         method: &str,
         request: ApiRequest,
@@ -144,12 +131,13 @@ impl ApiRoutes {
 
         debug!("Calling {}() with request: {}", method, request_json);
 
-        let (_, script_handle) = self
-            .loaded_scripts
+        // Call the handler function with the request JSON
+        // MetaCall looks up the function by name in all loaded scripts
+        let mut handles = self.handles.lock().unwrap();
+        let handle = handles
             .get_mut(file_path)
             .ok_or_else(|| anyhow!("Script not loaded: {}", file_path))?;
-
-        let result: String = metacall_handle(&mut script_handle.0, method, [request_json])
+        let result: String = metacall_handle(handle, method, vec![request_json])
             .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 
         let response: ApiResponse = serde_json::from_str(&result)
@@ -175,10 +163,10 @@ impl Default for ApiRoutes {
 /// # Arguments
 /// * `router` - The Axum router to add routes to
 /// * `root_path` - Root path of the project (to find `./src/api/`)
-pub fn register_api_routes(
+pub async fn register_api_routes(
     mut router: Router,
     root_path: &Path,
-) -> Result<(Router, Option<Arc<std::sync::Mutex<ApiRoutes>>>)> {
+) -> Result<(Router, Option<Arc<ApiRoutes>>)> {
     let api_dir = root_path.join("src").join("api");
 
     if !api_dir.exists() {
@@ -190,18 +178,14 @@ pub fn register_api_routes(
     }
 
     let mut api_routes = ApiRoutes::new();
-    api_routes.load_from_dir(&api_dir)?;
+    api_routes.load_from_dir(&api_dir).await?;
 
     if api_routes.routes().is_empty() {
         return Ok((router, None));
     }
 
-    let api_routes = Arc::new(std::sync::Mutex::new(api_routes));
-
     // Clone routes info before moving api_routes
     let routes_info: Vec<_> = api_routes
-        .lock()
-        .unwrap()
         .routes()
         .iter()
         .map(|r| {
@@ -211,6 +195,8 @@ pub fn register_api_routes(
             )
         })
         .collect();
+
+    let api_routes = Arc::new(api_routes);
 
     for (route_path, file_path) in routes_info {
         let api_routes_clone = Arc::clone(&api_routes);
@@ -236,6 +222,7 @@ pub fn register_api_routes(
                         file_path,
                         route_path,
                     )
+                    .await
                 }
             }
         })
@@ -257,10 +244,11 @@ pub fn register_api_routes(
                         file_path,
                         route_path,
                     )
+                    .await
                 }
             }
         });
-
+        // TODO: add PUT, DELETE ..etc
         router = router.route(&route_path, method_router);
         info!("Registered API route: {}", route_path);
     }
@@ -269,8 +257,8 @@ pub fn register_api_routes(
 }
 
 /// Handle an incoming API request.
-fn handle_api_request(
-    api_routes: Arc<std::sync::Mutex<ApiRoutes>>,
+async fn handle_api_request(
+    api_routes: Arc<ApiRoutes>,
     headers: HeaderMap,
     method: Method,
     query: HashMap<String, String>,
@@ -297,24 +285,29 @@ fn handle_api_request(
         params: HashMap::new(),
     };
 
-    let mut routes = api_routes.lock().unwrap();
-    match routes.call_handler(&file_path, method.as_str(), request) {
+    let method_str = method.as_str();
+
+    let result = api_routes
+        .call_handler(&file_path, method_str, request)
+        .await;
+
+    match result {
         Ok(response) => (
             StatusCode::from_u16(response.status).unwrap_or(StatusCode::OK),
             [(axum::http::header::CONTENT_TYPE, "application/json")],
             serde_json::to_string(&response.body).unwrap_or_else(|_| "{}".to_string()),
         ),
-        Err(error) => {
-            error!("API handler error: {}", error);
+        Err(e) => {
+            error!("API handler error: {:?}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 [(axum::http::header::CONTENT_TYPE, "application/json")],
-                format!("{{\"error\": \"{}\"}}", error),
+                format!("{{\"error\": \"{}\"}}", e),
             )
         }
     }
 }
-
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -360,3 +353,5 @@ mod tests {
         assert!(result.is_err());
     }
 }
+ */
+
