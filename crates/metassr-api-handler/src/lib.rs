@@ -119,6 +119,28 @@ impl ApiRoutes {
         Ok(())
     }
 
+    /// Reload a changed script: drops the old handle (clearing its symbols) then reloads.
+    pub fn reload_script(&self, file_path: &Path) -> Result<()> {
+        let path_str = file_path.to_string_lossy().to_string();
+
+        {
+            let mut handles = self.handles.lock().unwrap();
+            handles.remove(&path_str);
+        }
+
+        let code = std::fs::read_to_string(file_path)?;
+
+        let mut handle = Handle::new();
+        load::from_memory(load::Tag::NodeJS, code, Some(&mut handle))
+            .map_err(|e| anyhow!("Failed to reload script {:?}: {:?}", file_path, e))?;
+
+        let mut handles = self.handles.lock().unwrap();
+        handles.insert(path_str, handle);
+
+        info!("Reloaded API script: {:?}", file_path);
+        Ok(())
+    }
+
     /// Call a handler function (GET, POST) on a loaded script.
     /// The function name should match the HTTP method (GET, POST, etc.)
     pub async fn call_handler(
