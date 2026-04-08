@@ -169,4 +169,3 @@ mod tests {
         assert_eq!(route, "/api/users/profile");
     }
 }
-
