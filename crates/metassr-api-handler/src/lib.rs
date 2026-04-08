@@ -38,7 +38,6 @@ use axum::{
     Router,
 };
 use metacall::{
-    initialize, is_initialized,
     load::{self, Handle},
     metacall_handle,
 };
