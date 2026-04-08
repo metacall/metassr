@@ -302,12 +302,12 @@ async fn handle_api_request(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 [(axum::http::header::CONTENT_TYPE, "application/json")],
-                format!("{{\"error\": \"{}\"}}", error),
+                format!("{{\"error\": \"{}\"}}", e),
             )
         }
     }
 }
-/* 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
