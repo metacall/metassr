@@ -103,3 +103,79 @@ pub async fn inject_live_reload_script(
 
     Ok(response)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::{to_bytes, Body},
+        http::{header, Request, StatusCode},
+        routing::get,
+        Router,
+    };
+    use tower_service::Service;
+
+    #[tokio::test]
+    async fn injects_script_into_html_responses() {
+        let app = Router::new()
+            .route(
+                "/",
+                get(|| async {
+                    Response::builder()
+                        .status(StatusCode::OK)
+                        .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+                        .body(Body::from("<html><body>Hello</body></html>"))
+                        .unwrap()
+                }),
+            )
+            .layer(axum::middleware::from_fn(inject_live_reload_script));
+
+        let mut app = app;
+        let response = Service::call(
+            &mut app,
+            Request::builder().uri("/").body(Body::empty()).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(header::CACHE_CONTROL).unwrap(),
+            "no-cache"
+        );
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let html = String::from_utf8_lossy(&body);
+        assert!(html.contains(r#"<script src="/livereload/script.js"></script>"#));
+    }
+
+    #[tokio::test]
+    async fn leaves_non_html_responses_unchanged() {
+        let app = Router::new()
+            .route(
+                "/json",
+                get(|| async {
+                    Response::builder()
+                        .status(StatusCode::OK)
+                        .header(header::CONTENT_TYPE, "application/json")
+                        .body(Body::from(r#"{"ok":true}"#))
+                        .unwrap()
+                }),
+            )
+            .layer(axum::middleware::from_fn(inject_live_reload_script));
+
+        let mut app = app;
+        let response = Service::call(
+            &mut app,
+            Request::builder().uri("/json").body(Body::empty()).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(response.headers().get(header::CACHE_CONTROL).is_none());
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(String::from_utf8_lossy(&body), r#"{"ok":true}"#);
+    }
+}

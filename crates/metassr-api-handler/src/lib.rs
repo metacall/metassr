@@ -314,3 +314,49 @@ fn handle_api_request(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::Router;
+    use std::fs;
+
+    #[test]
+    fn register_api_routes_skips_when_api_dir_missing() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        fs::create_dir_all(root.join("src")).unwrap();
+
+        let base_router = Router::new();
+        let (_router, routes) = register_api_routes(base_router, root).unwrap();
+
+        assert!(routes.is_none());
+    }
+
+    #[test]
+    fn register_api_routes_skips_when_api_dir_empty() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        fs::create_dir_all(root.join("src/api")).unwrap();
+
+        let (router, routes) = register_api_routes(Router::new(), root).unwrap();
+        let _ = router;
+        assert!(routes.is_none());
+    }
+
+    #[test]
+    fn call_handler_returns_error_when_method_is_missing() {
+        let mut routes = ApiRoutes::new();
+        let request = ApiRequest {
+            url: "/api/hello".to_string(),
+            headers: HashMap::new(),
+            method: "GET".to_string(),
+            query: HashMap::new(),
+            body: None,
+            params: HashMap::new(),
+        };
+
+        let result = routes.call_handler("src/api/hello.js", "GET", request);
+        assert!(result.is_err());
+    }
+}

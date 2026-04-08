@@ -41,9 +41,11 @@ jobs:
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
-        env:
-          METACALL_INSTALL_PATH: /opt/homebrew/lib
         run: cargo build
+
+      - name: Fix npm cache permissions (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: sudo chown -R $(id -u):$(id -g) ~/.npm
 
       - name: Build (non-macOS)
         if: runner.os != 'macOS'
@@ -55,7 +57,6 @@ jobs:
         working-directory: ./tests/web-app
         shell: bash
         env:
-          METACALL_INSTALL_PATH: /opt/homebrew/lib
           npm_config_script_shell: bash
           npm_config_cache: ${{ github.workspace }}/.npm-cache
         run: |
@@ -90,24 +91,43 @@ jobs:
           fi
           exit 0
 
-      # TODO: Improve testing by checking if resulting HTML is correct
+      - name: Fix npm cache permissions before Playwright install (macOS)
+        if: runner.os == 'macOS'
+        run: sudo chown -R $(id -u):$(id -g) ~/.npm
 
-      # - name: Install Playwright
-      #   run: npm install -g playwright
+      - name: Install Playwright
+        working-directory: ./tests/web-app
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
 
-      # - name: Run Playwright test
-      #   run: |
-      #     node -e "
-      #       const { chromium } = require('playwright');
-      #       (async () => {
-      #         const browser = await chromium.launch();
-      #         const page = await browser.newPage();
-      #         await page.goto('http://localhost:3000');
-      #         const html = await page.content();
-      #         if (!html.includes('<title>My Node App</title>')) {
-      #           console.error('HTML content did not match expected value');
-      #           process.exit(1);
-      #         }
-      #         await browser.close();
-      #       })();
-      #     "
+      - name: Start Server
+        working-directory: ./tests/web-app
+        shell: bash
+        run: |
+          npm run start:debug &
+          echo $! > server.pid
+
+          echo "Waiting for server..."
+
+          for i in {1..30}; do
+            if curl -fs http://localhost:8080 > /dev/null; then
+              echo "Server ready"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Server failed to start"
+          exit 1
+
+      - name: Debug server response (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          curl -v http://localhost:8080/ || true 
+
+      - name: Run Playwright test
+        working-directory: ./tests/web-app
+        shell: bash
+        run: node tests/playwright-test.js

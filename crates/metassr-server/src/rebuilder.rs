@@ -255,3 +255,69 @@ impl Rebuilder {
         todo!("iterate entered rebuilding rebuild_page() on all pages")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use metassr_build::server::BuildingType;
+
+    fn test_rebuilder() -> Rebuilder {
+        Rebuilder::new(PathBuf::from("."), BuildingType::ServerSideRendering).unwrap()
+    }
+
+    #[test]
+    fn map_path_to_type_detects_page_paths() {
+        let rebuilder = test_rebuilder();
+        let result = rebuilder
+            .map_path_to_type(Path::new("src/pages/blog/index.tsx"))
+            .unwrap();
+
+        match result {
+            RebuildType::Page(path) => {
+                assert_eq!(path, PathBuf::from("src/pages/blog/index.tsx"));
+            }
+            other => panic!("expected page rebuild type, got {}", other),
+        }
+    }
+
+    #[test]
+    fn map_path_to_type_detects_component_paths() {
+        let rebuilder = test_rebuilder();
+        let result = rebuilder
+            .map_path_to_type(Path::new("src/components/button.tsx"))
+            .unwrap();
+
+        assert!(matches!(result, RebuildType::Component));
+    }
+
+    #[test]
+    fn map_path_to_type_detects_static_paths() {
+        let rebuilder = test_rebuilder();
+        let result = rebuilder
+            .map_path_to_type(Path::new("static/assets/logo.svg"))
+            .unwrap();
+
+        assert!(matches!(result, RebuildType::Static));
+    }
+
+    #[test]
+    fn map_path_to_type_falls_back_to_layout_for_unknown_paths() {
+        let rebuilder = test_rebuilder();
+        let result = rebuilder
+            .map_path_to_type(Path::new("scripts/rebuild-helper.ts"))
+            .unwrap();
+
+        assert!(matches!(result, RebuildType::Layout));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn map_path_to_type_handles_windows_separators() {
+        let rebuilder = test_rebuilder();
+        let result = rebuilder
+            .map_path_to_type(Path::new(r"src\components\button.tsx"))
+            .unwrap();
+
+        assert!(matches!(result, RebuildType::Component));
+    }
+}

@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.82"
 axum = "0.7.5"
 chrono = "0.4.38"
-metacall = "0.5.6"
+metacall = "0.5.8"
 metassr-build = { path = "../metassr-build" }
 metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
 metassr-utils = { path = "../metassr-utils" }
@@ -27,3 +27,9 @@ notify = { version = "8.0.0", features = ["serde"] }
 notify-debouncer-full = "0.6.0"
 walkdir = "2"
 metassr-api-handler = { path = "../metassr-api-handler" }
+
+[build-dependencies]
+metacall-sys = "0.1.5"
+
+[dev-dependencies]
+tempfile = "3"
