@@ -47,7 +47,6 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
-use tokio::fs::read_to_string;
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
