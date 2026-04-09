@@ -108,7 +108,7 @@ impl ApiRoutes {
         }
 
         let mut handle = Handle::new();
-        load::from_file(load::Tag::NodeJS, file_path, Some(&mut handle))
+        load::from_file(load::Tag::NodeJS, [path_str.clone()], Some(&mut handle))
             .map_err(|e| anyhow!("Failed to load script {:?}: {:?}", file_path, e))?;
 
         let mut handles = self.handles.lock().unwrap();
