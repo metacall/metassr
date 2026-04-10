@@ -95,7 +95,9 @@ mod tests {
     #[test]
     fn ignores_metadata_modify_events() {
         let event = make_event(
-            EventKind::Modify(ModifyKind::Metadata(notify::event::MetadataKind::Permissions)),
+            EventKind::Modify(ModifyKind::Metadata(
+                notify::event::MetadataKind::Permissions,
+            )),
             vec![PathBuf::from("src/pages/index.tsx")],
         );
         assert!(!is_relevant_event(&event));
