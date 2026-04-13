@@ -115,3 +115,27 @@ impl FromStr for BuildingType {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_building_type() {
+        assert_eq!("ssr".parse::<BuildingType>().unwrap(), BuildingType::Ssr);
+        assert_eq!("ssg".parse::<BuildingType>().unwrap(), BuildingType::Ssg);
+    }
+
+    #[test]
+    fn parse_unsupported_option_returns_err() {
+        assert!("csr".parse::<BuildingType>().is_err());
+    }
+
+    #[test]
+    fn convert_to_server_building_type() {
+        let ssr: server::BuildingType = BuildingType::Ssr.into();
+        let ssg: server::BuildingType = BuildingType::Ssg.into();
+        assert_eq!(ssr, server::BuildingType::ServerSideRendering);
+        assert_eq!(ssg, server::BuildingType::StaticSiteGeneration);
+    }
+}
