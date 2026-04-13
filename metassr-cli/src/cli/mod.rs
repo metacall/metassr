@@ -114,7 +114,11 @@ mod tests {
     #[test]
     fn build_defaults() {
         let args = parse(&["build"]).unwrap();
-        if let Commands::Build { out_dir, build_type } = args.commands {
+        if let Commands::Build {
+            out_dir,
+            build_type,
+        } = args.commands
+        {
             assert_eq!(out_dir, "dist");
             assert_eq!(build_type, BuildingType::Ssr);
         } else {
@@ -147,10 +151,14 @@ mod tests {
     #[test]
     fn create_with_all_flags() {
         let args = parse(&[
-            "create", "my-app",
-            "--version", "2.0.0",
-            "--description", "test project",
-            "--template", "typescript",
+            "create",
+            "my-app",
+            "--version",
+            "2.0.0",
+            "--description",
+            "test project",
+            "--template",
+            "typescript",
         ])
         .unwrap();
 
