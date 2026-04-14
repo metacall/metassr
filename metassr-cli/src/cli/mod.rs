@@ -99,3 +99,93 @@ pub enum Commands {
         ws_port: u16,
     },
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    fn parse(args: &[&str]) -> Result<Args, clap::Error> {
+        let mut full = vec!["metassr"];
+        full.extend_from_slice(args);
+        Args::try_parse_from(full)
+    }
+
+    #[test]
+    fn build_defaults() {
+        let args = parse(&["build"]).unwrap();
+        if let Commands::Build {
+            out_dir,
+            build_type,
+        } = args.commands
+        {
+            assert_eq!(out_dir, "dist");
+            assert_eq!(build_type, BuildingType::Ssr);
+        } else {
+            panic!("expected Build command");
+        }
+    }
+
+    #[test]
+    fn run_defaults() {
+        let args = parse(&["run"]).unwrap();
+        if let Commands::Run { port, serve } = args.commands {
+            assert_eq!(port, 8080);
+            assert!(!serve);
+        } else {
+            panic!("expected Run command");
+        }
+    }
+
+    #[test]
+    fn dev_defaults() {
+        let args = parse(&["dev"]).unwrap();
+        if let Commands::Dev { port, ws_port } = args.commands {
+            assert_eq!(port, 8080);
+            assert_eq!(ws_port, 3001);
+        } else {
+            panic!("expected Dev command");
+        }
+    }
+
+    #[test]
+    fn create_with_all_flags() {
+        let args = parse(&[
+            "create",
+            "my-app",
+            "--version",
+            "2.0.0",
+            "--description",
+            "test project",
+            "--template",
+            "typescript",
+        ])
+        .unwrap();
+
+        if let Commands::Create {
+            project_name,
+            version,
+            description,
+            template,
+        } = args.commands
+        {
+            assert_eq!(project_name, Some("my-app".into()));
+            assert_eq!(version, Some("2.0.0".into()));
+            assert_eq!(description, Some("test project".into()));
+            assert_eq!(template, Some(Template::Typescript));
+        } else {
+            panic!("expected Create command");
+        }
+    }
+
+    #[test]
+    fn debug_mode_flag() {
+        let args = parse(&["--debug-mode", "all", "build"]).unwrap();
+        assert_eq!(args.debug_mode, Some(DebugMode::All));
+    }
+
+    #[test]
+    fn unknown_subcommand_is_rejected() {
+        assert!(parse(&["deploy"]).is_err());
+    }
+}
