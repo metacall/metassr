@@ -101,7 +101,7 @@ echo ""
 echo "=== API Endpoints ==="
 assert_status "$BASE_URL/api/hello" 200 "GET /api/hello"
 assert_json_field "$BASE_URL/api/hello" "GET"  "message" "Hello from MetaSSR API" "API GET response"
-assert_json_field "$BASE_URL/api/hello" "POST" "message" "Hello, anonymous!"           "API POST response"
+assert_json_field "$BASE_URL/api/hello" "POST" "message" "Hello, world!"           "API POST response"
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then

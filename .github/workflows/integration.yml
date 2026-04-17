@@ -49,11 +49,9 @@ jobs:
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
         run: cargo build
-
-      - name: Fix npm cache permissions (macOS only)
-        if: matrix.os == 'macos-latest'
-        run: sudo chown -R $(id -u):$(id -g) ~/.npm
 
       - name: Build (non-macOS)
         if: runner.os != 'macOS'
@@ -130,6 +128,13 @@ jobs:
           bash tests/ssr.sh
           kill $SERVER_PID 2>/dev/null || true
           pkill -f "metassr.*run" 2>/dev/null || true
+
+      - name: Force kill metassr processes (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          taskkill /F /IM metassr.exe /T 2>$null
+          Start-Sleep -Seconds 3
 
       - name: Clean dist for SSG
         working-directory: ./tests/web-app

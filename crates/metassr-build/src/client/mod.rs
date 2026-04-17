@@ -127,14 +127,14 @@ mod tests {
     fn test_new_requires_src_and_creates_dist() {
         // Missing src/ should fail.
         let tmp = TempDir::new().unwrap();
-        assert!(ClientBuilder::new(tmp.path(), "dist").is_err());
+        assert!(ClientBuilder::new(tmp.path(), "dist", false).is_err());
 
         // Valid src/ present, dist/ absent — should succeed and create dist/.
         scaffold_project(tmp.path());
         let dist = tmp.path().join("dist");
         assert!(!dist.exists());
 
-        let builder = ClientBuilder::new(tmp.path(), "dist");
+        let builder = ClientBuilder::new(tmp.path(), "dist", false);
         assert!(builder.is_ok());
         assert!(dist.exists());
     }
@@ -152,7 +152,7 @@ mod tests {
         )
         .unwrap();
 
-        let builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
+        let builder = ClientBuilder::new(tmp.path(), "dist", false).unwrap();
 
         // Reproduce the cache-generation part of build() without invoking the
         // bundler, which requires the full MetaCall/Node runtime.
@@ -200,7 +200,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         scaffold_project(tmp.path());
 
-        let builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
+        let builder = ClientBuilder::new(tmp.path(), "dist", false).unwrap();
         let result = builder.build();
 
         match result {
