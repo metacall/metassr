@@ -37,22 +37,19 @@ use axum::{
     routing::{get, MethodRouter},
     Router,
 };
+use lockfree::{self, map::Map};
 use metacall::{
     load::{self, Handle},
     metacall_handle,
 };
 use scanner::{scan_api_dir, ApiRouteFile};
-use std::{
-    collections::HashMap,
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, path::Path, sync::Arc};
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
 /// Stores loaded API route scripts and their MetaCall handles.
 pub struct ApiRoutes {
-    handles: Mutex<HashMap<String, Handle>>,
+    handles: Map<String, Handle>,
     /// List of discovered route files.
     routes: Vec<ApiRouteFile>,
 }
@@ -61,7 +58,7 @@ impl ApiRoutes {
     /// Create a new empty ApiRoutes instance.
     pub fn new() -> Self {
         Self {
-            handles: Mutex::new(HashMap::new()),
+            handles: Map::new(),
             routes: Vec::new(),
         }
     }
@@ -98,20 +95,14 @@ impl ApiRoutes {
     /// Load a single JavaScript file into MetaCall.
     async fn load_script(&mut self, file_path: &Path) -> Result<()> {
         let path_str = file_path.to_string_lossy().to_string();
-
-        {
-            let handles = self.handles.lock().unwrap();
-            if handles.contains_key(&path_str) {
-                return Ok(());
-            }
+        if self.handles.get(&path_str).is_some() {
+            return Ok(());
         }
-
         let mut handle = Handle::new();
         load::from_file(load::Tag::NodeJS, [path_str.clone()], Some(&mut handle))
             .map_err(|e| anyhow!("Failed to load script {:?}: {:?}", file_path, e))?;
 
-        let mut handles = self.handles.lock().unwrap();
-        handles.insert(path_str, handle);
+        self.handles.insert(path_str, handle);
 
         Ok(())
     }
@@ -121,8 +112,7 @@ impl ApiRoutes {
         let path_str = file_path.to_string_lossy().to_string();
 
         {
-            let mut handles = self.handles.lock().unwrap();
-            handles.remove(&path_str);
+            self.handles.remove(&path_str);
         }
 
         let code = std::fs::read_to_string(file_path)?;
@@ -131,8 +121,7 @@ impl ApiRoutes {
         load::from_memory(load::Tag::NodeJS, code, Some(&mut handle))
             .map_err(|e| anyhow!("Failed to reload script {:?}: {:?}", file_path, e))?;
 
-        let mut handles = self.handles.lock().unwrap();
-        handles.insert(path_str, handle);
+        self.handles.insert(path_str, handle);
 
         info!("Reloaded API script: {:?}", file_path);
         Ok(())
@@ -152,10 +141,8 @@ impl ApiRoutes {
 
         // Call the handler function with the request JSON
         // MetaCall looks up the function by name in all loaded scripts
-        let mut handles = self.handles.lock().unwrap();
-        let handle = handles
-            .get_mut(file_path)
-            .ok_or_else(|| anyhow!("Script not loaded: {}", file_path))?;
+        let mut handles = self.handles;
+        let handle = handles.get(file_path).unwrap().1;
         let result: String = metacall_handle(handle, method, vec![request_json])
             .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 
