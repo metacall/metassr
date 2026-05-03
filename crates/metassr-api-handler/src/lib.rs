@@ -141,8 +141,11 @@ impl ApiRoutes {
 
         // Call the handler function with the request JSON
         // MetaCall looks up the function by name in all loaded scripts
-        let mut handles = self.handles;
-        let handle = handles.get(file_path).unwrap().1;
+        let handle = &self
+            .handles
+            .get(file_path)
+            .ok_or_else(|| anyhow!("No loaded handle for API script: {}", file_path))?
+            .1;
         let result: String = metacall_handle(handle, method, vec![request_json])
             .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 

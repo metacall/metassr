@@ -926,9 +926,9 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "metacall"
-version = "0.5.9"
+version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1899fc885d436a7c348b79ff61245b0d28c8d65b8f3711fbf4e841dc2f2631a4"
+checksum = "0b9430a61a9c66ca517360d19c9564ef6b451e3f4f2d98c5ffc09ccdc6521c8f"
 dependencies = [
  "bindgen",
  "metacall-inline",
