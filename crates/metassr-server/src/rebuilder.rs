@@ -11,8 +11,8 @@ use metassr_api_handler::ApiRoutes;
 use metassr_build::{
     client::ClientBuilder,
     server::{BuildingType, ServerSideBuilder},
-    traits::Build,
 };
+use metassr_bundler::WebBundler;
 use metassr_watcher::utils::*;
 use tokio::sync::broadcast;
 
@@ -22,6 +22,23 @@ use std::time::Instant;
 use notify_debouncer_full::DebouncedEvent;
 
 use tracing::{debug, error, warn};
+struct RebuildGuard<'a> {
+    flag: &'a AtomicBool,
+}
+impl<'a> RebuildGuard<'a> {
+    fn new(flag: &'a AtomicBool) -> Option<Self> {
+        if flag.swap(true, Ordering::SeqCst) {
+            None
+        } else {
+            Some(Self { flag })
+        }
+    }
+}
+impl Drop for RebuildGuard<'_> {
+    fn drop(&mut self) {
+        self.flag.store(false, Ordering::SeqCst);
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum RebuildType {
@@ -122,9 +139,13 @@ impl Rebuilder {
     }
 
     pub fn rebuild(&self, rebuild_type: RebuildType) -> Result<()> {
-        if self.is_rebuilding.swap(true, Ordering::SeqCst) {
-            return Ok(()); // Already rebuilding, skip
-        }
+        let _guard = match RebuildGuard::new(&self.is_rebuilding) {
+            Some(guard) => guard,
+            None => {
+                debug!("rebuilding in progress, skipping");
+                return Ok(());
+            }
+        };
 
         match rebuild_type {
             RebuildType::Page(ref path) => {
@@ -166,66 +187,52 @@ impl Rebuilder {
             }
         }
 
-        self.is_rebuilding.store(false, Ordering::SeqCst);
         Ok(())
     }
 
     fn rebuild_page(&self, path: PathBuf) -> Result<()> {
         debug!("Rebuilding page {:?}", path);
 
-        debug!("Rebuilding page Rel path: {:?} Rebuilding page ", path);
+        let out_dir = self
+            .out_dir
+            .to_str()
+            .ok_or_else(|| anyhow!("Invalid output path"))?;
 
-        // Build client-side bundle
+        let client_builder = ClientBuilder::new("", out_dir, true)?;
+        let server_builder = ServerSideBuilder::new("", out_dir, self.building_type, true)?;
+
+        // Generate targets for both client and server
+        let client_targets = client_builder.generate_targets()?;
+        let server_state = server_builder.generate_targets()?;
+
+        // Combine all targets into a single rspack compilation
+        let mut combined_targets = client_targets;
+        combined_targets.extend(server_state.bundling_targets.clone());
+
         {
             let instant = Instant::now();
-            let client_builder = ClientBuilder::new(
-                "",
-                self.out_dir
-                    .to_str()
-                    .ok_or_else(|| anyhow!("couldn't find out dir path"))?,
-            )?
-            .build();
-
-            if let Err(e) = client_builder {
+            let bundler = WebBundler::new(&combined_targets, out_dir, true)?;
+            if let Err(e) = bundler.exec() {
                 error!(
                     target = "rebuilder",
-                    message = format!("Couldn't build for the client side:  {e}"),
+                    message = format!("Bundling failed: {e}")
                 );
                 return Err(anyhow!("Couldn't continue rebuilding process."));
             }
-
             debug!(
                 target = "rebuilder",
-                message = "Client building is completed",
+                message = "Bundling is completed",
                 time = format!("{}ms", instant.elapsed().as_millis())
             );
         }
 
-        // Build server-side bundle
-        {
-            let instant = Instant::now();
-
-            let server_builder = ServerSideBuilder::new(
-                "",
-                self.out_dir
-                    .to_str()
-                    .ok_or_else(|| anyhow!("Invalid output path"))?,
-                self.building_type,
-            )?;
-
-            if let Err(e) = server_builder.build() {
-                error!(
-                    target = "rebuilder",
-                    message = format!("Failed to build server-side for {}: {}", path.display(), e)
-                );
-                return Err(anyhow!("Server-side build failed"));
-            }
-
-            debug!(
-                target = "rel_path",
-                message = "Server building is completed",
-                time = format!("{}ms", instant.elapsed().as_millis())
+        // Server post-processing
+        if let Err(e) = server_builder.finish_build(server_state) {
+            error!(
+                target = "rebuilder",
+                message = format!("Failed to build server-side for {}: {}", path.display(), e)
             );
+            return Err(anyhow!("Server-side build failed"));
         }
 
         Ok(())
@@ -319,5 +326,44 @@ mod tests {
             .unwrap();
 
         assert!(matches!(result, RebuildType::Component));
+    }
+
+    #[test]
+    fn rebuild_flag_resets_after_error() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let rebuilder =
+            Rebuilder::new(tmp.path().to_path_buf(), BuildingType::ServerSideRendering).unwrap();
+        let first = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
+            "src/pages/nonexistent.tsx",
+        )));
+        assert!(
+            first.is_err(),
+            "first rebuild should fail with invalid path"
+        );
+        let second = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
+            "src/pages/nonexistent.tsx",
+        )));
+        assert!(
+            second.is_err(),
+            "second rebuild should attempt to rebuild (return Err), not return Ok(())"
+        );
+    }
+    #[test]
+    fn rebuild_flag_resets_after_successful_variant() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let rebuilder =
+            Rebuilder::new(tmp.path().to_path_buf(), BuildingType::ServerSideRendering).unwrap();
+        let first = rebuilder.rebuild(RebuildType::Api(PathBuf::from("src/api/test.js")));
+        assert!(
+            first.is_ok(),
+            "api rebuild with no routes should succeed with a warning"
+        );
+        let second = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
+            "src/pages/nonexistent.tsx",
+        )));
+        assert!(
+            second.is_err(),
+            "page rebuild after api rebuild should still attempt (not skipped)"
+        );
     }
 }

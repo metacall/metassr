@@ -24,6 +24,7 @@ pub struct Dev {
     rebuilder: Arc<Rebuilder>,
     root_path: PathBuf,
     rebuild_tx: broadcast::Sender<RebuildType>,
+    allow_http_debug: bool,
 }
 
 impl Dev {
@@ -32,6 +33,7 @@ impl Dev {
         ws_port: u16,
         root_path: PathBuf,
         building_type: BuildingType,
+        allow_http_debug: bool,
     ) -> Result<Self> {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
 
@@ -45,6 +47,7 @@ impl Dev {
             rebuilder,
             root_path,
             rebuild_tx,
+            allow_http_debug,
         })
     }
 
@@ -118,7 +121,7 @@ impl Dev {
         let server_configs = ServerConfigs {
             port: self.port,
             ws_port: self.ws_port,
-            _enable_http_logging: true,
+            _enable_http_logging: self.allow_http_debug,
             root_path: self.root_path.clone(),
             running_type: RunningType::ServerSideRendering,
             mode: metassr_server::ServerMode::Development,

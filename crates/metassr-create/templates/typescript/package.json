@@ -7,11 +7,8 @@
     "serve": "metassr --debug-mode=http run --serve",
     "build:ssr": "metassr --debug-mode=metacall build -t ssr",
     "build:ssg": "metassr --debug-mode=metacall build -t ssg",
-    "dev": "rspack --watch"
   },
-  "devDependencies": {
-    "@rspack/core": "1.5.5"
-  },
+  "devDependencies": {},
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
