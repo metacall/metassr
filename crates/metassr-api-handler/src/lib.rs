@@ -149,7 +149,7 @@ impl ApiRoutes {
             .get_mut(file_path)
             .ok_or_else(|| anyhow!("Script not loaded: {}", file_path))?;
 
-        let result: String = metacall_handle(&mut script_handle.0, method, [request_json])
+        let result: String = metacall_handle(&script_handle.0, method, [request_json])
             .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 
         let response: ApiResponse = serde_json::from_str(&result)
