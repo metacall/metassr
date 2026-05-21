@@ -76,7 +76,7 @@ pub struct Rebuilder {
     building_type: BuildingType,
     is_rebuilding: Arc<AtomicBool>,
     /// Shared handle to the loaded API routes, set after the server registers them.
-    api_routes: Mutex<Option<Arc<Mutex<ApiRoutes>>>>,
+    api_routes: Mutex<Option<Arc<ApiRoutes>>>,
 }
 
 impl Rebuilder {
@@ -95,7 +95,7 @@ impl Rebuilder {
     }
 
     /// Called by the server after API routes are loaded to enable hot-reloading.
-    pub fn set_api_routes(&self, api_routes: Arc<Mutex<ApiRoutes>>) {
+    pub fn set_api_routes(&self, api_routes: Arc<ApiRoutes>) {
         *self.api_routes.lock().unwrap() = Some(api_routes);
     }
 
@@ -244,7 +244,7 @@ impl Rebuilder {
         let api_routes = self.api_routes.lock().unwrap().clone();
         match api_routes {
             Some(api_routes) => {
-                api_routes.lock().unwrap().reload_script(&abs_path)?;
+                api_routes.reload_script(&abs_path)?;
                 Ok(())
             }
             None => {
