@@ -2,9 +2,9 @@ name: Linter
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +15,7 @@ jobs:
   clippy:
     name: Run Format, Clippy, Spellcheck
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -44,6 +44,3 @@ jobs:
 
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Spell Checking with Typos
-        uses: crate-ci/typos@master

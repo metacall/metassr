@@ -19,6 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      npm_config_cache: ${{ github.workspace }}/.npm-cache
+      npm_config_script_shell: bash
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -33,6 +36,11 @@ jobs:
         if: runner.os == 'Windows'
         run: powershell -NoProfile -ExecutionPolicy Unrestricted -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; &([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/metacall/install/master/install.ps1')))"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -41,93 +49,142 @@ jobs:
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
         run: cargo build
-
-      - name: Fix npm cache permissions (macOS only)
-        if: matrix.os == 'macos-latest'
-        run: sudo chown -R $(id -u):$(id -g) ~/.npm
 
       - name: Build (non-macOS)
         if: runner.os != 'macOS'
         run: cargo build
 
-      - name: Integration Testing (macOS)
+      - name: Cache metassr vendor (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~/.metassr/vendor
+          key: metassr-vendor-${{ runner.os }}-${{ hashFiles('crates/metassr-bundler/vendor/package.json') }}
+
+      - name: Cache metassr vendor (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: C:\Users\X\AppData\Roaming\metassr\vendor
+          key: metassr-vendor-${{ runner.os }}-${{ hashFiles('crates/metassr-bundler/vendor/package.json') }}
+
+      - name: Install web-app dependencies
+        working-directory: ./tests/web-app
+        shell: bash
+        run: npm install
+
+      - name: Build SSR (macOS)
         if: runner.os == 'macOS'
-        timeout-minutes: 10
         working-directory: ./tests/web-app
         shell: bash
         env:
-          npm_config_script_shell: bash
-          npm_config_cache: ${{ github.workspace }}/.npm-cache
-        run: |
-          npm install
-          npm run build:debug
-          npm run start:debug &
-          sleep 10
-          response=$(curl --write-out "%{http_code}" --silent --output /dev/null http://localhost:8080)
-          if [ "$response" -ne 200 ]; then
-            echo "Server did not respond with status 200"
-            exit 1
-          fi
-          exit 0
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
+        run: npm run build:debug
 
-      - name: Integration Testing (non-macOS)
+      - name: Build SSR (non-macOS)
         if: runner.os != 'macOS'
-        timeout-minutes: 10
+        working-directory: ./tests/web-app
+        shell: bash
+        run: npm run build:debug
+
+      - name: Validate build output
+        working-directory: ./tests/web-app
+        shell: bash
+        run: bash tests/bundle.sh
+
+      - name: SSR server tests (macOS)
+        if: runner.os == 'macOS'
+        timeout-minutes: 5
         working-directory: ./tests/web-app
         shell: bash
         env:
-          npm_config_script_shell: bash
-          npm_config_cache: ${{ github.workspace }}/.npm-cache
-        run: |
-          npm install
-          npm run build:debug
-          npm run start:debug &
-          sleep 10
-          response=$(curl --write-out "%{http_code}" --silent --output /dev/null http://localhost:8080)
-          if [ "$response" -ne 200 ]; then
-            echo "Server did not respond with status 200"
-            exit 1
-          fi
-          exit 0
-
-      - name: Fix npm cache permissions before Playwright install (macOS)
-        if: runner.os == 'macOS'
-        run: sudo chown -R $(id -u):$(id -g) ~/.npm
-
-      - name: Install Playwright
-        working-directory: ./tests/web-app
-        run: |
-          npm install playwright
-          npx playwright install --with-deps chromium
-
-      - name: Start Server
-        working-directory: ./tests/web-app
-        shell: bash
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
         run: |
           npm run start:debug &
-          echo $! > server.pid
-
-          echo "Waiting for server..."
-
-          for i in {1..30}; do
-            if curl -fs http://localhost:8080 > /dev/null; then
-              echo "Server ready"
-              exit 0
-            fi
-            sleep 2
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
           done
+          bash tests/ssr.sh
+          kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
 
-          echo "Server failed to start"
-          exit 1
-
-      - name: Debug server response (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: bash
-        run: |
-          curl -v http://localhost:8080/ || true 
-
-      - name: Run Playwright test
+      - name: SSR server tests (non-macOS)
+        if: runner.os != 'macOS'
+        timeout-minutes: 5
         working-directory: ./tests/web-app
         shell: bash
-        run: node tests/playwright-test.js
+        run: |
+          npm run start:debug &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+          bash tests/ssr.sh
+          kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
+
+      - name: Force kill metassr processes (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          taskkill /F /IM metassr.exe /T 2>$null
+          Start-Sleep -Seconds 3
+
+      - name: Clean dist for SSG
+        working-directory: ./tests/web-app
+        shell: bash
+        run: rm -rf dist
+
+      - name: Build SSG (macOS)
+        if: runner.os == 'macOS'
+        working-directory: ./tests/web-app
+        shell: bash
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
+        run: npm run build:debug:ssg
+
+      - name: Build SSG (non-macOS)
+        if: runner.os != 'macOS'
+        working-directory: ./tests/web-app
+        shell: bash
+        run: npm run build:debug:ssg
+
+      - name: SSG server tests (macOS)
+        if: runner.os == 'macOS'
+        timeout-minutes: 5
+        working-directory: ./tests/web-app
+        shell: bash
+        env:
+          METACALL_INSTALL_PATH: /opt/homebrew/lib
+        run: |
+          npm run start:debug:ssg &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+          bash tests/ssg.sh
+          kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
+
+      - name: SSG server tests (non-macOS)
+        if: runner.os != 'macOS'
+        timeout-minutes: 5
+        working-directory: ./tests/web-app
+        shell: bash
+        run: |
+          npm run start:debug:ssg &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+          bash tests/ssg.sh
+          kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true

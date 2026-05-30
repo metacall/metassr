@@ -155,7 +155,8 @@ impl Server {
         // This scans for .js files and registers GET/POST handlers
         let src_path = self.configs.root_path.join("src");
         if src_path.join("api").exists() {
-            match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path) {
+            match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path).await
+            {
                 Ok((router_with_api, Some(api_routes))) => {
                     app = RouterMut::from(router_with_api);
                     if let Some(rebuilder) = &self.configs.rebuilder {

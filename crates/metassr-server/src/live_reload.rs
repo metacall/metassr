@@ -113,7 +113,10 @@ mod tests {
         routing::get,
         Router,
     };
+    use std::path::PathBuf;
     use tower_service::Service;
+
+    // ---- middleware tests ----
 
     #[tokio::test]
     async fn injects_script_into_html_responses() {
@@ -177,5 +180,123 @@ mod tests {
 
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(String::from_utf8_lossy(&body), r#"{"ok":true}"#);
+    }
+
+    #[tokio::test]
+    async fn does_not_inject_when_body_tag_missing() {
+        let app = Router::new()
+            .route(
+                "/fragment",
+                get(|| async {
+                    Response::builder()
+                        .status(StatusCode::OK)
+                        .header(header::CONTENT_TYPE, "text/html")
+                        .body(Body::from("<div>no body tag here</div>"))
+                        .unwrap()
+                }),
+            )
+            .layer(axum::middleware::from_fn(inject_live_reload_script));
+
+        let mut app = app;
+        let response = Service::call(
+            &mut app,
+            Request::builder()
+                .uri("/fragment")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let html = String::from_utf8_lossy(&body);
+        assert!(!html.contains("livereload"));
+    }
+
+    #[tokio::test]
+    async fn preserves_original_status_code() {
+        let app = Router::new()
+            .route(
+                "/not-found",
+                get(|| async {
+                    Response::builder()
+                        .status(StatusCode::NOT_FOUND)
+                        .header(header::CONTENT_TYPE, "text/html")
+                        .body(Body::from("<html><body>404</body></html>"))
+                        .unwrap()
+                }),
+            )
+            .layer(axum::middleware::from_fn(inject_live_reload_script));
+
+        let mut app = app;
+        let response = Service::call(
+            &mut app,
+            Request::builder()
+                .uri("/not-found")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    // ---- message serialization (must match what live-reload.js parses) ----
+
+    #[test]
+    fn page_message_serializes_with_type_and_path() {
+        let msg = RebuildType::Page(PathBuf::from("src/pages/index.tsx")).as_message();
+        let json: serde_json::Value = serde_json::to_value(&msg).unwrap();
+
+        assert_eq!(json["type"], "page");
+        assert_eq!(json["path"], "src/pages/index.tsx");
+    }
+
+    #[test]
+    fn non_page_message_serializes_with_null_path() {
+        let msg = RebuildType::Layout.as_message();
+        let json: serde_json::Value = serde_json::to_value(&msg).unwrap();
+
+        assert_eq!(json["type"], "layout");
+        assert!(json["path"].is_null());
+    }
+
+    // ---- WebSocket server ----
+
+    #[tokio::test]
+    async fn server_sends_rebuild_message_over_websocket() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let (sender, _) = tokio::sync::broadcast::channel::<RebuildType>(16);
+
+        let receiver = sender.subscribe();
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let server = LiveReloadServer::new(receiver);
+            server.handle_connection(stream).await;
+        });
+
+        let url = format!("ws://{}", addr);
+        let (mut ws_stream, _) = tokio_tungstenite::connect_async(&url).await.unwrap();
+
+        // Page rebuild — should have type and path
+        sender
+            .send(RebuildType::Page(PathBuf::from("src/pages/about.tsx")))
+            .unwrap();
+
+        let msg = ws_stream.next().await.unwrap().unwrap();
+        let json: serde_json::Value = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+        assert_eq!(json["type"], "page");
+        assert_eq!(json["path"], "src/pages/about.tsx");
+
+        // Style rebuild — should have type only
+        sender.send(RebuildType::Style).unwrap();
+
+        let msg = ws_stream.next().await.unwrap().unwrap();
+        let json: serde_json::Value = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+        assert_eq!(json["type"], "style");
+        assert!(json["path"].is_null());
     }
 }

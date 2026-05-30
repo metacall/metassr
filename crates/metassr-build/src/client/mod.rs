@@ -23,10 +23,11 @@ pub mod hydrator;
 pub struct ClientBuilder {
     src_path: PathBuf,
     dist_path: PathBuf,
+    dev_mode: bool,
 }
 
 impl ClientBuilder {
-    pub fn new<S>(root: &S, dist_dir: &str) -> Result<Self>
+    pub fn new<S>(root: &S, dist_dir: &str, dev_mode: bool) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
     {
@@ -43,13 +44,15 @@ impl ClientBuilder {
         Ok(Self {
             src_path,
             dist_path,
+            dev_mode,
         })
     }
 }
 
-impl Build for ClientBuilder {
-    type Output = ();
-    fn build(&self) -> Result<Self::Output> {
+impl ClientBuilder {
+    /// Generates client-side hydrator scripts and returns the bundling targets
+    /// without running the bundler. Use with `WebBundler` to combine with server targets.
+    pub fn generate_targets(&self) -> Result<HashMap<String, String>> {
         let mut cache_dir = CacheDir::new(&format!("{}/cache", self.dist_path.display()))?;
         let src = SourceDir::new(&self.src_path).analyze()?;
 
@@ -68,16 +71,22 @@ impl Build for ClientBuilder {
             .iter()
             .map(|(entry_name, path)| {
                 let fullpath = dunce::canonicalize(path).unwrap();
-
                 (entry_name.to_owned(), format!("{}", fullpath.display()))
             })
             .collect::<HashMap<String, String>>();
 
-        let bundler = WebBundler::new(&targets, &self.dist_path)?;
+        Ok(targets)
+    }
+}
+
+impl Build for ClientBuilder {
+    type Output = ();
+    fn build(&self) -> Result<Self::Output> {
+        let targets = self.generate_targets()?;
+        let bundler = WebBundler::new(&targets, &self.dist_path, self.dev_mode)?;
         if let Err(e) = bundler.exec() {
             return Err(anyhow!("Bundling failed: {e}"));
         }
-
         Ok(())
     }
 }
@@ -118,14 +127,14 @@ mod tests {
     fn test_new_requires_src_and_creates_dist() {
         // Missing src/ should fail.
         let tmp = TempDir::new().unwrap();
-        assert!(ClientBuilder::new(tmp.path(), "dist").is_err());
+        assert!(ClientBuilder::new(tmp.path(), "dist", false).is_err());
 
         // Valid src/ present, dist/ absent — should succeed and create dist/.
         scaffold_project(tmp.path());
         let dist = tmp.path().join("dist");
         assert!(!dist.exists());
 
-        let builder = ClientBuilder::new(tmp.path(), "dist");
+        let builder = ClientBuilder::new(tmp.path(), "dist", false);
         assert!(builder.is_ok());
         assert!(dist.exists());
     }
@@ -143,7 +152,7 @@ mod tests {
         )
         .unwrap();
 
-        let builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
+        let builder = ClientBuilder::new(tmp.path(), "dist", false).unwrap();
 
         // Reproduce the cache-generation part of build() without invoking the
         // bundler, which requires the full MetaCall/Node runtime.
@@ -191,7 +200,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         scaffold_project(tmp.path());
 
-        let builder = ClientBuilder::new(tmp.path(), "dist").unwrap();
+        let builder = ClientBuilder::new(tmp.path(), "dist", false).unwrap();
         let result = builder.build();
 
         match result {

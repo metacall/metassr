@@ -19,7 +19,7 @@ use super::{
 };
 
 pub struct PagesGenerator {
-    cache: PathBuf,
+    server_pages_dir: PathBuf,
     dist: DistDirContainer,
     head: String,
     output: HashMap<String, String>,
@@ -31,28 +31,33 @@ impl PagesGenerator {
         head_path: &S,
         dist_path: &S,
         cache_dir: CacheDir,
+        dev_mode: bool,
     ) -> Result<Self> {
+        let dist_path_buf = PathBuf::from(dist_path.as_ref());
         let dist = DistDir::new(dist_path)?.analyze()?;
-        let head = HeadRenderer::new(&head_path, cache_dir.clone()).render(true)?;
-        let cache = cache_dir.path().to_path_buf();
+        let head = HeadRenderer::new(&head_path, cache_dir.clone(), dev_mode).render(false)?;
+        let server_pages_dir = dist_path_buf.join("server").join("pages");
 
-        let output = MultiRenderExec::new(targets.ready_for_exec())?.exec()?;
+        let output = MultiRenderExec::new(targets.ready_for_exec(&dist_path_buf))?.exec()?;
 
         Ok(Self {
             dist,
             head,
-            cache,
+            server_pages_dir,
             output,
         })
     }
 
     pub fn generate(&self) -> Result<()> {
         for (path, html_body) in &self.output {
-            let path = Path::new(&path).parent().unwrap();
-            // dbg!(&path, &self.cache.join(""));
-            let route = match path.strip_prefix(self.cache.join("pages"))? {
-                p if p == Path::new("") => "#root",
-                p => p.to_str().unwrap(),
+            // Bundle path is e.g. dist/server/pages/home.js
+            // File stem is the route key: "home", "root", "blog/article"
+            let path = Path::new(&path);
+            let rel = path.strip_prefix(&self.server_pages_dir)?;
+            let route_key = rel.with_extension("");
+            let route = match route_key.to_str().unwrap() {
+                "root" => "#root",
+                r => r,
             };
 
             let page_entry = self.dist.pages.get(route);
