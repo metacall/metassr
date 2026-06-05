@@ -12,7 +12,7 @@ use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use super::traits::AsyncExec;
 
@@ -24,6 +24,7 @@ pub struct Dev {
     rebuilder: Arc<Rebuilder>,
     root_path: PathBuf,
     rebuild_tx: broadcast::Sender<RebuildType>,
+    allow_http_debug: bool,
 }
 
 impl Dev {
@@ -32,6 +33,7 @@ impl Dev {
         ws_port: u16,
         root_path: PathBuf,
         building_type: BuildingType,
+        allow_http_debug: bool,
     ) -> Result<Self> {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
 
@@ -45,6 +47,7 @@ impl Dev {
             rebuilder,
             root_path,
             rebuild_tx,
+            allow_http_debug,
         })
     }
 
@@ -75,14 +78,17 @@ impl Dev {
         tokio::spawn(async move {
             while let Ok(event) = rx.recv().await {
                 match rebuilder.handle_event(event) {
-                    Ok(rebuild_type) => {
+                    Ok(Some(rebuild_type)) => {
                         // Notify the server about what needs rebuilding
                         if let Err(err) = rebuild_tx.send(rebuild_type) {
                             error!("Error sending rebuild notification: {}", err);
                         }
                     }
+                    Ok(None) => {
+                        debug!("Skipping irrelevant watcher event");
+                    }
                     Err(err) => {
-                        error!("Error handling file change: {}", err)
+                        warn!("Could not map file-change event to a rebuild type: {}", err);
                     }
                 }
             }
@@ -115,7 +121,7 @@ impl Dev {
         let server_configs = ServerConfigs {
             port: self.port,
             ws_port: self.ws_port,
-            _enable_http_logging: true,
+            _enable_http_logging: self.allow_http_debug,
             root_path: self.root_path.clone(),
             running_type: RunningType::ServerSideRendering,
             mode: metassr_server::ServerMode::Development,

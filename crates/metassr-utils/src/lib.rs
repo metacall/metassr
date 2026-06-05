@@ -49,4 +49,5 @@ pub mod checker;
 /// let rand = Rand::new();
 /// println!("Generated random value: {}", rand.val());
 /// ```
+pub mod js_path;
 pub mod rand;

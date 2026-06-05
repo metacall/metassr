@@ -1,0 +1,352 @@
+[
+  {
+    "id": 1,
+    "name": "Amina Saleh",
+    "email": "amina.saleh@example.com",
+    "role": "Product Manager",
+    "city": "Cairo"
+  },
+  {
+    "id": 2,
+    "name": "Omar Haddad",
+    "email": "omar.haddad@example.com",
+    "role": "Frontend Engineer",
+    "city": "Amman"
+  },
+  {
+    "id": 3,
+    "name": "Nadia Karim",
+    "email": "nadia.karim@example.com",
+    "role": "Designer",
+    "city": "Beirut"
+  },
+  {
+    "id": 4,
+    "name": "Yousef Mansour",
+    "email": "yousef.mansour@example.com",
+    "role": "Backend Engineer",
+    "city": "Alexandria"
+  },
+  {
+    "id": 5,
+    "name": "Leila Nassar",
+    "email": "leila.nassar@example.com",
+    "role": "Data Analyst",
+    "city": "Dubai"
+  },
+  {
+    "id": 6,
+    "name": "Samir Rahman",
+    "email": "samir.rahman@example.com",
+    "role": "DevOps Engineer",
+    "city": "Doha"
+  },
+  {
+    "id": 7,
+    "name": "Hana Farouk",
+    "email": "hana.farouk@example.com",
+    "role": "QA Engineer",
+    "city": "Riyadh"
+  },
+  {
+    "id": 8,
+    "name": "Tarek Aziz",
+    "email": "tarek.aziz@example.com",
+    "role": "Support Lead",
+    "city": "Jeddah"
+  },
+  {
+    "id": 9,
+    "name": "Maya Ibrahim",
+    "email": "maya.ibrahim@example.com",
+    "role": "Marketing Manager",
+    "city": "Tunis"
+  },
+  {
+    "id": 10,
+    "name": "Karim Fadel",
+    "email": "karim.fadel@example.com",
+    "role": "Sales Manager",
+    "city": "Casablanca"
+  },
+  {
+    "id": 11,
+    "name": "Salma Zaki",
+    "email": "salma.zaki@example.com",
+    "role": "Content Strategist",
+    "city": "Muscat"
+  },
+  {
+    "id": 12,
+    "name": "Adel Shaker",
+    "email": "adel.shaker@example.com",
+    "role": "Security Engineer",
+    "city": "Kuwait City"
+  },
+  {
+    "id": 13,
+    "name": "Rana Maher",
+    "email": "rana.maher@example.com",
+    "role": "Researcher",
+    "city": "Manama"
+  },
+  {
+    "id": 14,
+    "name": "Faris Ali",
+    "email": "faris.ali@example.com",
+    "role": "Mobile Engineer",
+    "city": "Sharjah"
+  },
+  {
+    "id": 15,
+    "name": "Dina Latif",
+    "email": "dina.latif@example.com",
+    "role": "HR Partner",
+    "city": "Giza"
+  },
+  {
+    "id": 16,
+    "name": "Basel Noor",
+    "email": "basel.noor@example.com",
+    "role": "Systems Architect",
+    "city": "Istanbul"
+  },
+  {
+    "id": 17,
+    "name": "Nour Hassan",
+    "email": "nour.hassan@example.com",
+    "role": "Operations Manager",
+    "city": "Abu Dhabi"
+  },
+  {
+    "id": 18,
+    "name": "Ziad Saad",
+    "email": "ziad.saad@example.com",
+    "role": "Technical Writer",
+    "city": "Marrakesh"
+  },
+  {
+    "id": 19,
+    "name": "Mariam Adel",
+    "email": "mariam.adel@example.com",
+    "role": "Finance Analyst",
+    "city": "Luxor"
+  },
+  {
+    "id": 20,
+    "name": "Khaled Sami",
+    "email": "khaled.sami@example.com",
+    "role": "Engineering Manager",
+    "city": "Baghdad"
+  },
+  {
+    "id": 21,
+    "name": "Sara Ezzat",
+    "email": "sara.ezzat@example.com",
+    "role": "Customer Success",
+    "city": "Damascus"
+  },
+  {
+    "id": 22,
+    "name": "Ibrahim Fouad",
+    "email": "ibrahim.fouad@example.com",
+    "role": "Platform Engineer",
+    "city": "Tripoli"
+  },
+  {
+    "id": 23,
+    "name": "Farah Yassin",
+    "email": "farah.yassin@example.com",
+    "role": "UX Researcher",
+    "city": "Algiers"
+  },
+  {
+    "id": 24,
+    "name": "Rami Khalil",
+    "email": "rami.khalil@example.com",
+    "role": "Database Engineer",
+    "city": "Sousse"
+  },
+  {
+    "id": 25,
+    "name": "Yara Salem",
+    "email": "yara.salem@example.com",
+    "role": "Recruiter",
+    "city": "Hurghada"
+  },
+  {
+    "id": 26,
+    "name": "Mahmoud Taha",
+    "email": "mahmoud.taha@example.com",
+    "role": "Cloud Engineer",
+    "city": "Medina"
+  },
+  {
+    "id": 27,
+    "name": "Lina Badr",
+    "email": "lina.badr@example.com",
+    "role": "Brand Designer",
+    "city": "Fes"
+  },
+  {
+    "id": 28,
+    "name": "Anas Galal",
+    "email": "anas.galal@example.com",
+    "role": "API Engineer",
+    "city": "Aswan"
+  },
+  {
+    "id": 29,
+    "name": "Mona Lotfy",
+    "email": "mona.lotfy@example.com",
+    "role": "Account Manager",
+    "city": "Salalah"
+  },
+  {
+    "id": 30,
+    "name": "Hussein Amin",
+    "email": "hussein.amin@example.com",
+    "role": "Release Manager",
+    "city": "Khartoum"
+  },
+  {
+    "id": 31,
+    "name": "Reem Nabil",
+    "email": "reem.nabil@example.com",
+    "role": "Legal Counsel",
+    "city": "Bahrain"
+  },
+  {
+    "id": 32,
+    "name": "Mostafa Eid",
+    "email": "mostafa.eid@example.com",
+    "role": "Machine Learning Engineer",
+    "city": "Cairo"
+  },
+  {
+    "id": 33,
+    "name": "Noha Ashraf",
+    "email": "noha.ashraf@example.com",
+    "role": "Community Manager",
+    "city": "Amman"
+  },
+  {
+    "id": 34,
+    "name": "Sherif Nader",
+    "email": "sherif.nader@example.com",
+    "role": "Solutions Engineer",
+    "city": "Dubai"
+  },
+  {
+    "id": 35,
+    "name": "Jana Sami",
+    "email": "jana.sami@example.com",
+    "role": "Illustrator",
+    "city": "Beirut"
+  },
+  {
+    "id": 36,
+    "name": "Walid Rashad",
+    "email": "walid.rashad@example.com",
+    "role": "IT Administrator",
+    "city": "Riyadh"
+  },
+  {
+    "id": 37,
+    "name": "Heba Fathy",
+    "email": "heba.fathy@example.com",
+    "role": "Scrum Master",
+    "city": "Alexandria"
+  },
+  {
+    "id": 38,
+    "name": "Ali Barakat",
+    "email": "ali.barakat@example.com",
+    "role": "Network Engineer",
+    "city": "Doha"
+  },
+  {
+    "id": 39,
+    "name": "Aya Gamal",
+    "email": "aya.gamal@example.com",
+    "role": "Analytics Engineer",
+    "city": "Jeddah"
+  },
+  {
+    "id": 40,
+    "name": "Othman Said",
+    "email": "othman.said@example.com",
+    "role": "Technical Lead",
+    "city": "Kuwait City"
+  },
+  {
+    "id": 41,
+    "name": "Laila Omar",
+    "email": "laila.omar@example.com",
+    "role": "Office Manager",
+    "city": "Tunis"
+  },
+  {
+    "id": 42,
+    "name": "Hamza Rashid",
+    "email": "hamza.rashid@example.com",
+    "role": "Growth Manager",
+    "city": "Casablanca"
+  },
+  {
+    "id": 43,
+    "name": "Samar Wael",
+    "email": "samar.wael@example.com",
+    "role": "Training Lead",
+    "city": "Muscat"
+  },
+  {
+    "id": 44,
+    "name": "Nabil Farid",
+    "email": "nabil.farid@example.com",
+    "role": "Site Reliability Engineer",
+    "city": "Manama"
+  },
+  {
+    "id": 45,
+    "name": "Malak Sami",
+    "email": "malak.sami@example.com",
+    "role": "Product Analyst",
+    "city": "Sharjah"
+  },
+  {
+    "id": 46,
+    "name": "Fady Kamel",
+    "email": "fady.kamel@example.com",
+    "role": "Integration Engineer",
+    "city": "Giza"
+  },
+  {
+    "id": 47,
+    "name": "Menna Youssef",
+    "email": "menna.youssef@example.com",
+    "role": "Localization Manager",
+    "city": "Istanbul"
+  },
+  {
+    "id": 48,
+    "name": "Kareem Nabil",
+    "email": "kareem.nabil@example.com",
+    "role": "Full Stack Engineer",
+    "city": "Abu Dhabi"
+  },
+  {
+    "id": 49,
+    "name": "Nada Sobhy",
+    "email": "nada.sobhy@example.com",
+    "role": "Project Coordinator",
+    "city": "Marrakesh"
+  },
+  {
+    "id": 50,
+    "name": "Tamer Shoukry",
+    "email": "tamer.shoukry@example.com",
+    "role": "Business Analyst",
+    "city": "Luxor"
+  }
+]

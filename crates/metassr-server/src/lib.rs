@@ -155,10 +155,18 @@ impl Server {
         // This scans for .js files and registers GET/POST handlers
         let src_path = self.configs.root_path.join("src");
         if src_path.join("api").exists() {
-            match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path) {
-                Ok((router_with_api, _api_routes)) => {
+            match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path).await
+            {
+                Ok((router_with_api, Some(api_routes))) => {
                     app = RouterMut::from(router_with_api);
+                    if let Some(rebuilder) = &self.configs.rebuilder {
+                        rebuilder.set_api_routes(api_routes);
+                    }
                     info!("API routes registered successfully");
+                }
+                Ok((router_with_api, None)) => {
+                    app = RouterMut::from(router_with_api);
+                    info!("API routes registered (no route files found)");
                 }
                 Err(e) => {
                     tracing::warn!("Failed to register API routes: {}", e);

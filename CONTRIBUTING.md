@@ -5,7 +5,6 @@ Thank you for your interest in contributing to MetaSSR! We welcome contributions
 ## Table of contents
 - [Development Setup](#development-setup)
 - [How to Contribute](#how-to-contribute)
-
 ## Development Setup
 
 To set up your development environment for MetaSSR, choose one of the following methods based on your preferences and system configuration:
@@ -18,7 +17,7 @@ The fastest way to get started with a fully configured development environment:
    ```bash
    sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
    ```
-   
+
 2. **Enable Nix Flakes**:
    ```bash
    mkdir -p ~/.config/nix
@@ -123,6 +122,23 @@ Once your pull request is submitted, it will be reviewed by the project maintain
 
 - **Code Style**: Follow the coding style and conventions used in the existing codebase. This includes indentation, naming conventions, and code organization.
 - **Documentation**: Update or add documentation as needed. Ensure that your code changes are reflected in the project documentation.
+- **Windows Path Handling**: Windows paths require special handling when passed to JavaScript/MetaCall:
+
+  1. **Canonicalization**: Always use `dunce::canonicalize()` instead of `std::fs::canonicalize()`. On Windows, `std::fs::canonicalize()` returns paths with the `\\?\` extended-length prefix (e.g., `\\?\C:\path\to\file`), which causes issues when passed to MetaCall/rspack. The `dunce` crate removes this prefix when safe, while being a no-op on other platforms.
+
+  2. **JavaScript String Safety**: When passing paths to JavaScript code (e.g., in templates, MetaCall FFI, or generated JS), always use `metassr_utils::js_path::to_js_path()`. This converts backslashes to forward slashes, preventing escape sequence interpretation in JavaScript strings (e.g., `\t` becoming a TAB character).
+
+  ```rust
+  use metassr_utils::js_path::to_js_path;
+
+  // ❌ Don't use:
+  let path = std::fs::canonicalize(&path)?;
+  let js_import = format!(r#"import Page from "{}""#, path.to_str().unwrap());
+
+  // ✅ Use instead:
+  let path = dunce::canonicalize(&path)?;
+  let js_import = format!(r#"import Page from "{}""#, to_js_path(&path));
+  ```
 
 ### 5. Commit Message Conventions
 
@@ -135,7 +151,7 @@ Use clear and descriptive commit messages that follow this format:
 **Examples:**
 
 ```
-feat(cli): new cool feature in the cli 
+feat(cli): new cool feature in the cli
 fix(builder): fix a bug in building operation
 ```
 
@@ -151,7 +167,7 @@ also, you can test one of web applications that located at [tests](../../tests/)
 
 **Example:**
 ```bash
-$ cargo run --bin metassr -- --root=tests/web-app --debug-mode=all run 
+$ cargo run --bin metassr -- --root=tests/web-app --debug-mode=all run
 ```
 
 
