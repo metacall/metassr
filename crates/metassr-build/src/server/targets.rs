@@ -83,13 +83,11 @@ mod tests {
     #[test]
     fn maps_path_to_func_id() {
         let mut targets = Targets::new();
-        targets.insert(42, Path::new("/dist/pages/about/index.server.js"));
+        let dist_path = Path::new("/dist");
+        targets.insert(42, Path::new("/dist/cache/pages/about/index.server.js"));
 
-        let exec = targets.ready_for_exec();
-        assert_eq!(
-            exec.get("/dist/pages/about/index.server.js").copied(),
-            Some(42),
-        );
+        let exec = targets.ready_for_exec(dist_path);
+        assert_eq!(exec.get("/dist/server/pages/about.js").copied(), Some(42),);
     }
 
     // Page paths are the map key, so re-bundling the same page replaces the
@@ -97,12 +95,13 @@ mod tests {
     #[test]
     fn reinsert_overwrites_func_id() {
         let mut targets = Targets::new();
-        let path = Path::new("/dist/pages/index.server.js");
+        let dist_path = Path::new("/dist");
+        let path = Path::new("/dist/cache/pages/index.server.js");
 
         targets.insert(1, path);
         targets.insert(2, path);
 
-        let exec = targets.ready_for_exec();
+        let exec = targets.ready_for_exec(dist_path);
         assert_eq!(exec.len(), 1);
         assert_eq!(exec.values().copied().next(), Some(2));
     }
