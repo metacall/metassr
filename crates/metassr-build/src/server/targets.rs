@@ -25,33 +25,44 @@ impl Targets {
         self.0.insert(path.to_path_buf(), func_id);
     }
 
-    pub fn ready_for_bundling(&self, dist_path: &PathBuf) -> HashMap<String, String> {
+    /// Returns bundling targets with entry names that output to `dist/server/pages/`.
+    /// e.g. source `dist/cache/pages/home/index.server.js` => entry `server/pages/home`
+    ///      => esbuild output `dist/server/pages/home.js` (no collision with source)
+    pub fn ready_for_bundling(&self, dist_path: &Path) -> HashMap<String, String> {
+        let cache_pages = dist_path.join("cache").join("pages");
         self.0
             .keys()
             .map(|path| {
-                let mut name = match path.strip_prefix(dist_path) {
-                    Ok(p) => p,
-                    Err(e) => panic!(
-                        "Couldn't \"{}\".strip_prefix(\"{}\"): {e}",
-                        dist_path.display(),
-                        path.display()
-                    ),
-                }
-                .to_path_buf();
-                name.set_extension("");
-                (
-                    to_js_path(&name),
-                    to_js_path(&dunce::canonicalize(path).unwrap()),
-                )
+                let route = self.route_from_source(path, &cache_pages);
+                let entry = format!("server/pages/{route}");
+                (entry, to_js_path(&dunce::canonicalize(path).unwrap()))
             })
             .collect()
     }
 
-    pub fn ready_for_exec(&self) -> HashMap<String, i64> {
+    /// Returns the expected bundle output paths for execution (SSG/SSR).
+    /// e.g. route `home` => `dist/server/pages/home.js`
+    pub fn ready_for_exec(&self, dist_path: &Path) -> HashMap<String, i64> {
+        let cache_pages = dist_path.join("cache").join("pages");
         self.0
             .iter()
-            .map(|(path, &id)| (path.to_str().unwrap().to_string(), id))
+            .map(|(path, &id)| {
+                let route = self.route_from_source(path, &cache_pages);
+                let bundle = dist_path
+                    .join("server")
+                    .join("pages")
+                    .join(format!("{route}.js"));
+                (bundle.to_str().unwrap().to_string(), id)
+            })
             .collect()
+    }
+
+    fn route_from_source(&self, source: &Path, cache_pages: &Path) -> String {
+        let rel = source.strip_prefix(cache_pages).unwrap();
+        match rel.parent().unwrap() {
+            p if p == Path::new("") => "root".to_string(),
+            p => p.to_str().unwrap().to_string(),
+        }
     }
 
     pub fn iter(&self) -> Iter<'_, PathBuf, i64> {

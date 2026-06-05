@@ -6,7 +6,8 @@ use clap::ValueEnum;
 use metacall::initialize;
 use metassr_build::server;
 
-use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
+use metassr_build::{client::ClientBuilder, server::ServerSideBuilder};
+use metassr_bundler::WebBundler;
 
 use std::time::Instant;
 
@@ -28,37 +29,60 @@ impl Exec for Builder {
         let _metacall = initialize().unwrap();
         let instant = Instant::now();
 
+        let client_builder = ClientBuilder::new("", &self.out_dir, false)?;
+        let server_builder = ServerSideBuilder::new("", &self.out_dir, self._type.into(), false)?;
+
+        // Generate targets for both client and server
+        let client_targets = client_builder.generate_targets().map_err(|e| {
+            error!(
+                target = "builder",
+                message = format!("Client target generation failed: {e}")
+            );
+            anyhow!("Couldn't continue building process.")
+        })?;
+
+        let server_state = server_builder.generate_targets().map_err(|e| {
+            error!(
+                target = "builder",
+                message = format!("Server target generation failed: {e}")
+            );
+            anyhow!("Couldn't continue building process.")
+        })?;
+
+        // Combine all targets into a single rspack compilation
+        let mut combined_targets = client_targets;
+        combined_targets.extend(server_state.bundling_targets.clone());
+
         {
             let instant = Instant::now();
-
-            if let Err(e) = ClientBuilder::new("", &self.out_dir)?.build() {
+            let bundler = WebBundler::new(&combined_targets, &self.out_dir, false)?;
+            if let Err(e) = bundler.exec() {
                 error!(
                     target = "builder",
-                    message = format!("Couldn't build for the client side:  {e}"),
+                    message = format!("Bundling failed: {e}")
                 );
                 return Err(anyhow!("Couldn't continue building process."));
             }
             info!(
                 target = "builder",
-                message = "Client building is completed",
+                message = "Bundling is completed",
                 time = format!("{}ms", instant.elapsed().as_millis())
             );
         }
 
+        // Run server post-processing (manifest, head rendering, SSG pages)
         {
             let instant = Instant::now();
-
-            if let Err(e) = ServerSideBuilder::new("", &self.out_dir, self._type.into())?.build() {
+            server_builder.finish_build(server_state).map_err(|e| {
                 error!(
                     target = "builder",
-                    message = format!("Couldn't build for the server side: {e}"),
+                    message = format!("Server post-processing failed: {e}")
                 );
-                return Err(anyhow!("Couldn't continue building process."));
-            }
-
+                anyhow!("Couldn't continue building process.")
+            })?;
             info!(
                 target = "builder",
-                message = "Server building is completed",
+                message = "Server post-processing is completed",
                 time = format!("{}ms", instant.elapsed().as_millis())
             );
         }

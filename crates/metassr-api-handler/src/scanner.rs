@@ -84,3 +84,88 @@ fn build_route_path(relative_path: &Path, full_path: &Path) -> String {
 
     route_path
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn create_test_api_dir() -> TempDir {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create api/hello.js
+        fs::write(temp_dir.path().join("hello.js"), "function GET() {}").unwrap();
+
+        // Create api/users/list.js (nested)
+        let users_dir = temp_dir.path().join("users");
+        fs::create_dir(&users_dir).unwrap();
+        fs::write(users_dir.join("list.js"), "function GET() {}").unwrap();
+
+        // Create a non-js file (should be ignored)
+        fs::write(temp_dir.path().join("readme.txt"), "ignore me").unwrap();
+
+        temp_dir
+    }
+
+    #[test]
+    fn test_scan_api_dir_finds_js_files() {
+        let temp_dir = create_test_api_dir();
+        let routes = scan_api_dir(temp_dir.path());
+
+        assert_eq!(routes.len(), 2, "Should find exactly 2 JS files");
+    }
+
+    #[test]
+    fn test_scan_api_dir_ignores_non_js_files() {
+        let temp_dir = create_test_api_dir();
+        let routes = scan_api_dir(temp_dir.path());
+
+        // Should not contain any .txt files
+        for route in &routes {
+            assert!(
+                route.file_path.extension().unwrap() == "js",
+                "Should only find .js files"
+            );
+        }
+    }
+
+    #[test]
+    fn test_scan_api_dir_builds_correct_routes() {
+        let temp_dir = create_test_api_dir();
+        let routes = scan_api_dir(temp_dir.path());
+
+        let route_paths: Vec<_> = routes.iter().map(|r| r.route_path.as_str()).collect();
+
+        assert!(
+            route_paths.contains(&"/api/hello"),
+            "Should have /api/hello route"
+        );
+        assert!(
+            route_paths.contains(&"/api/users/list"),
+            "Should have /api/users/list route"
+        );
+    }
+
+    #[test]
+    fn test_scan_nonexistent_dir_returns_empty() {
+        let routes = scan_api_dir(Path::new("/nonexistent/path"));
+        assert!(routes.is_empty(), "Should return empty for nonexistent dir");
+    }
+
+    #[test]
+    fn test_build_route_path() {
+        let relative = Path::new("hello.js");
+        let full = Path::new("/some/path/hello.js");
+        let route = build_route_path(relative, full);
+        assert_eq!(route, "/api/hello");
+    }
+
+    #[test]
+    fn test_build_route_path_nested() {
+        let relative = Path::new("users/profile.js");
+        let full = Path::new("/some/path/users/profile.js");
+        let route = build_route_path(relative, full);
+        assert_eq!(route, "/api/users/profile");
+    }
+}
