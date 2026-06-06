@@ -97,6 +97,10 @@ pub enum Commands {
         /// port number for the WebSocket live reload server
         #[arg(long, default_value_t = 3001)]
         ws_port: u16,
+
+        /// The type of build to perform. Choose between Ssr (Server-Side Rendering) and Ssg (Static Site Generation).
+        #[arg(short = 't', long = "type", default_value_t = BuildingType::Ssr)]
+        build_type: BuildingType,
     },
 }
 
@@ -140,9 +144,15 @@ mod tests {
     #[test]
     fn dev_defaults() {
         let args = parse(&["dev"]).unwrap();
-        if let Commands::Dev { port, ws_port } = args.commands {
+        if let Commands::Dev {
+            port,
+            ws_port,
+            build_type,
+        } = args.commands
+        {
             assert_eq!(port, 8080);
             assert_eq!(ws_port, 3001);
+            assert_eq!(build_type, BuildingType::Ssr);
         } else {
             panic!("expected Dev command");
         }

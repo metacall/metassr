@@ -6,8 +6,9 @@ use tokio::sync::broadcast;
 
 use anyhow::Result;
 
+use crate::cli::BuildingType;
 use metacall::initialize;
-use metassr_build::server::BuildingType;
+use metassr_build::server::BuildingType as ServerBuildingType;
 use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
@@ -32,10 +33,20 @@ impl Dev {
         port: u16,
         ws_port: u16,
         root_path: PathBuf,
-        building_type: BuildingType,
+        build_type: BuildingType,
         allow_http_debug: bool,
     ) -> Result<Self> {
+        let _metacall = initialize().unwrap();
+
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
+
+        // There is a difference between BuildingType in CLI and Server crates. I remember trying to
+        // make them shared but i failed for some reason. The current pattern matching is for me to
+        // be able to pass building_type to the Server crate. This is not the best solution and sure needs to be improved later
+        let building_type: ServerBuildingType = match build_type {
+            BuildingType::Ssg => ServerBuildingType::ServerSideRendering,
+            BuildingType::Ssr => ServerBuildingType::StaticSiteGeneration,
+        };
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
         let rebuilder = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
