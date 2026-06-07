@@ -84,12 +84,18 @@ async fn main() -> Result<()> {
         } => {
             cli::Creator::new(project_name, version, description, template)?.exec()?;
         }
-        Commands::Dev { port, ws_port } => {
+        Commands::Dev {
+            port,
+            ws_port,
+            out_dir,
+            build_type,
+        } => {
             cli::Dev::new(
                 port,
                 ws_port,
                 current_dir()?,
-                metassr_build::server::BuildingType::ServerSideRendering,
+                out_dir,
+                build_type,
                 allow_http_debug,
             )?
             .exec()

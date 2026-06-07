@@ -6,7 +6,8 @@
     "start:ssr": "metassr --debug-mode=http run",
     "serve": "metassr --debug-mode=http run --serve",
     "build:ssr": "metassr --debug-mode=metacall build -t ssr",
-    "build:ssg": "metassr --debug-mode=metacall build -t ssg"
+    "build:ssg": "metassr --debug-mode=metacall build -t ssg",
+    "dev": "metassr --debug-mode=metacall dev"
   },
   "devDependencies": {},
   "dependencies": {

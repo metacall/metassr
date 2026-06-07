@@ -23,6 +23,7 @@ pub struct Creator {
     description: String,
     template: Template,
 }
+
 impl Creator {
     pub fn new(project_name: &str, version: &str, desc: &str, template: &str) -> Self {
         Self {
