@@ -1,5 +1,4 @@
-import React, { ReactNode } from 'react';
-import { renderToString } from 'react-dom/server';
+import React from 'react';
 import { PageLayout } from './layout/PageLayout';
 import "./styles/global.css";
 
