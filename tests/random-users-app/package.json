@@ -11,7 +11,7 @@
         "start:ssr": "npm run metassr:release -- run --serve",
         "build:debug": "npm run metassr -- --debug-mode=metacall build",
         "start:debug": "npm run metassr -- --debug-mode=metacall run",
-        "dev": "npm run build:debug && npm run metassr:release -- --debug-mode=metacall dev"
+        "dev": "npm run metassr --debug-mode=metacall dev"
     },
     "devDependencies": {
         "@types/react": "^18.0.24",

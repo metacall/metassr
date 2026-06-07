@@ -4,10 +4,11 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::broadcast;
 
-use anyhow::Result;
+use anyhow::{self, Result};
 
-use metacall::initialize;
-use metassr_build::server::BuildingType;
+use crate::cli::traits::Exec;
+use crate::cli::{Builder, BuildingType};
+use metassr_build::server::BuildingType as ServerBuildingType;
 use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
@@ -24,6 +25,8 @@ pub struct Dev {
     rebuilder: Arc<Rebuilder>,
     root_path: PathBuf,
     rebuild_tx: broadcast::Sender<RebuildType>,
+    build_type: BuildingType,
+    out_dir: String,
     allow_http_debug: bool,
 }
 
@@ -32,10 +35,19 @@ impl Dev {
         port: u16,
         ws_port: u16,
         root_path: PathBuf,
-        building_type: BuildingType,
+        out_dir: String,
+        build_type: BuildingType,
         allow_http_debug: bool,
     ) -> Result<Self> {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
+
+        // There is a difference between BuildingType in CLI and Server crates. I remember trying to
+        // make them shared but i failed for some reason. The current pattern matching is for me to
+        // be able to pass building_type to the Server crate. This is not the best solution and sure needs to be improved later
+        let building_type: ServerBuildingType = match build_type {
+            BuildingType::Ssr => ServerBuildingType::ServerSideRendering,
+            BuildingType::Ssg => ServerBuildingType::StaticSiteGeneration,
+        };
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
         let rebuilder = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
@@ -47,6 +59,8 @@ impl Dev {
             rebuilder,
             root_path,
             rebuild_tx,
+            build_type,
+            out_dir: out_dir.to_string(),
             allow_http_debug,
         })
     }
@@ -135,7 +149,7 @@ impl Dev {
 
 impl AsyncExec for Dev {
     async fn exec(&self) -> Result<()> {
-        let _metacall = initialize().unwrap();
+        Builder::new(self.build_type, self.out_dir.clone()).exec()?;
 
         self.setup_watcher()?;
 
