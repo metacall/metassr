@@ -87,11 +87,19 @@ async fn main() -> Result<()> {
         Commands::Dev {
             port,
             ws_port,
+            out_dir,
             build_type,
         } => {
-            cli::Dev::new(port, ws_port, current_dir()?, build_type, allow_http_debug)?
-                .exec()
-                .await?;
+            cli::Dev::new(
+                port,
+                ws_port,
+                current_dir()?,
+                out_dir,
+                build_type,
+                allow_http_debug,
+            )?
+            .exec()
+            .await?;
         }
     };
 
