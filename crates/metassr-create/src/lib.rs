@@ -75,8 +75,10 @@ mod test {
     include!(concat!(env!("OUT_DIR"), "/templates.rs"));
     #[test]
     fn load_template() {
+        let templates = load_templates();
+
         dbg!(&from_utf8(
-            load_templates()
+            templates
                 .get("typescript")
                 .unwrap()
                 .get("src/_head.tsx")
@@ -85,6 +87,17 @@ mod test {
         .unwrap()
         .replace(tags::VERSION, "1.0.0")
         .replace(tags::NAME, "MetaSSR"));
+
+        for (template, config) in [
+            ("javascript", "jsconfig.json"),
+            ("typescript", "tsconfig.json"),
+        ] {
+            let config = from_utf8(templates.get(template).unwrap().get(config).unwrap()).unwrap();
+            assert!(
+                config.contains(r#""jsx": "react-jsx""#),
+                "{template} template must use React's automatic JSX runtime"
+            );
+        }
     }
     #[test]
     fn generate_templates() -> Result<()> {
