@@ -16,12 +16,13 @@ use live_reload::LiveReloadServer;
 use rebuilder::Rebuilder;
 use router::RouterMut;
 use std::{
+    io::ErrorKind,
     path::{Path, PathBuf},
     sync::Arc,
 };
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::live_reload::inject_live_reload_script;
 
@@ -75,8 +76,7 @@ impl Server {
     }
 
     pub async fn run(&self) -> Result<()> {
-        let listener =
-            tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.configs.port)).await?;
+        let listener = bind_http_listener(self.configs.port).await?;
 
         let static_dir = format!("{}/static", self.configs.root_path.to_str().unwrap());
         let dist_dir = format!("{}/dist", self.configs.root_path.to_str().unwrap());
@@ -200,5 +200,53 @@ impl Server {
 
         axum::serve(listener, app.app()).await?;
         Ok(())
+    }
+}
+
+async fn bind_http_listener(start_port: u16) -> Result<TcpListener> {
+    let mut port = start_port;
+
+    loop {
+        match TcpListener::bind(("0.0.0.0", port)).await {
+            Ok(listener) => return Ok(listener),
+            Err(error) if error.kind() == ErrorKind::AddrInUse => {
+                let next_port = port.checked_add(1).ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "HTTP port {port} is already in use and no higher port is available"
+                    )
+                })?;
+
+                warn!("HTTP port {port} is already in use; trying port {next_port}");
+                port = next_port;
+            }
+            Err(error) => return Err(error.into()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bind_http_listener;
+    use tokio::net::TcpListener;
+
+    #[tokio::test]
+    async fn binds_to_requested_port_when_available() {
+        let listener = bind_http_listener(0).await.unwrap();
+
+        assert_ne!(listener.local_addr().unwrap().port(), 0);
+    }
+
+    #[tokio::test]
+    async fn increments_port_when_requested_port_is_in_use() {
+        let occupied_listener = TcpListener::bind(("0.0.0.0", 0)).await.unwrap();
+        let occupied_port = occupied_listener.local_addr().unwrap().port();
+
+        if occupied_port == u16::MAX {
+            return;
+        }
+
+        let listener = bind_http_listener(occupied_port).await.unwrap();
+
+        assert!(listener.local_addr().unwrap().port() > occupied_port);
     }
 }
