@@ -112,7 +112,7 @@ impl Server {
             base_router = base_router.layer(axum::middleware::from_fn(inject_live_reload_script));
 
             // Start the WebSocket server for live reload
-            let ws_listener = TcpListener::bind(format!("127.0.0.1:{ws_port}"))
+            let ws_listener = bind_http_listener(ws_port)
                 .await
                 .map_err(|e| anyhow::anyhow!("WebSocket bind error: {}", e))?;
             info!(
