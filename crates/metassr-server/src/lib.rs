@@ -16,7 +16,7 @@ use live_reload::LiveReloadServer;
 use rebuilder::Rebuilder;
 use router::RouterMut;
 use std::{
-    io::ErrorKind,
+    io::{Error, ErrorKind},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -76,7 +76,10 @@ impl Server {
     }
 
     pub async fn run(&self) -> Result<()> {
-        let listener = bind_http_listener(self.configs.port).await?;
+        let listener = match self.configs.mode {
+            ServerMode::Development => bind_http_listener_with_fallback(self.configs.port).await?,
+            ServerMode::Production => bind_listener("0.0.0.0", self.configs.port).await?,
+        };
 
         let static_dir = format!("{}/static", self.configs.root_path.to_str().unwrap());
         let dist_dir = format!("{}/dist", self.configs.root_path.to_str().unwrap());
@@ -112,7 +115,7 @@ impl Server {
             base_router = base_router.layer(axum::middleware::from_fn(inject_live_reload_script));
 
             // Start the WebSocket server for live reload
-            let ws_listener = bind_http_listener(ws_port)
+            let ws_listener = bind_http_listener_with_fallback(ws_port)
                 .await
                 .map_err(|e| anyhow::anyhow!("WebSocket bind error: {}", e))?;
             info!(
@@ -203,11 +206,15 @@ impl Server {
     }
 }
 
-async fn bind_http_listener(start_port: u16) -> Result<TcpListener> {
+async fn bind_listener(host: &str, port: u16) -> std::result::Result<TcpListener, Error> {
+    TcpListener::bind((host, port)).await
+}
+
+async fn bind_http_listener_with_fallback(start_port: u16) -> Result<TcpListener> {
     let mut port = start_port;
 
     loop {
-        match TcpListener::bind(("0.0.0.0", port)).await {
+        match bind_listener("0.0.0.0", port).await {
             Ok(listener) => return Ok(listener),
             Err(error) if error.kind() == ErrorKind::AddrInUse => {
                 let next_port = port.checked_add(1).ok_or_else(|| {
@@ -226,12 +233,13 @@ async fn bind_http_listener(start_port: u16) -> Result<TcpListener> {
 
 #[cfg(test)]
 mod tests {
-    use super::bind_http_listener;
+    use super::{bind_http_listener_with_fallback, bind_listener};
+    use std::io::ErrorKind;
     use tokio::net::TcpListener;
 
     #[tokio::test]
     async fn binds_to_requested_port_when_available() {
-        let listener = bind_http_listener(0).await.unwrap();
+        let listener = bind_http_listener_with_fallback(0).await.unwrap();
 
         assert_ne!(listener.local_addr().unwrap().port(), 0);
     }
@@ -245,8 +253,20 @@ mod tests {
             return;
         }
 
-        let listener = bind_http_listener(occupied_port).await.unwrap();
+        let listener = bind_http_listener_with_fallback(occupied_port)
+            .await
+            .unwrap();
 
         assert!(listener.local_addr().unwrap().port() > occupied_port);
+    }
+
+    #[tokio::test]
+    async fn strict_bind_returns_addr_in_use_when_port_is_occupied() {
+        let occupied_listener = TcpListener::bind(("0.0.0.0", 0)).await.unwrap();
+        let occupied_port = occupied_listener.local_addr().unwrap().port();
+
+        let error = bind_listener("0.0.0.0", occupied_port).await.unwrap_err();
+
+        assert_eq!(error.kind(), ErrorKind::AddrInUse);
     }
 }
