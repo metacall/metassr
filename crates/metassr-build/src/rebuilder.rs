@@ -6,12 +6,12 @@ use std::{
     },
 };
 
-use anyhow::{anyhow, Result};
-use metassr_api_handler::ApiRoutes;
-use metassr_build::{
+use crate::{
     client::ClientBuilder,
     server::{BuildingType, ServerSideBuilder},
 };
+use anyhow::{anyhow, Result};
+use metassr_api_handler::ApiRoutes;
 use metassr_bundler::WebBundler;
 use metassr_watcher::utils::*;
 use tokio::sync::broadcast;
@@ -266,7 +266,7 @@ impl Rebuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use metassr_build::server::BuildingType;
+    use crate::server::BuildingType;
 
     fn test_rebuilder() -> Rebuilder {
         Rebuilder::new(PathBuf::from("."), BuildingType::ServerSideRendering).unwrap()

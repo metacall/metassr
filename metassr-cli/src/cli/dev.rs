@@ -8,8 +8,8 @@ use anyhow::{self, Result};
 
 use crate::cli::traits::Exec;
 use crate::cli::{Builder, BuildingType};
+use metassr_build::rebuilder::{RebuildType, Rebuilder};
 use metassr_build::server::BuildingType as ServerBuildingType;
-use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_watcher::FileWatcher;
 

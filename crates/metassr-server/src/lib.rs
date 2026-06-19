@@ -2,7 +2,6 @@ mod fallback;
 mod handler;
 mod layers;
 pub mod live_reload;
-pub mod rebuilder;
 mod router;
 
 use fallback::Fallback;
@@ -13,7 +12,7 @@ use anyhow::Result;
 use axum::routing::get;
 use axum::{http::StatusCode, response::Redirect, Router};
 use live_reload::LiveReloadServer;
-use rebuilder::Rebuilder;
+use metassr_build::rebuilder::Rebuilder;
 use router::RouterMut;
 use std::{
     io::{Error, ErrorKind},
