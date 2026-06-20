@@ -159,7 +159,7 @@ impl Server {
         if src_path.join("api").exists() {
             match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path).await
             {
-                Ok((router_with_api, Some(api_routes))) => {
+                Ok((router_with_api, Some(_api_routes))) => {
                     app = RouterMut::from(router_with_api);
                     info!("API routes registered successfully");
                 }
