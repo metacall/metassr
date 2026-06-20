@@ -161,9 +161,6 @@ impl Server {
             {
                 Ok((router_with_api, Some(api_routes))) => {
                     app = RouterMut::from(router_with_api);
-                    if let Some(rebuilder) = &self.configs.rebuilder {
-                        rebuilder.set_api_routes(api_routes);
-                    }
                     info!("API routes registered successfully");
                 }
                 Ok((router_with_api, None)) => {

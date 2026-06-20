@@ -2,7 +2,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
+        Arc,
     },
 };
 
@@ -45,8 +45,6 @@ pub enum RebuildType {
     /// Rebuild a single page. page's path is provided
     Page(PathBuf),
     Layout,
-    /// Reload a single API handler script.
-    Api(PathBuf),
     // Rebuild a single Component.
     Component,
     // Reload Styles only.
@@ -61,7 +59,6 @@ impl fmt::Display for RebuildType {
                 write!(f, "page:{}", path.to_string_lossy())
             }
             RebuildType::Layout => write!(f, "layout"),
-            RebuildType::Api(path) => write!(f, "api:{}", path.to_string_lossy()),
             RebuildType::Component => write!(f, "component"),
             RebuildType::Style => write!(f, "style"),
             RebuildType::Static => write!(f, "static"),
@@ -75,8 +72,6 @@ pub struct Rebuilder {
     out_dir: PathBuf,
     building_type: BuildingType,
     is_rebuilding: Arc<AtomicBool>,
-    /// Shared handle to the loaded API routes, set after the server registers them.
-    api_routes: Mutex<Option<Arc<ApiRoutes>>>,
 }
 
 impl Rebuilder {
@@ -90,13 +85,7 @@ impl Rebuilder {
             out_dir,
             building_type,
             is_rebuilding: Arc::new(AtomicBool::new(false)),
-            api_routes: Mutex::new(None),
         })
-    }
-
-    /// Called by the server after API routes are loaded to enable hot-reloading.
-    pub fn set_api_routes(&self, api_routes: Arc<ApiRoutes>) {
-        *self.api_routes.lock().unwrap() = Some(api_routes);
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<RebuildType> {
@@ -126,7 +115,6 @@ impl Rebuilder {
 
         let rebuild_type: RebuildType = match path_str {
             path if path.starts_with("src/pages") => RebuildType::Page(path_buf.clone()),
-            path if path.starts_with("src/api") => RebuildType::Api(path_buf.clone()),
             path if path.starts_with("src/layout") => RebuildType::Layout,
             path if path.starts_with("src/components") => RebuildType::Component,
             path if path.starts_with("src/styles") => RebuildType::Style,
@@ -160,10 +148,6 @@ impl Rebuilder {
                         debug!("FULL CHANNEL: {e}");
                     }
                 };
-            }
-            RebuildType::Api(ref rel_path) => {
-                debug!("Reloading API handler: {:?}", rel_path);
-                self.rebuild_api(rel_path.clone())?;
             }
             RebuildType::Layout => {
                 // todo: implement granular layout rebuild
@@ -236,25 +220,6 @@ impl Rebuilder {
         }
 
         Ok(())
-    }
-
-    fn rebuild_api(&self, rel_path: PathBuf) -> Result<()> {
-        let abs_path = self.root_path.join(&rel_path);
-
-        let api_routes = self.api_routes.lock().unwrap().clone();
-        match api_routes {
-            Some(api_routes) => {
-                api_routes.reload_script(&abs_path)?;
-                Ok(())
-            }
-            None => {
-                warn!(
-                    "API routes not registered; cannot hot-reload {:?}",
-                    rel_path
-                );
-                Ok(())
-            }
-        }
     }
 
     #[allow(dead_code)]
@@ -353,11 +318,6 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let rebuilder =
             Rebuilder::new(tmp.path().to_path_buf(), BuildingType::ServerSideRendering).unwrap();
-        let first = rebuilder.rebuild(RebuildType::Api(PathBuf::from("src/api/test.js")));
-        assert!(
-            first.is_ok(),
-            "api rebuild with no routes should succeed with a warning"
-        );
         let second = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
             "src/pages/nonexistent.tsx",
         )));
