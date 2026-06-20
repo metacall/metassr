@@ -11,7 +11,6 @@ use crate::{
     server::{BuildingType, ServerSideBuilder},
 };
 use anyhow::{anyhow, Result};
-use metassr_api_handler::ApiRoutes;
 use metassr_bundler::WebBundler;
 use metassr_watcher::utils::*;
 use tokio::sync::broadcast;
@@ -21,7 +20,7 @@ use std::time::Instant;
 
 use notify_debouncer_full::DebouncedEvent;
 
-use tracing::{debug, error, warn};
+use tracing::{debug, error};
 struct RebuildGuard<'a> {
     flag: &'a AtomicBool,
 }
