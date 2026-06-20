@@ -92,7 +92,7 @@ impl Server {
             .nest_service("/dist", ServeDir::new(&dist_dir));
 
         if let ServerMode::Development = self.configs.mode {
-            info!("Configuring server for development mode");
+            debug!("Configuring server for development mode");
             let ws_port = self.configs.ws_port;
             // Inject the ws_port into the live-reload script at runtime
             let live_reload_script =
@@ -102,7 +102,7 @@ impl Server {
                 get(move || {
                     let script = live_reload_script.clone();
                     async move {
-                        info!("Serving live-reload.js");
+                        debug!("Serving live-reload.js");
                         axum::response::Response::builder()
                             .header("Content-Type", "application/javascript")
                             .body(script)
@@ -117,7 +117,7 @@ impl Server {
             let ws_listener = bind_http_listener_with_fallback(ws_port)
                 .await
                 .map_err(|e| anyhow::anyhow!("WebSocket bind error: {}", e))?;
-            info!(
+            debug!(
                 "WebSocket server listening on {:?}",
                 ws_listener.local_addr()?
             );
