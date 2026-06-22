@@ -15,7 +15,12 @@ lazy_static = "1.5.0"
 serde = { version = "1.0.207", features = ["derive"] }
 metassr-bundler = { path = "../metassr-bundler" }
 metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
+metassr-api-handler = { path = "../metassr-api-handler" }
+metassr-watcher = { path = "../metassr-watcher" }
 dunce = "1.0"
+notify-debouncer-full = "0.6.0"
+tokio = { version = "1.36.0", features = ["sync"] }
+tracing = "0.1.40"
 
 
 [build-dependencies]
