@@ -90,7 +90,58 @@ mod tests {
             .scripts(vec!["main.js".to_owned(), "react.js".to_owned()])
             .styles(vec!["style.css".to_owned()]);
         let props = binding.build();
+        let html = HtmlBuilder::new(HtmlTemplate::default(), props)
+            .generate()
+            .to_string();
+
+        assert!(html.contains("<title>This is a static page</title>"));
+        assert!(html.contains("<div id=\"root\"></div>"));
+        assert!(html.contains("<script src=\"main.js\">"));
+        assert!(html.contains("<script src=\"react.js\">"));
+        assert!(html.contains("<link rel=\"stylesheet\" href=\"style.css\">"));
+        assert!(html.contains("lang=\"en\""));
+    }
+
+    #[test]
+    fn generating_html_without_scripts_or_styles() {
+        // This previously panicked before the fix in HtmlPropsBuilder::build()
+        let props = HtmlPropsBuilder::new()
+            .lang("en")
+            .body("<div id=\"root\"></div>")
+            .head("<title>Test</title>")
+            .build();
         let html = HtmlBuilder::new(HtmlTemplate::default(), props).generate();
-        println!("{html:?}")
+        let output = html.to_string();
+        assert!(output.contains("<title>Test</title>"));
+        assert!(output.contains("<div id=\"root\"></div>"));
+        assert!(!output.contains("<script")); // no scripts injected
+        assert!(!output.contains("<link rel=\"stylesheet\"")); // no styles injected
+    }
+
+    #[test]
+    fn generating_html_contains_correct_script_tags() {
+        let props = HtmlPropsBuilder::new()
+            .scripts(vec!["app.js".to_owned()])
+            .styles(vec!["style.css".to_owned()])
+            .build();
+        let html = HtmlBuilder::new(HtmlTemplate::default(), props)
+            .generate()
+            .to_string();
+        assert!(html.contains("<script src=\"app.js\">"));
+        assert!(html.contains("<link rel=\"stylesheet\" href=\"style.css\">"));
+    }
+
+    #[test]
+    fn generating_html_with_empty_lang_defaults_gracefully() {
+        let props = HtmlPropsBuilder::new().build(); // all defaults
+        let html = HtmlBuilder::new(HtmlTemplate::default(), props)
+            .generate()
+            .to_string();
+        assert!(html.contains("<html lang=\"\">"));
+        assert!(!html.contains("%LANG%"));
+        assert!(!html.contains("%HEAD%"));
+        assert!(!html.contains("%BODY%"));
+        assert!(!html.contains("%SCRIPTS%"));
+        assert!(!html.contains("%STYLES%"));
     }
 }

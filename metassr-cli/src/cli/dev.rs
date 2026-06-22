@@ -2,17 +2,20 @@ use std::env::current_dir;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
 use tokio::sync::broadcast;
 
-use metacall::initialize;
-use metassr_build::server::BuildingType;
+use anyhow::{self, Result};
+
+use crate::cli::traits::Exec;
+use crate::cli::{Builder, BuildingType};
+use metassr_build::rebuilder::{RebuildType, Rebuilder};
+use metassr_build::server::BuildingType as ServerBuildingType;
 use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
-use metassr_server::rebuilder::{RebuildType, Rebuilder};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_utils::ansi::ansi_regex;
 use metassr_watcher::FileWatcher;
-use tracing::{debug, error};
+
+use tracing::{debug, error, warn};
 
 use super::traits::AsyncExec;
 
@@ -24,6 +27,9 @@ pub struct Dev {
     rebuilder: Arc<Rebuilder>,
     root_path: PathBuf,
     rebuild_tx: broadcast::Sender<RebuildType>,
+    build_type: BuildingType,
+    out_dir: String,
+    allow_http_debug: bool,
 }
 
 impl Dev {
@@ -31,9 +37,19 @@ impl Dev {
         port: u16,
         ws_port: u16,
         root_path: PathBuf,
-        building_type: BuildingType,
+        out_dir: String,
+        build_type: BuildingType,
+        allow_http_debug: bool,
     ) -> Result<Self> {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
+
+        // There is a difference between BuildingType in CLI and Server crates. I remember trying to
+        // make them shared but i failed for some reason. The current pattern matching is for me to
+        // be able to pass building_type to the Server crate. This is not the best solution and sure needs to be improved later
+        let building_type: ServerBuildingType = match build_type {
+            BuildingType::Ssr => ServerBuildingType::ServerSideRendering,
+            BuildingType::Ssg => ServerBuildingType::StaticSiteGeneration,
+        };
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
         let rebuilder = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
@@ -45,6 +61,9 @@ impl Dev {
             rebuilder,
             root_path,
             rebuild_tx,
+            build_type,
+            out_dir: out_dir.to_string(),
+            allow_http_debug,
         })
     }
 
@@ -75,14 +94,17 @@ impl Dev {
         tokio::spawn(async move {
             while let Ok(event) = rx.recv().await {
                 match rebuilder.handle_event(event) {
-                    Ok(rebuild_type) => {
+                    Ok(Some(rebuild_type)) => {
                         // Notify the server about what needs rebuilding
                         if let Err(err) = rebuild_tx.send(rebuild_type) {
                             error!("Error sending rebuild notification: {}", err);
                         }
                     }
+                    Ok(None) => {
+                        debug!("Skipping irrelevant watcher event");
+                    }
                     Err(err) => {
-                        error!("Error handling file change: {}", err)
+                        warn!("Could not map file-change event to a rebuild type: {}", err);
                     }
                 }
             }
@@ -113,7 +135,7 @@ impl Dev {
         let server_configs = ServerConfigs {
             port: self.port,
             ws_port: self.ws_port,
-            _enable_http_logging: true,
+            _enable_http_logging: self.allow_http_debug,
             root_path: self.root_path.clone(),
             running_type: RunningType::ServerSideRendering,
             mode: metassr_server::ServerMode::Development,
@@ -127,7 +149,7 @@ impl Dev {
 
 impl AsyncExec for Dev {
     async fn exec(&self) -> Result<()> {
-        let _metacall = initialize().unwrap();
+        Builder::new(self.build_type, self.out_dir.clone()).exec()?;
 
         self.setup_watcher()?;
 
@@ -141,7 +163,7 @@ impl AsyncExec for Dev {
         let out_dir = self.rebuilder.out_dir().to_string_lossy().to_string();
 
         // client build
-        if let Err(e) = ClientBuilder::new("", &out_dir)?.build() {
+        if let Err(e) = ClientBuilder::new("", &out_dir, true)?.build() {
             // exec() now propagates the bundling error through its return value,
             // so e already contains the full compilation error message.
             let err_msg = format!("Client-side build failed: {}", e);
@@ -155,7 +177,7 @@ impl AsyncExec for Dev {
         } else {
             // server build
             let stype = self.rebuilder.building_type();
-            if let Err(e) = ServerSideBuilder::new("", &out_dir, stype)?.build() {
+            if let Err(e) = ServerSideBuilder::new("", &out_dir, stype, true)?.build() {
                 let err_msg = format!("Server build failed: {}", e);
                 let clean_log_msg = ansi_regex().replace_all(&err_msg, "");
                 error!(

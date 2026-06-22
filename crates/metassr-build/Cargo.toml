@@ -6,7 +6,7 @@ description = "Web builder & client bundler (built on Rspack), built for MetaSSR
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-metacall = "0.5.6"
+metacall = "0.5.10"
 anyhow = "1.0.82"
 serde_json = "1.0.120"
 metassr-utils = { path = "../metassr-utils" }
@@ -15,10 +15,16 @@ lazy_static = "1.5.0"
 serde = { version = "1.0.207", features = ["derive"] }
 metassr-bundler = { path = "../metassr-bundler" }
 metassr-fs-analyzer = { path = "../metassr-fs-analyzer" }
+metassr-api-handler = { path = "../metassr-api-handler" }
+metassr-watcher = { path = "../metassr-watcher" }
+dunce = "1.0"
+notify-debouncer-full = "0.6.0"
+tokio = { version = "1.36.0", features = ["sync"] }
+tracing = "0.1.40"
 
 
 [build-dependencies]
-metacall-sys = "0.1.4"
+metacall-sys = "0.1.5"
 
 [dev-dependencies]
 tempfile = "3"

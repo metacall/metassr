@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use dunce;
 
 use metassr_fs_analyzer::dist_dir::{DistDirContainer, PageEntry};
 use metassr_utils::cache_dir::CacheDir;
@@ -45,7 +46,7 @@ impl GlobalEntry {
         C: AsRef<OsStr> + ?Sized,
     {
         Ok(Self {
-            head: PathBuf::from(head).canonicalize()?,
+            head: dunce::canonicalize(PathBuf::from(head))?,
             cache: PathBuf::from(cache),
         })
     }
@@ -108,14 +109,21 @@ pub struct ManifestGenerator {
     targets: Targets,
     dist: DistDirContainer,
     cache: CacheDir,
+    dist_path: PathBuf,
 }
 
 impl ManifestGenerator {
-    pub fn new(targets: Targets, cache: CacheDir, dist: DistDirContainer) -> Self {
+    pub fn new(
+        targets: Targets,
+        cache: CacheDir,
+        dist: DistDirContainer,
+        dist_path: PathBuf,
+    ) -> Self {
         Self {
             targets,
             dist,
             cache,
+            dist_path,
         }
     }
     pub fn generate<H: AsRef<OsStr> + ?Sized>(&self, head: &H) -> Result<Manifest> {
@@ -123,24 +131,29 @@ impl ManifestGenerator {
         let global = GlobalEntry::new(head, cache_path)?;
         let mut manifest = Manifest::new(global);
 
+        let cache_pages = cache_path.join("pages");
         for (path, &id) in self.targets.iter() {
-            let route = match path
-                .strip_prefix(cache_path.join("pages"))?
-                .parent()
-                .unwrap()
-            {
+            let rel = path.strip_prefix(&cache_pages)?;
+            let route = match rel.parent().unwrap() {
                 p if p == Path::new("") => "#root",
                 p => p.to_str().unwrap(),
             };
+            let route_key = if route == "#root" { "root" } else { route };
+
+            // Point to the esbuild bundle output, not the source file
+            let renderer = self
+                .dist_path
+                .join("server")
+                .join("pages")
+                .join(format!("{route_key}.js"));
 
             let page_entry = match self.dist.pages.get(route) {
                 Some(e) => e,
                 None => {
-                    return Err(anyhow!("manifest: No Entries founded for: {:#?}", route));
+                    return Err(anyhow!("manifest: No entries found for: {:#?}", route));
                 }
             };
-            manifest.insert(route, id, page_entry, path.canonicalize()?);
-            // dbg!(&route, &page_entry);
+            manifest.insert(route, id, page_entry, renderer);
         }
         Ok(manifest)
     }

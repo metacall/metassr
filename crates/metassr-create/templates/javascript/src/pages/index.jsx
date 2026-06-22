@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState } from 'react';
 import metacallLogo from "../../static/assets/metacall-logo.png"
 
 import { Link } from '../components/link';
@@ -47,6 +47,5 @@ export default function Index() {
 	)
 
 }
-
 
 

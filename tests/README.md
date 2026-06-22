@@ -5,10 +5,27 @@ This directory contains tests for the MetaSSR bundler.
 ## Web App Test
 
 The `web-app` example tests the bundler with a React application including:
+
 - TypeScript/TSX files
 - CSS imports (should be embedded in the bundle)
 - Image assets (should be inlined as base64)
 - Multiple pages and components
+
+## Random Users App
+
+The `random-users-app` example tests a small React page backed by an API route:
+
+- `static/users.json` stores 50 static users
+- `src/api/users.js` randomizes on the backend and returns 10 users from `/api/users`
+- `src/pages/index.tsx` fetches the API when the page loads, so every browser refresh requests a new random set
+
+Run it locally:
+
+```bash
+cd tests/random-users-app
+npm install
+npm run dev
+```
 
 ### Expected Output
 
@@ -58,6 +75,7 @@ dist/
 ### Running Tests Locally
 
 1. Build the project:
+
 ```bash
 cd tests/web-app
 npm install
@@ -65,6 +83,7 @@ npm run build
 ```
 
 2. Run the test script from anywhere in the project:
+
 ```bash
 # Run from project root
 ./tests/test-bundle.sh
@@ -92,6 +111,7 @@ The GitHub Actions workflow (`.github/workflows/test.yml`) automatically runs th
 The test script is designed to be easily configurable. Key configuration sections:
 
 ### Expected Directories
+
 ```bash
 EXPECTED_DIRECTORIES=(
     "cache"
@@ -107,6 +127,7 @@ EXPECTED_DIRECTORIES=(
 ```
 
 ### Expected Files
+
 ```bash
 EXPECTED_FILES=(
     "manifest.json"
@@ -116,6 +137,7 @@ EXPECTED_FILES=(
 ```
 
 ### Expected Patterns
+
 ```bash
 EXPECTED_PATTERNS=(
     "cache/pages/*/index.js"
@@ -127,6 +149,7 @@ EXPECTED_PATTERNS=(
 ```
 
 ### CSS Embedding Check
+
 ```bash
 CSS_SEPARATE_FILES_PATTERNS=(
     "pages/*/index.js.css"

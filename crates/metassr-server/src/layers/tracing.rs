@@ -41,7 +41,7 @@ impl LayerSetup for TracingLayer {
         .on_request(move |req: &Request<_>, _span: &Span| {
             if options.enable_http_logging {
                 debug!(
-                    target = "http",
+                    target: "http",
                     user_agent=?  req.headers().get("user-agent").unwrap_or(&HeaderValue::from_str("Unknown").unwrap()),
                     "request: {} {}",
                     req.method(),
@@ -52,7 +52,7 @@ impl LayerSetup for TracingLayer {
         .on_response(move |res: &Response<_>, latency: Duration, _span: &Span| {
             if options.enable_http_logging {
                 debug!(
-                    target = "http",
+                    target: "http",
                     "[{}]: generated in {:?}",
                     res.status(),
                     latency,
