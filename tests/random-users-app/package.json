@@ -1,7 +1,7 @@
 {
     "name": "random-users-app",
     "version": "1.0.0",
-    "description": "MetaSSR example app that returns 10 random users from a static JSON file.",
+    "description": "MetaSSR example app that returns 10 random users from a SQLite database.",
     "main": "src/pages/index.tsx",
     "scripts": {
         "metassr": "cargo run --bin metassr --",

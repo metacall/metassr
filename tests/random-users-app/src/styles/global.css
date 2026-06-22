@@ -80,6 +80,12 @@ h1 {
     font-size: 0.9rem;
 }
 
+.panelActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .userGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -97,6 +103,10 @@ h1 {
     gap: 20px;
     background: #ffffff;
     padding: 18px;
+}
+
+.userCard form {
+    margin: 0;
 }
 
 .userCard strong,
@@ -139,10 +149,77 @@ dd {
     text-align: right;
 }
 
+.cardActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+button {
+    border: 0;
+    border-radius: 999px;
+    background: #006d77;
+    padding: 9px 14px;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.secondaryButton {
+    border: 1px solid #b8c0c8;
+    background: #ffffff;
+    color: #1f2933;
+}
+
+.dangerButton {
+    background: #b42318;
+}
+
+.editForm {
+    display: grid;
+    gap: 10px;
+}
+
+.editForm label {
+    display: grid;
+    gap: 5px;
+    color: #52616b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.editForm input {
+    width: 100%;
+    border: 1px solid #b8c0c8;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 9px 10px;
+    color: #1f2933;
+    font: inherit;
+    font-size: 0.95rem;
+    text-transform: none;
+}
+
 .error {
     border: 1px solid #ffb4a2;
     border-radius: 8px;
     background: #fff1ed;
     padding: 14px 16px;
     color: #9f1239;
+}
+
+@media (max-width: 640px) {
+    .panelHeader,
+    .panelActions {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 }
