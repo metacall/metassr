@@ -23,7 +23,7 @@
 //!     });
 //! }
 //!
-//! module.exports = { GET, POST };
+//! module.exports = { GET, POST, PUT, DELETE };
 //! ```
 
 pub mod scanner;
@@ -127,7 +127,7 @@ impl ApiRoutes {
         Ok(())
     }
 
-    /// Call a handler function (GET, POST) on a loaded script.
+    /// Call a handler function (GET, POST, PUT, DELETE) on a loaded script.
     /// The function name should match the HTTP method (GET, POST, etc.)
     pub async fn call_handler(
         &self,
@@ -212,7 +212,7 @@ pub async fn register_api_routes(
         let file_path_clone = file_path.clone();
         let route_path_clone = route_path.clone();
 
-        // Create method router for GET and POST
+        // Create method router for supported API handler exports.
         let method_router: MethodRouter = get({
             let api_routes = Arc::clone(&api_routes_clone);
             let file_path = file_path_clone.clone();
@@ -256,8 +256,51 @@ pub async fn register_api_routes(
                     .await
                 }
             }
+        })
+        .put({
+            let api_routes = Arc::clone(&api_routes_clone);
+            let file_path = file_path_clone.clone();
+            let route_path = route_path_clone.clone();
+            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
+                let api_routes = Arc::clone(&api_routes);
+                let file_path = file_path.clone();
+                let route_path = route_path.clone();
+                async move {
+                    handle_api_request(
+                        api_routes,
+                        headers,
+                        Method::PUT,
+                        query,
+                        body,
+                        file_path,
+                        route_path,
+                    )
+                    .await
+                }
+            }
+        })
+        .delete({
+            let api_routes = Arc::clone(&api_routes_clone);
+            let file_path = file_path_clone.clone();
+            let route_path = route_path_clone.clone();
+            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
+                let api_routes = Arc::clone(&api_routes);
+                let file_path = file_path.clone();
+                let route_path = route_path.clone();
+                async move {
+                    handle_api_request(
+                        api_routes,
+                        headers,
+                        Method::DELETE,
+                        query,
+                        body,
+                        file_path,
+                        route_path,
+                    )
+                    .await
+                }
+            }
         });
-        // TODO: add PUT, DELETE ..etc
         router = router.route(&route_path, method_router);
         info!("Registered API route: {}", route_path);
     }

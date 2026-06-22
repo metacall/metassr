@@ -1,10 +1,10 @@
-use crate::rebuilder::RebuildType;
 use axum::{
     body::Body,
     http::{header, Request, Response, StatusCode},
     middleware::Next,
 };
 use futures_util::{SinkExt, StreamExt};
+use metassr_build::rebuilder::RebuildType;
 use serde::Serialize;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -18,7 +18,11 @@ struct LiveReloadMessage {
     path: Option<String>,
 }
 
-impl RebuildType {
+trait RebuildTypeLiveReloadExt {
+    fn as_message(&self) -> LiveReloadMessage;
+}
+
+impl RebuildTypeLiveReloadExt for RebuildType {
     fn as_message(&self) -> LiveReloadMessage {
         let (type_, path) = match self {
             RebuildType::Page(path) => {

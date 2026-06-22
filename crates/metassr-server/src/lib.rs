@@ -2,7 +2,6 @@ mod fallback;
 mod handler;
 mod layers;
 pub mod live_reload;
-pub mod rebuilder;
 mod router;
 
 use fallback::Fallback;
@@ -13,7 +12,7 @@ use anyhow::Result;
 use axum::routing::get;
 use axum::{http::StatusCode, response::Redirect, Router};
 use live_reload::LiveReloadServer;
-use rebuilder::Rebuilder;
+use metassr_build::rebuilder::Rebuilder;
 use router::RouterMut;
 use std::{
     io::{Error, ErrorKind},
@@ -93,7 +92,7 @@ impl Server {
             .nest_service("/dist", ServeDir::new(&dist_dir));
 
         if let ServerMode::Development = self.configs.mode {
-            info!("Configuring server for development mode");
+            debug!("Configuring server for development mode");
             let ws_port = self.configs.ws_port;
             // Inject the ws_port into the live-reload script at runtime
             let live_reload_script =
@@ -103,7 +102,7 @@ impl Server {
                 get(move || {
                     let script = live_reload_script.clone();
                     async move {
-                        info!("Serving live-reload.js");
+                        debug!("Serving live-reload.js");
                         axum::response::Response::builder()
                             .header("Content-Type", "application/javascript")
                             .body(script)
@@ -118,7 +117,7 @@ impl Server {
             let ws_listener = bind_http_listener_with_fallback(ws_port)
                 .await
                 .map_err(|e| anyhow::anyhow!("WebSocket bind error: {}", e))?;
-            info!(
+            debug!(
                 "WebSocket server listening on {:?}",
                 ws_listener.local_addr()?
             );
@@ -160,11 +159,8 @@ impl Server {
         if src_path.join("api").exists() {
             match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path).await
             {
-                Ok((router_with_api, Some(api_routes))) => {
+                Ok((router_with_api, Some(_api_routes))) => {
                     app = RouterMut::from(router_with_api);
-                    if let Some(rebuilder) = &self.configs.rebuilder {
-                        rebuilder.set_api_routes(api_routes);
-                    }
                     info!("API routes registered successfully");
                 }
                 Ok((router_with_api, None)) => {
