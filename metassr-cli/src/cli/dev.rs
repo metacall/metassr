@@ -52,7 +52,11 @@ impl Dev {
         };
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
-        let rebuilder = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
+        let rebuilder = Arc::new(Rebuilder::new(
+            root_path.clone(),
+            building_type,
+            PathBuf::from(&out_dir),
+        )?);
 
         Ok(Self {
             port,
@@ -160,10 +164,8 @@ impl AsyncExec for Dev {
         debug!("Checking cache directory: {:?}", cache_dir);
 
         // perform an initial build pass to catch any pre existing errors
-        let out_dir = self.rebuilder.out_dir().to_string_lossy().to_string();
-
         // client build
-        if let Err(e) = ClientBuilder::new("", &out_dir, true)?.build() {
+        if let Err(e) = ClientBuilder::new("", &self.out_dir, true)?.build() {
             // exec() now propagates the bundling error through its return value,
             // so e already contains the full compilation error message.
             let err_msg = format!("Client-side build failed: {}", e);
@@ -177,7 +179,7 @@ impl AsyncExec for Dev {
         } else {
             // server build
             let stype = self.rebuilder.building_type();
-            if let Err(e) = ServerSideBuilder::new("", &out_dir, stype, true)?.build() {
+            if let Err(e) = ServerSideBuilder::new("", &self.out_dir, stype, true)?.build() {
                 let err_msg = format!("Server build failed: {}", e);
                 let clean_log_msg = ansi_regex().replace_all(&err_msg, "");
                 error!(

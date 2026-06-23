@@ -81,9 +81,8 @@ pub struct Rebuilder {
 }
 
 impl Rebuilder {
-    pub fn new(root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
+    pub fn new(root_path: PathBuf, building_type: BuildingType, out_dir: PathBuf) -> Result<Self> {
         let (sender, _) = broadcast::channel(100);
-        let out_dir = PathBuf::from("dist");
 
         Ok(Self {
             sender,
@@ -101,10 +100,6 @@ impl Rebuilder {
 
     pub fn building_type(&self) -> BuildingType {
         self.building_type
-    }
-
-    pub fn out_dir(&self) -> &PathBuf {
-        &self.out_dir
     }
 
     pub fn last_errors(&self) -> Arc<Mutex<Option<Vec<String>>>> {
@@ -272,7 +267,12 @@ mod tests {
     use crate::server::BuildingType;
 
     fn test_rebuilder() -> Rebuilder {
-        Rebuilder::new(PathBuf::from("."), BuildingType::ServerSideRendering).unwrap()
+        Rebuilder::new(
+            PathBuf::from("."),
+            BuildingType::ServerSideRendering,
+            PathBuf::from("dist"),
+        )
+        .unwrap()
     }
 
     #[test]
@@ -334,8 +334,12 @@ mod tests {
     #[test]
     fn rebuild_flag_resets_after_error() {
         let tmp = tempfile::TempDir::new().unwrap();
-        let rebuilder =
-            Rebuilder::new(tmp.path().to_path_buf(), BuildingType::ServerSideRendering).unwrap();
+        let rebuilder = Rebuilder::new(
+            tmp.path().to_path_buf(),
+            BuildingType::ServerSideRendering,
+            PathBuf::from("dist"),
+        )
+        .unwrap();
         let first = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
             "src/pages/nonexistent.tsx",
         )));
@@ -354,8 +358,12 @@ mod tests {
     #[test]
     fn rebuild_flag_resets_after_successful_variant() {
         let tmp = tempfile::TempDir::new().unwrap();
-        let rebuilder =
-            Rebuilder::new(tmp.path().to_path_buf(), BuildingType::ServerSideRendering).unwrap();
+        let rebuilder = Rebuilder::new(
+            tmp.path().to_path_buf(),
+            BuildingType::ServerSideRendering,
+            PathBuf::from("dist"),
+        )
+        .unwrap();
         let second = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
             "src/pages/nonexistent.tsx",
         )));
