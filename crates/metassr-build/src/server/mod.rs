@@ -124,7 +124,7 @@ impl ServerSideBuilder {
         .generate(&state.head)?;
         manifest.write(&self.dist_path.clone())?;
 
-        // Head was already bundled in the combined rspack call, just load it
+        // Head was already bundled in the combined esbuild call, just load it
         if let Err(e) = HeadRenderer::new(
             &manifest.global.head,
             state.cache_dir.clone(),
