@@ -49,7 +49,7 @@ impl Exec for Builder {
             anyhow!("Couldn't continue building process.")
         })?;
 
-        // Combine all targets into a single rspack compilation
+        // Combine all targets into a single esbuild compilation
         let mut combined_targets = client_targets;
         combined_targets.extend(server_state.bundling_targets.clone());
 

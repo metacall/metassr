@@ -1,5 +1,4 @@
 import React, { useState, ReactNode } from 'react';
-import rspacklogo from '../../static/assets/rspack-logo.png'
 import metacalllogo from '../../static/assets/metacall-logo.png'
 
 export default function Home() {
@@ -14,7 +13,6 @@ export default function Home() {
 				Click me :D
 			</button>
 
-			<img src={rspacklogo} width="200px" />
 			<img src={metacalllogo} width="200px" />
 		</div>
 	)
