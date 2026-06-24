@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use axum::{
     body::Body,
     http::{header, Request, Response, StatusCode},
@@ -48,13 +50,13 @@ impl RebuildTypeLiveReloadExt for RebuildType {
 
 pub struct LiveReloadServer {
     receiver: Receiver<RebuildType>,
-    last_errors: std::sync::Arc<std::sync::Mutex<Option<Vec<String>>>>,
+    last_errors: Arc<Mutex<Option<Vec<String>>>>,
 }
 
 impl LiveReloadServer {
     pub fn new(
         receiver: Receiver<RebuildType>,
-        last_errors: std::sync::Arc<std::sync::Mutex<Option<Vec<String>>>>,
+        last_errors: Arc<Mutex<Option<Vec<String>>>>,
     ) -> Self {
         Self {
             receiver,
@@ -317,7 +319,7 @@ mod tests {
         let receiver = sender.subscribe();
         tokio::spawn(async move {
             let (stream, _) = listener.accept().await.unwrap();
-            let server = LiveReloadServer::new(receiver);
+            let server = LiveReloadServer::new(receiver, Arc::new(Mutex::new(None)));
             server.handle_connection(stream).await;
         });
 
