@@ -2,7 +2,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, Mutex,
     },
 };
 
@@ -12,6 +12,7 @@ use crate::{
 };
 use anyhow::{anyhow, Result};
 use metassr_bundler::WebBundler;
+use metassr_utils::ansi::ansi_regex;
 use metassr_watcher::utils::*;
 use tokio::sync::broadcast;
 
@@ -49,6 +50,10 @@ pub enum RebuildType {
     // Reload Styles only.
     Style,
     Static,
+    /// A compilation error occurred during rebuild, so the dev overlay can display it.
+    BuildError {
+        errors: Vec<String>,
+    },
 }
 
 impl fmt::Display for RebuildType {
@@ -61,6 +66,7 @@ impl fmt::Display for RebuildType {
             RebuildType::Component => write!(f, "component"),
             RebuildType::Style => write!(f, "style"),
             RebuildType::Static => write!(f, "static"),
+            RebuildType::BuildError { errors } => write!(f, "build_error:{}", errors.join(", ")),
         }
     }
 }
@@ -71,12 +77,12 @@ pub struct Rebuilder {
     out_dir: PathBuf,
     building_type: BuildingType,
     is_rebuilding: Arc<AtomicBool>,
+    last_errors: Arc<Mutex<Option<Vec<String>>>>,
 }
 
 impl Rebuilder {
-    pub fn new(root_path: PathBuf, building_type: BuildingType) -> Result<Self> {
+    pub fn new(root_path: PathBuf, building_type: BuildingType, out_dir: PathBuf) -> Result<Self> {
         let (sender, _) = broadcast::channel(100);
-        let out_dir = PathBuf::from("dist");
 
         Ok(Self {
             sender,
@@ -84,11 +90,28 @@ impl Rebuilder {
             out_dir,
             building_type,
             is_rebuilding: Arc::new(AtomicBool::new(false)),
+            last_errors: Arc::new(Mutex::new(None)),
         })
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<RebuildType> {
         self.sender.subscribe()
+    }
+
+    pub fn building_type(&self) -> BuildingType {
+        self.building_type
+    }
+
+    pub fn last_errors(&self) -> Arc<Mutex<Option<Vec<String>>>> {
+        Arc::clone(&self.last_errors)
+    }
+
+    pub fn set_last_errors(&self, errors: Vec<String>) {
+        *self.last_errors.lock().unwrap() = Some(errors);
+    }
+
+    pub fn clear_last_errors(&self) {
+        *self.last_errors.lock().unwrap() = None;
     }
 
     pub fn handle_event(&self, event: DebouncedEvent) -> Result<Option<RebuildType>> {
@@ -138,7 +161,16 @@ impl Rebuilder {
             RebuildType::Page(ref path) => {
                 debug!("entered rebuilding {:?} in {:?}", rebuild_type, path);
 
-                self.rebuild_page(path.clone())?;
+                if let Err(e) = self.rebuild_page(path.clone()) {
+                    let err_msg = e.to_string();
+                    self.set_last_errors(vec![err_msg.clone()]);
+                    let _ = self.sender.send(RebuildType::BuildError {
+                        errors: vec![err_msg],
+                    });
+                    return Err(e);
+                }
+
+                self.clear_last_errors();
                 match self.sender.send(rebuild_type.clone()) {
                     Ok(rec) => {
                         debug!("Sent to: {rec} receivers")
@@ -168,6 +200,9 @@ impl Rebuilder {
                 debug!("entered rebuilding {:?}", rebuild_type);
                 tracing::warn!("Static asset rebuild is not yet implemented; skipping.");
             }
+            RebuildType::BuildError { .. } => {
+                // BuildError is emitted by rebuild() and should not trigger another rebuild.
+            }
         }
 
         Ok(())
@@ -196,11 +231,10 @@ impl Rebuilder {
             let instant = Instant::now();
             let bundler = WebBundler::new(&combined_targets, out_dir, true)?;
             if let Err(e) = bundler.exec() {
-                error!(
-                    target = "rebuilder",
-                    message = format!("Bundling failed: {e}")
-                );
-                return Err(anyhow!("Couldn't continue rebuilding process."));
+                let msg = format!("Bundling failed: {e}");
+                let clean_log_msg = ansi_regex().replace_all(&msg, "").to_string();
+                error!(target = "rebuilder", message = clean_log_msg);
+                return Err(anyhow!(msg));
             }
             debug!(
                 target = "rebuilder",
@@ -233,7 +267,12 @@ mod tests {
     use crate::server::BuildingType;
 
     fn test_rebuilder() -> Rebuilder {
-        Rebuilder::new(PathBuf::from("."), BuildingType::ServerSideRendering).unwrap()
+        Rebuilder::new(
+            PathBuf::from("."),
+            BuildingType::ServerSideRendering,
+            PathBuf::from("dist"),
+        )
+        .unwrap()
     }
 
     #[test]
@@ -295,8 +334,12 @@ mod tests {
     #[test]
     fn rebuild_flag_resets_after_error() {
         let tmp = tempfile::TempDir::new().unwrap();
-        let rebuilder =
-            Rebuilder::new(tmp.path().to_path_buf(), BuildingType::ServerSideRendering).unwrap();
+        let rebuilder = Rebuilder::new(
+            tmp.path().to_path_buf(),
+            BuildingType::ServerSideRendering,
+            PathBuf::from("dist"),
+        )
+        .unwrap();
         let first = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
             "src/pages/nonexistent.tsx",
         )));
@@ -315,8 +358,12 @@ mod tests {
     #[test]
     fn rebuild_flag_resets_after_successful_variant() {
         let tmp = tempfile::TempDir::new().unwrap();
-        let rebuilder =
-            Rebuilder::new(tmp.path().to_path_buf(), BuildingType::ServerSideRendering).unwrap();
+        let rebuilder = Rebuilder::new(
+            tmp.path().to_path_buf(),
+            BuildingType::ServerSideRendering,
+            PathBuf::from("dist"),
+        )
+        .unwrap();
         let second = rebuilder.rebuild(RebuildType::Page(PathBuf::from(
             "src/pages/nonexistent.tsx",
         )));

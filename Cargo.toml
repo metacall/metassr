@@ -38,6 +38,7 @@ metassr-create = { path = "crates/metassr-create" }
 metassr-bundler = { path = "crates/metassr-bundler" }
 metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
 metassr-watcher = { path = "crates/metassr-watcher" }
+regex = "1.12.3"
 dunce = "1.0.5"
 
 [build-dependencies]

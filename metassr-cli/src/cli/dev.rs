@@ -10,7 +10,9 @@ use crate::cli::traits::Exec;
 use crate::cli::{Builder, BuildingType};
 use metassr_build::rebuilder::{RebuildType, Rebuilder};
 use metassr_build::server::BuildingType as ServerBuildingType;
+use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
 use metassr_server::{RunningType, Server, ServerConfigs};
+use metassr_utils::ansi::ansi_regex;
 use metassr_watcher::FileWatcher;
 
 use tracing::{debug, error, warn};
@@ -50,7 +52,11 @@ impl Dev {
         };
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
-        let rebuilder = Arc::new(Rebuilder::new(root_path.clone(), building_type)?);
+        let rebuilder = Arc::new(Rebuilder::new(
+            root_path.clone(),
+            building_type,
+            PathBuf::from(&out_dir),
+        )?);
 
         Ok(Self {
             port,
@@ -121,12 +127,10 @@ impl Dev {
 
             async move {
                 while let Ok(rebuild_type) = rebuild_rx.recv().await {
-                    if let Err(e) = rebuilder
-                        .clone()
-                        // .expect("Rebuild failed")
-                        .rebuild(rebuild_type)
-                    {
-                        error!("Rebuild failed: {}", e);
+                    if let Err(e) = rebuilder.clone().rebuild(rebuild_type) {
+                        let err_msg = e.to_string();
+                        let clean_log_msg = ansi_regex().replace_all(&err_msg, "");
+                        error!("Rebuild failed: {}", clean_log_msg);
                     }
                 }
             }
@@ -158,6 +162,33 @@ impl AsyncExec for Dev {
 
         let cache_dir = current.join("dist/cache/pages");
         debug!("Checking cache directory: {:?}", cache_dir);
+
+        // perform an initial build pass to catch any pre existing errors
+        // client build
+        if let Err(e) = ClientBuilder::new("", &self.out_dir, true)?.build() {
+            // exec() now propagates the bundling error through its return value,
+            // so e already contains the full compilation error message.
+            let err_msg = format!("Client-side build failed: {}", e);
+            let clean_log_msg = ansi_regex().replace_all(&err_msg, "");
+
+            error!(
+                "Initial build failed, caching error for overlay: {}",
+                clean_log_msg
+            );
+            self.rebuilder.set_last_errors(vec![err_msg]);
+        } else {
+            // server build
+            let stype = self.rebuilder.building_type();
+            if let Err(e) = ServerSideBuilder::new("", &self.out_dir, stype, true)?.build() {
+                let err_msg = format!("Server build failed: {}", e);
+                let clean_log_msg = ansi_regex().replace_all(&err_msg, "");
+                error!(
+                    "Initial build failed, caching error for overlay: {}",
+                    clean_log_msg
+                );
+                self.rebuilder.set_last_errors(vec![err_msg]);
+            }
+        }
 
         self.handle_file_changes().await?;
 

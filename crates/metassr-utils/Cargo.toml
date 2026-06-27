@@ -9,4 +9,5 @@ description = "Important utilities for MetaSSR"
 anyhow = "1.0.86"
 serde = {version = "1.0.207", features = ["derive"]}
 walkdir = "2.5.0"
+regex = "1.12.3"
 dunce = "1.0"

@@ -23,6 +23,8 @@ metassr-build = { path = "../crates/metassr-build" }
 metassr-bundler = { path = "../crates/metassr-bundler" }
 metassr-create = { path = "../crates/metassr-create" }
 metassr-watcher = { path = "../crates/metassr-watcher" }
+metassr-utils = { path = "../crates/metassr-utils" }
+regex = "1.12.3"
 
 [build-dependencies]
 metacall-sys = "0.1.5"
