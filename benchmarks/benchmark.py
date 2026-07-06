@@ -409,10 +409,16 @@ def main():
             log("Setting up benchmark app...")
             subprocess.run(["npm", "install", "--silent"], cwd=bench_app, check=True)
             subprocess.run(["npm", "run", "build"], cwd=bench_app, capture_output=True)
-            subprocess.Popen(["npm", "start"], cwd=bench_app,
+
+            target_dir = project_root / "target" / "release"
+            env = os.environ.copy()
+            env["PATH"] = str(target_dir) + os.pathsep + env.get("PATH", "")
+            log("Starting metassr server...")
+            subprocess.Popen(["npm", "start"], cwd=bench_app, env=env,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
-            print("Apps directory is not exist")
+            error("Benchmark app not found at " + str(bench_app))
+            sys.exit(1)
     
     # Wait for server
     if not wait_for_server(server_url):
