@@ -1,0 +1,77 @@
+name: Bench
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install MetaCall
+        run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install wrk
+        run: sudo apt-get update && sudo apt-get install -y wrk
+
+      - name: Build MetaSSR
+        run: cargo build --release
+
+      - name: Install binary
+        run: sudo cp target/release/metassr /usr/local/bin/metassr
+
+      - name: Setup benchmark app
+        working-directory: ./benchmarks/apps/metassr-app
+        run: |
+          npm install
+          npm run build
+
+      - name: Start server
+        working-directory: ./benchmarks/apps/metassr-app
+        run: |
+          npm start &
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+
+      - name: Run benchmark
+        run: python3 benchmarks/benchmark.py --skip-build
+
+      - name: Stop server
+        run: kill $(lsof -ti:8080) 2>/dev/null || true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: .bench/
+          retention-days: 90

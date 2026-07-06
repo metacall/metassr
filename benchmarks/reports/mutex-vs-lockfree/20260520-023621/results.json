@@ -1,0 +1,170 @@
+{
+  "timestamp": "2026-05-20T02:36:21.506677",
+  "url": "http://127.0.0.1:8080/api/bench",
+  "mutex_commit": "fbc73bc411e55ac94743f5302c99c1da95febeab^",
+  "lockfree_commit": "8c36012b3fea78304e193898d4568608ecd0affa",
+  "mutex": {
+    "commit": "fbc73bc411e55ac94743f5302c99c1da95febeab^",
+    "short": "dd1611d",
+    "url": "http://127.0.0.1:8080/api/bench",
+    "tests": [
+      {
+        "name": "Light",
+        "threads": 1,
+        "connections": 10,
+        "duration": 5,
+        "rps": 43025.38,
+        "latency": "248.07us",
+        "latency_ms": 0.24806999999999998,
+        "p99": "0.92ms",
+        "p99_ms": 0.92,
+        "requests": 219425,
+        "errors": 0
+      },
+      {
+        "name": "Medium",
+        "threads": 4,
+        "connections": 50,
+        "duration": 5,
+        "rps": 43002.17,
+        "latency": "1.16ms",
+        "latency_ms": 1.16,
+        "p99": "3.27ms",
+        "p99_ms": 3.27,
+        "requests": 219284,
+        "errors": 0
+      },
+      {
+        "name": "Heavy",
+        "threads": 8,
+        "connections": 200,
+        "duration": 5,
+        "rps": 41517.8,
+        "latency": "4.86ms",
+        "latency_ms": 4.86,
+        "p99": "13.41ms",
+        "p99_ms": 13.41,
+        "requests": 210838,
+        "errors": 0
+      },
+      {
+        "name": "Stress",
+        "threads": 12,
+        "connections": 500,
+        "duration": 5,
+        "rps": 36603.58,
+        "latency": "13.50ms",
+        "latency_ms": 13.5,
+        "p99": "38.67ms",
+        "p99_ms": 38.67,
+        "requests": 186673,
+        "errors": 0
+      }
+    ]
+  },
+  "lockfree": {
+    "commit": "8c36012b3fea78304e193898d4568608ecd0affa",
+    "short": "8c36012",
+    "url": "http://127.0.0.1:8080/api/bench",
+    "tests": [
+      {
+        "name": "Light",
+        "threads": 1,
+        "connections": 10,
+        "duration": 5,
+        "rps": 132710.83,
+        "latency": "69.84us",
+        "latency_ms": 0.06984,
+        "p99": "171.00us",
+        "p99_ms": 0.171,
+        "requests": 663582,
+        "errors": 0
+      },
+      {
+        "name": "Medium",
+        "threads": 4,
+        "connections": 50,
+        "duration": 5,
+        "rps": 290822.31,
+        "latency": "213.93us",
+        "latency_ms": 0.21393,
+        "p99": "512.00us",
+        "p99_ms": 0.512,
+        "requests": 1483101,
+        "errors": 0
+      },
+      {
+        "name": "Heavy",
+        "threads": 8,
+        "connections": 200,
+        "duration": 5,
+        "rps": 238100.34,
+        "latency": "0.87ms",
+        "latency_ms": 0.87,
+        "p99": "2.88ms",
+        "p99_ms": 2.88,
+        "requests": 1214106,
+        "errors": 0
+      },
+      {
+        "name": "Stress",
+        "threads": 12,
+        "connections": 500,
+        "duration": 5,
+        "rps": 248413.87,
+        "latency": "2.01ms",
+        "latency_ms": 2.01,
+        "p99": "6.29ms",
+        "p99_ms": 6.29,
+        "requests": 1266910,
+        "errors": 0
+      }
+    ]
+  },
+  "summary": [
+    {
+      "scenario": "Light",
+      "old_rps": 43025.38,
+      "new_rps": 132710.83,
+      "rps_pct": 208.44778128630122,
+      "old_p99_ms": 0.92,
+      "new_p99_ms": 0.171,
+      "p99_pct": -81.41304347826087,
+      "old_errors": 0,
+      "new_errors": 0
+    },
+    {
+      "scenario": "Medium",
+      "old_rps": 43002.17,
+      "new_rps": 290822.31,
+      "rps_pct": 576.2968240905052,
+      "old_p99_ms": 3.27,
+      "new_p99_ms": 0.512,
+      "p99_pct": -84.34250764525993,
+      "old_errors": 0,
+      "new_errors": 0
+    },
+    {
+      "scenario": "Heavy",
+      "old_rps": 41517.8,
+      "new_rps": 238100.34,
+      "rps_pct": 473.4897802870093,
+      "old_p99_ms": 13.41,
+      "new_p99_ms": 2.88,
+      "p99_pct": -78.52348993288591,
+      "old_errors": 0,
+      "new_errors": 0
+    },
+    {
+      "scenario": "Stress",
+      "old_rps": 36603.58,
+      "new_rps": 248413.87,
+      "rps_pct": 578.6600381711296,
+      "old_p99_ms": 38.67,
+      "new_p99_ms": 6.29,
+      "p99_pct": -83.73416084820275,
+      "old_errors": 0,
+      "new_errors": 0
+    }
+  ]
+}
