@@ -1,0 +1,167 @@
+{
+  "timestamp": "2026-05-17T22:14:05.020898",
+  "mutex_commit": "fbc73bc411e55ac94743f5302c99c1da95febeab^",
+  "lockfree_commit": "HEAD",
+  "mutex": {
+    "commit": "fbc73bc411e55ac94743f5302c99c1da95febeab^",
+    "short": "dd1611d",
+    "tests": [
+      {
+        "name": "Light",
+        "threads": 1,
+        "connections": 10,
+        "duration": 5,
+        "rps": 174238.69,
+        "latency": "46.51us",
+        "latency_ms": 0.046509999999999996,
+        "p99": "138.00us",
+        "p99_ms": 0.138,
+        "requests": 888560,
+        "errors": 0
+      },
+      {
+        "name": "Medium",
+        "threads": 4,
+        "connections": 50,
+        "duration": 5,
+        "rps": 500507.52,
+        "latency": "121.08us",
+        "latency_ms": 0.12108,
+        "p99": "614.00us",
+        "p99_ms": 0.614,
+        "requests": 2552262,
+        "errors": 0
+      },
+      {
+        "name": "Heavy",
+        "threads": 8,
+        "connections": 200,
+        "duration": 5,
+        "rps": 735696.03,
+        "latency": "269.68us",
+        "latency_ms": 0.26968000000000003,
+        "p99": "1.06ms",
+        "p99_ms": 1.06,
+        "requests": 3751331,
+        "errors": 0
+      },
+      {
+        "name": "Stress",
+        "threads": 12,
+        "connections": 500,
+        "duration": 5,
+        "rps": 811539.85,
+        "latency": "632.07us",
+        "latency_ms": 0.63207,
+        "p99": "2.99ms",
+        "p99_ms": 2.99,
+        "requests": 4138682,
+        "errors": 0
+      }
+    ]
+  },
+  "lockfree": {
+    "commit": "HEAD",
+    "short": "6e66af6",
+    "tests": [
+      {
+        "name": "Light",
+        "threads": 1,
+        "connections": 10,
+        "duration": 5,
+        "rps": 161734.37,
+        "latency": "47.86us",
+        "latency_ms": 0.04786,
+        "p99": "128.00us",
+        "p99_ms": 0.128,
+        "requests": 824838,
+        "errors": 0
+      },
+      {
+        "name": "Medium",
+        "threads": 4,
+        "connections": 50,
+        "duration": 5,
+        "rps": 540001.37,
+        "latency": "145.82us",
+        "latency_ms": 0.14582,
+        "p99": "500.00us",
+        "p99_ms": 0.5,
+        "requests": 2753980,
+        "errors": 0
+      },
+      {
+        "name": "Heavy",
+        "threads": 8,
+        "connections": 200,
+        "duration": 5,
+        "rps": 755690.68,
+        "latency": "266.28us",
+        "latency_ms": 0.26627999999999996,
+        "p99": "1.08ms",
+        "p99_ms": 1.08,
+        "requests": 3853130,
+        "errors": 0
+      },
+      {
+        "name": "Stress",
+        "threads": 12,
+        "connections": 500,
+        "duration": 5,
+        "rps": 868067.24,
+        "latency": "579.55us",
+        "latency_ms": 0.57955,
+        "p99": "2.90ms",
+        "p99_ms": 2.9,
+        "requests": 4429498,
+        "errors": 0
+      }
+    ]
+  },
+  "summary": [
+    {
+      "scenario": "Light",
+      "old_rps": 174238.69,
+      "new_rps": 161734.37,
+      "rps_pct": -7.17654615057081,
+      "old_p99_ms": 0.138,
+      "new_p99_ms": 0.128,
+      "p99_pct": -7.246376811594208,
+      "old_errors": 0,
+      "new_errors": 0
+    },
+    {
+      "scenario": "Medium",
+      "old_rps": 500507.52,
+      "new_rps": 540001.37,
+      "rps_pct": 7.8907605623987385,
+      "old_p99_ms": 0.614,
+      "new_p99_ms": 0.5,
+      "p99_pct": -18.566775244299674,
+      "old_errors": 0,
+      "new_errors": 0
+    },
+    {
+      "scenario": "Heavy",
+      "old_rps": 735696.03,
+      "new_rps": 755690.68,
+      "rps_pct": 2.717786855530541,
+      "old_p99_ms": 1.06,
+      "new_p99_ms": 1.08,
+      "p99_pct": 1.8867924528301903,
+      "old_errors": 0,
+      "new_errors": 0
+    },
+    {
+      "scenario": "Stress",
+      "old_rps": 811539.85,
+      "new_rps": 868067.24,
+      "rps_pct": 6.9654484619578465,
+      "old_p99_ms": 2.99,
+      "new_p99_ms": 2.9,
+      "p99_pct": -3.0100334448160635,
+      "old_errors": 0,
+      "new_errors": 0
+    }
+  ]
+}
