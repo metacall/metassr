@@ -2,6 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
+use metacall::load::Tag;
+
 /// Represents a discovered API route file.
 #[derive(Debug, Clone)]
 pub struct ApiRouteFile {
@@ -9,6 +11,8 @@ pub struct ApiRouteFile {
     pub route_path: String,
     /// The absolute file path to the script.
     pub file_path: PathBuf,
+    /// The Tag of the language used in the route.
+    pub tag: Tag,
 }
 
 /// Scan the api directory and return list of discovered route files.
@@ -43,20 +47,40 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
             scan_api_dir_recursive(base_path, &path, routes);
         } else if path.is_file() {
             // Only support .js files for now (NodeJS)
-            let is_js = path
-                .extension()
-                .and_then(|s| s.to_str())
-                .map(|ext| ext == "js")
-                .unwrap_or(false);
+            let ext = path.extension().and_then(|s| s.to_str());
 
-            if is_js {
-                if let Ok(relative_path) = path.strip_prefix(base_path) {
-                    let route_path = build_route_path(relative_path, &path);
-                    routes.push(ApiRouteFile {
-                        route_path,
-                        file_path: path,
-                    });
+            match ext {
+                Some("js") => {
+                    if let Ok(relative_path) = path.strip_prefix(base_path) {
+                        let route_path = build_route_path(relative_path, &path);
+                        routes.push(ApiRouteFile {
+                            route_path,
+                            file_path: path,
+                            tag: Tag::NodeJS,
+                        });
+                    }
                 }
+                Some("rb") => {
+                    if let Ok(relative_path) = path.strip_prefix(base_path) {
+                        let route_path = build_route_path(relative_path, &path);
+                        routes.push(ApiRouteFile {
+                            route_path,
+                            file_path: path,
+                            tag: Tag::Ruby,
+                        });
+                    }
+                }
+                Some("py") => {
+                    if let Ok(relative_path) = path.strip_prefix(base_path) {
+                        let route_path = build_route_path(relative_path, &path);
+                        routes.push(ApiRouteFile {
+                            route_path,
+                            file_path: path,
+                            tag: Tag::Python,
+                        });
+                    }
+                }
+                _ => {}
             }
         }
     }
