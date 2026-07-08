@@ -11,7 +11,7 @@ pub struct ApiRouteFile {
     pub route_path: String,
     /// The absolute file path to the script.
     pub file_path: PathBuf,
-    /// The Tag of the language used in the route.
+    /// The Programming Language MetaCall Tag used in the route.
     pub tag: Tag,
 }
 
@@ -80,7 +80,9 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
                         });
                     }
                 }
-                _ => {}
+                _ => {
+                    panic!("language not supported")
+                }
             }
         }
     }
