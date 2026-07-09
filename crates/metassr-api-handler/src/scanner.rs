@@ -80,9 +80,7 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
                         });
                     }
                 }
-                _ => {
-                    panic!("language not supported")
-                }
+                _ => {}
             }
         }
     }
