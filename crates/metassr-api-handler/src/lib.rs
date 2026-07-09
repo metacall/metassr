@@ -39,7 +39,7 @@ use axum::{
 };
 use lockfree::{self, map::Map};
 use metacall::{
-    load::{self, Handle},
+    load::{self, Handle, Tag},
     metacall_handle,
 };
 use scanner::{scan_api_dir, ApiRouteFile};
@@ -63,7 +63,7 @@ impl ApiRoutes {
         }
     }
 
-    /// Scan the given API directory and load all JavaScript files.
+    /// Scan the given API directory and load all script files.
     ///
     /// # Arguments
     /// * `api_dir` - Path to the API directory (typically `./src/api/`)
@@ -76,9 +76,13 @@ impl ApiRoutes {
         }
 
         info!("Found {} API route(s)", route_files.len());
+        info!("Found {:?} API route(s)", route_files);
 
         for route_file in &route_files {
-            if let Err(e) = self.load_script(&route_file.file_path).await {
+            if let Err(e) = self
+                .load_script(&route_file.file_path, route_file.tag)
+                .await
+            {
                 warn!("Failed to load API route {:?}: {}", route_file.file_path, e);
             } else {
                 info!(
@@ -92,14 +96,14 @@ impl ApiRoutes {
         Ok(())
     }
 
-    /// Load a single JavaScript file into MetaCall.
-    async fn load_script(&mut self, file_path: &Path) -> Result<()> {
+    /// Load a single script into MetaCall.
+    async fn load_script(&mut self, file_path: &Path, tag: Tag) -> Result<()> {
         let path_str = file_path.to_string_lossy().to_string();
         if self.handles.get(&path_str).is_some() {
             return Ok(());
         }
         let mut handle = Handle::new();
-        load::from_file(load::Tag::NodeJS, [path_str.clone()], Some(&mut handle))
+        load::from_file(tag, [path_str.clone()], Some(&mut handle))
             .map_err(|e| anyhow!("Failed to load script {:?}: {:?}", file_path, e))?;
 
         self.handles.insert(path_str, handle);
@@ -108,7 +112,7 @@ impl ApiRoutes {
     }
 
     /// Reload a changed script: drops the old handle (clearing its symbols) then reloads.
-    pub fn reload_script(&self, file_path: &Path) -> Result<()> {
+    pub fn reload_script(&self, file_path: &Path, tag: Tag) -> Result<()> {
         let path_str = file_path.to_string_lossy().to_string();
 
         {
@@ -118,7 +122,7 @@ impl ApiRoutes {
         let code = std::fs::read_to_string(file_path)?;
 
         let mut handle = Handle::new();
-        load::from_memory(load::Tag::NodeJS, code, Some(&mut handle))
+        load::from_memory(tag, code, Some(&mut handle))
             .map_err(|e| anyhow!("Failed to reload script {:?}: {:?}", file_path, e))?;
 
         self.handles.insert(path_str, handle);
