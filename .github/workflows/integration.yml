@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -188,3 +188,4 @@ jobs:
           bash tests/ssg.sh
           kill $SERVER_PID 2>/dev/null || true
           pkill -f "metassr.*run" 2>/dev/null || true
+
