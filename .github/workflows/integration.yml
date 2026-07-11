@@ -113,8 +113,8 @@ jobs:
           kill $SERVER_PID 2>/dev/null || true
           pkill -f "metassr.*run" 2>/dev/null || true
 
-      - name: SSR server tests (non-macOS)
-        if: runner.os != 'macOS'
+      - name: SSR server tests (Linux)
+        if: runner.os == 'Linux'
         timeout-minutes: 5
         working-directory: ./tests/web-app
         shell: bash
@@ -129,8 +129,27 @@ jobs:
           kill $SERVER_PID 2>/dev/null || true
           pkill -f "metassr.*run" 2>/dev/null || true
 
-      - name: Force kill metassr processes (Windows)
+      - name: SSR server tests (Windows)
         if: runner.os == 'Windows'
+        timeout-minutes: 5
+        working-directory: ./tests/web-app
+        shell: bash
+        run: |
+          PYTHONHOME=$(cygpath -u "$LOCALAPPDATA\\MetaCall\\metacall\\runtimes\\python")
+          export PYTHONHOME
+          export PATH="$PYTHONHOME:$PYTHONHOME/Scripts:$PATH"
+          npm run start:debug &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+          bash tests/ssr.sh
+          kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
+
+      - name: Force kill metassr processes (Windows)
+        if: always() && runner.os == 'Windows'
         shell: pwsh
         run: |
           taskkill /F /IM metassr.exe /T 2>$null
@@ -173,12 +192,31 @@ jobs:
           kill $SERVER_PID 2>/dev/null || true
           pkill -f "metassr.*run" 2>/dev/null || true
 
-      - name: SSG server tests (non-macOS)
-        if: runner.os != 'macOS'
+      - name: SSG server tests (Linux)
+        if: runner.os == 'Linux'
         timeout-minutes: 5
         working-directory: ./tests/web-app
         shell: bash
         run: |
+          npm run start:debug:ssg &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+          bash tests/ssg.sh
+          kill $SERVER_PID 2>/dev/null || true
+          pkill -f "metassr.*run" 2>/dev/null || true
+
+      - name: SSG server tests (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        working-directory: ./tests/web-app
+        shell: bash
+        run: |
+          PYTHONHOME=$(cygpath -u "$LOCALAPPDATA\\MetaCall\\metacall\\runtimes\\python")
+          export PYTHONHOME
+          export PATH="$PYTHONHOME:$PYTHONHOME/Scripts:$PATH"
           npm run start:debug:ssg &
           SERVER_PID=$!
           for i in $(seq 1 30); do
