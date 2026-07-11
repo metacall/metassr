@@ -363,39 +363,40 @@ async fn handle_api_request(
         }
     }
 }
-/*
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::Router;
     use std::fs;
 
-    #[test]
-    fn register_api_routes_skips_when_api_dir_missing() {
+    #[tokio::test]
+    async fn register_api_routes_skips_when_api_dir_missing() {
         let tmp = tempfile::TempDir::new().unwrap();
         let root = tmp.path();
         fs::create_dir_all(root.join("src")).unwrap();
 
         let base_router = Router::new();
-        let (_router, routes) = register_api_routes(base_router, root).unwrap();
+        let (_router, routes) = register_api_routes(base_router, root).await.unwrap();
 
         assert!(routes.is_none());
     }
 
-    #[test]
-    fn register_api_routes_skips_when_api_dir_empty() {
+    #[tokio::test]
+    async fn register_api_routes_skips_when_api_dir_empty() {
         let tmp = tempfile::TempDir::new().unwrap();
         let root = tmp.path();
         fs::create_dir_all(root.join("src/api")).unwrap();
 
-        let (router, routes) = register_api_routes(Router::new(), root).unwrap();
+        let base_router = Router::new();
+        let (router, routes) = register_api_routes(base_router, root).await.unwrap();
         let _ = router;
         assert!(routes.is_none());
     }
 
-    #[test]
-    fn call_handler_returns_error_when_method_is_missing() {
-        let mut routes = ApiRoutes::new();
+    #[tokio::test]
+    async fn call_handler_returns_error_when_method_is_missing() {
+        let routes = ApiRoutes::new();
         let request = ApiRequest {
             url: "/api/hello".to_string(),
             headers: HashMap::new(),
@@ -405,8 +406,9 @@ mod tests {
             params: HashMap::new(),
         };
 
-        let result = routes.call_handler("src/api/hello.js", "GET", request);
+        let result = routes
+            .call_handler("src/api/hello.js", "GET", request)
+            .await;
         assert!(result.is_err());
     }
 }
- */
