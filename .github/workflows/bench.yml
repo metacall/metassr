@@ -7,6 +7,10 @@ on:
     branches: ["master"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -70,8 +74,9 @@ jobs:
         run: kill $(lsof -ti:8080) 2>/dev/null || true
 
       - name: Upload results
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-${{ github.run_id }}
-          path: .bench/
+          path: ${{ github.workspace }}/.bench/
           retention-days: 90
