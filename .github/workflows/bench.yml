@@ -84,4 +84,5 @@ jobs:
         with:
           name: benchmark-results-${{ github.run_id }}
           path: ${{ github.workspace }}/.bench/
+          include-hidden-files: true
           retention-days: 90
