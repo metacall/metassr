@@ -3,6 +3,8 @@ name: Bench
 on:
   push:
     branches: ["master"]
+  pull_request:
+    branches: ["master"]
   pull_request_target:
     branches: ["master"]
   workflow_dispatch:
@@ -77,6 +79,7 @@ jobs:
 
       - name: Upload results
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-${{ github.run_id }}
