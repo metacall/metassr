@@ -5,7 +5,13 @@ on:
     branches: ["master"]
   pull_request:
     branches: ["master"]
+  pull_request_target:
+    branches: ["master"]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -19,6 +25,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -70,8 +78,11 @@ jobs:
         run: kill $(lsof -ti:8080) 2>/dev/null || true
 
       - name: Upload results
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-${{ github.run_id }}
-          path: .bench/
+          path: ${{ github.workspace }}/.bench/
+          include-hidden-files: true
           retention-days: 90
