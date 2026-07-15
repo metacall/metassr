@@ -340,6 +340,163 @@ xychart-beta
     
     return summary
 
+def generate_comparison(baseline_file, current_file, output_dir):
+    """Generate comparison summary between two benchmark runs."""
+    baseline = json.loads(Path(baseline_file).read_text())
+    current = json.loads(Path(current_file).read_text())
+
+    base_index = {t["name"]: t for t in baseline["tests"]}
+    curr_index = {t["name"]: t for t in current["tests"]}
+
+    labels = ", ".join(f'"{s[0]}"' for s in SCENARIOS)
+
+    def collect(attr):
+        return [curr_index[s[0]][attr] for s in SCENARIOS]
+
+    def collect_base(attr):
+        return [base_index[s[0]][attr] for s in SCENARIOS]
+
+    base_rps_list = collect_base("rps")
+    curr_rps_list = collect("rps")
+    base_lat_list = collect_base("latency_ms")
+    curr_lat_list = collect("latency_ms")
+    base_p99_list = collect_base("p99_ms")
+    curr_p99_list = collect("p99_ms")
+    base_mem_list = collect_base("memory_mb")
+    curr_mem_list = collect("memory_mb")
+    base_req_list = collect_base("requests")
+    curr_req_list = collect("requests")
+
+    max_rps = max(max(base_rps_list), max(curr_rps_list)) * 1.2
+    max_lat = max(max(base_lat_list), max(curr_lat_list)) * 1.2
+    max_p99 = max(max(base_p99_list), max(curr_p99_list)) * 1.2
+    max_mem = max(max(base_mem_list), max(curr_mem_list)) * 1.2
+    max_req = max(max(base_req_list), max(curr_req_list)) * 1.2
+
+    base_rps_str = ", ".join(f"{int(v)}" for v in base_rps_list)
+    curr_rps_str = ", ".join(f"{int(v)}" for v in curr_rps_list)
+    base_lat_str = ", ".join(f"{v:.2f}" for v in base_lat_list)
+    curr_lat_str = ", ".join(f"{v:.2f}" for v in curr_lat_list)
+    base_p99_str = ", ".join(f"{v:.2f}" for v in base_p99_list)
+    curr_p99_str = ", ".join(f"{v:.2f}" for v in curr_p99_list)
+    base_mem_str = ", ".join(f"{v}" for v in base_mem_list)
+    curr_mem_str = ", ".join(f"{v}" for v in curr_mem_list)
+    base_req_str = ", ".join(f"{int(v)}" for v in base_req_list)
+    curr_req_str = ", ".join(f"{int(v)}" for v in curr_req_list)
+
+    def delta_str(old, new):
+        if old == 0:
+            return "N/A"
+        d = (new - old) / old * 100
+        return f"{d:+.2f}%"
+
+    def fmt_lat(ms):
+        if ms < 1:
+            return f"{ms*1000:.2f}us"
+        return f"{ms:.2f}ms"
+
+    table_rows = []
+    for name, _ in SCENARIOS:
+        b = base_index[name]
+        c = curr_index[name]
+        rps_d = delta_str(b["rps"], c["rps"])
+        lat_d = delta_str(b["latency_ms"], c["latency_ms"])
+        p99_d = delta_str(b["p99_ms"], c["p99_ms"])
+        mem_d = delta_str(b["memory_mb"], c["memory_mb"])
+        row = (
+            f"| {name} "
+            f"| {int(b['rps']):,} | {int(c['rps']):,} | {rps_d} "
+            f"| {fmt_lat(b['latency_ms'])} | {fmt_lat(c['latency_ms'])} | {lat_d} "
+            f"| {fmt_lat(b['p99_ms'])} | {fmt_lat(c['p99_ms'])} | {p99_d} "
+            f"| {b['memory_mb']:.1f}MB | {c['memory_mb']:.1f}MB | {mem_d} |"
+        )
+        table_rows.append(row)
+
+    avg_base_rps = sum(base_rps_list) / len(base_rps_list)
+    avg_curr_rps = sum(curr_rps_list) / len(curr_rps_list)
+    avg_base_lat = sum(base_lat_list) / len(base_lat_list)
+    avg_curr_lat = sum(curr_lat_list) / len(curr_lat_list)
+
+    summary = f"""# MetaSSR Benchmark Comparison
+
+**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Performance Charts
+
+Legend: bars in order — **Baseline**, **Current**
+
+### Requests per Second
+```mermaid
+xychart-beta
+    title "Requests per Second"
+    x-axis [{labels}]
+    y-axis "RPS" 0 --> {max_rps:.0f}
+    bar [{base_rps_str}]
+    bar [{curr_rps_str}]
+```
+
+### Average Latency (ms)
+```mermaid
+xychart-beta
+    title "Average Latency"
+    x-axis [{labels}]
+    y-axis "Latency (ms)" 0 --> {max_lat:.2f}
+    bar [{base_lat_str}]
+    bar [{curr_lat_str}]
+```
+
+### P99 Latency (ms)
+```mermaid
+xychart-beta
+    title "P99 Latency"
+    x-axis [{labels}]
+    y-axis "P99 (ms)" 0 --> {max_p99:.2f}
+    bar [{base_p99_str}]
+    bar [{curr_p99_str}]
+```
+
+### Memory Usage (MB)
+```mermaid
+xychart-beta
+    title "Memory Usage"
+    x-axis [{labels}]
+    y-axis "Memory (MB)" 0 --> {max_mem:.0f}
+    bar [{base_mem_str}]
+    bar [{curr_mem_str}]
+```
+
+### Total Requests
+```mermaid
+xychart-beta
+    title "Total Requests Handled"
+    x-axis [{labels}]
+    y-axis "Requests" 0 --> {max_req:.0f}
+    bar [{base_req_str}]
+    bar [{curr_req_str}]
+```
+
+## Detailed Comparison
+
+| Test | Base RPS | PR RPS | RPS Δ | Base Latency | PR Latency | Lat Δ | Base P99 | PR P99 | P99 Δ | Base Mem | PR Mem | Mem Δ |
+|------|----------|--------|-------|-------------|-----------|-------|---------|-------|-------|----------|--------|-------|
+{chr(10).join(table_rows)}
+
+## Summary
+
+| Metric | Baseline | Current | Delta |
+|--------|----------|---------|-------|
+| Avg RPS | {avg_base_rps:,.0f} | {avg_curr_rps:,.0f} | {delta_str(avg_base_rps, avg_curr_rps)} |
+| Avg Latency | {fmt_lat(avg_base_lat)} | {fmt_lat(avg_curr_lat)} | {delta_str(avg_base_lat, avg_curr_lat)} |
+"""
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "summary.md").write_text(summary)
+    success(f"Comparison saved to {out / 'summary.md'}")
+    print(summary)
+    return summary
+
+
 def analyze_results(results):
     """Print analysis of benchmark results"""
     print(f"\n{'='*60}")
@@ -371,7 +528,19 @@ def main():
     parser.add_argument("-o", "--output", default=".bench", help="Output directory")
     parser.add_argument("-s", "--skip-build", action="store_true", help="Skip building")
     parser.add_argument("--analyze-only", metavar="FILE", help="Only analyze existing results.json")
+    parser.add_argument("--compare", nargs=2, metavar=("BASELINE", "CURRENT"),
+                        help="Compare two results.json files and generate comparison summary")
     args = parser.parse_args()
+    
+    # Handle compare mode
+    if args.compare:
+        baseline_file, current_file = args.compare
+        for f in [baseline_file, current_file]:
+            if not Path(f).exists():
+                error(f"File not found: {f}")
+                sys.exit(1)
+        generate_comparison(baseline_file, current_file, args.output)
+        return
     
     # Handle analyze-only mode
     if args.analyze_only:
@@ -388,7 +557,7 @@ def main():
     script_dir = Path(__file__).parent.resolve()
     project_root = script_dir.parent
     output_dir = project_root / args.output
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"{Colors.BLUE}=== MetaSSR Benchmark ==={Colors.NC}")
     
