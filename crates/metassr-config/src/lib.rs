@@ -1,15 +1,16 @@
 pub struct MetaSSRConfig {
-    build: Option<toml::Value>,
-    server: Option<toml::Value>,
-    port: Option<toml::Value>,
+    build: Option<BuildConfig>,
+    server: Option<ServerConfig>,
 }
 
 impl MetaSSRConfig {
     fn new() -> Self {
         Self {
-            build: todo!(),
-            server: todo!(),
-            port: todo!(),
+            build: Some(BuildConfig {
+                _type: Some(String::from("SSSR")),
+                out_dir: Some(String::from("dist")),
+            }),
+            server: Some(ServerConfig { port: 8080 }),
         }
     }
 }
@@ -18,4 +19,13 @@ impl Default for MetaSSRConfig {
     fn default() -> Self {
         Self::new()
     }
+}
+
+struct BuildConfig {
+    _type: Option<String>,
+    out_dir: Option<String>,
+}
+
+struct ServerConfig {
+    port: u16,
 }
