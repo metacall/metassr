@@ -37,6 +37,7 @@ tower-service = "0.3.3"
 metassr-create = { path = "crates/metassr-create" }
 metassr-bundler = { path = "crates/metassr-bundler" }
 metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
+metassr-config = { path = "crates/metassr-config" }
 metassr-watcher = { path = "crates/metassr-watcher" }
 regex = "1.12.3"
 dunce = "1.0.5"
@@ -57,6 +58,7 @@ members = [
   "crates/metassr-fs-analyzer",
   "crates/metassr-watcher",
   "crates/metassr-api-handler",
+  "crates/metassr-config",
 ]
 
 [workspace.package]

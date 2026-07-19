@@ -1,0 +1,7 @@
+[package]
+name = "metassr-config"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+toml = "1.1.3"
