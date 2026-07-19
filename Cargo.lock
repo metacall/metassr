@@ -1016,6 +1016,7 @@ dependencies = [
  "metacall-sys",
  "metassr-build",
  "metassr-bundler",
+ "metassr-config",
  "metassr-create",
  "metassr-server",
  "metassr-utils",
@@ -1031,6 +1032,7 @@ dependencies = [
 name = "metassr-config"
 version = "1.0.0-alpha"
 dependencies = [
+ "anyhow",
  "toml",
 ]
 

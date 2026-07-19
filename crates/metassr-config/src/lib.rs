@@ -1,17 +1,26 @@
+use std::path::Path;
+
 pub struct MetaSSRConfig {
-    build: Option<BuildConfig>,
-    server: Option<ServerConfig>,
+    _build: Option<BuildConfig>,
+    _server: Option<ServerConfig>,
 }
 
 impl MetaSSRConfig {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            build: Some(BuildConfig {
+            _build: Some(BuildConfig {
                 _type: Some(String::from("SSSR")),
-                out_dir: Some(String::from("dist")),
+                _out_dir: Some(String::from("dist")),
             }),
-            server: Some(ServerConfig { port: 8080 }),
+            _server: Some(ServerConfig { _port: 8080 }),
         }
+    }
+
+    pub fn load(_root: &Path) -> anyhow::Result<()> {
+        // find the config file and load it into memory
+        //
+        //validate syntax
+        Ok(())
     }
 }
 
@@ -23,9 +32,9 @@ impl Default for MetaSSRConfig {
 
 struct BuildConfig {
     _type: Option<String>,
-    out_dir: Option<String>,
+    _out_dir: Option<String>,
 }
 
 struct ServerConfig {
-    port: u16,
+    _port: u16,
 }

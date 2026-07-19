@@ -7,6 +7,7 @@ use cli::{
 use logger::LoggingLayer;
 
 use anyhow::Result;
+use metassr_config::MetaSSRConfig;
 
 use std::{
     env::{current_dir, set_current_dir, set_var},
@@ -53,6 +54,8 @@ async fn main() -> Result<()> {
             })
             .init();
         let project_root = Path::new(&args.root);
+
+        MetaSSRConfig::load(project_root)?;
 
         set_current_dir(project_root)
             .map_err(|err| eprintln!("Cannot chdir: {err}"))
