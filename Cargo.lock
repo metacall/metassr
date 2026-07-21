@@ -1033,6 +1033,8 @@ name = "metassr-config"
 version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
+ "serde",
+ "tempfile",
  "toml",
 ]
 
