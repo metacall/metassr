@@ -1,0 +1,13 @@
+[build]
+type = "ssr"
+out_dir = "dist"
+
+[server]
+port = 3000
+
+[debug]
+mode = "off"
+
+[dev]
+hmr = true
+ws_port = 3001
