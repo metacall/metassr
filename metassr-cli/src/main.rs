@@ -151,7 +151,7 @@ async fn main() -> Result<()> {
         } => {
             let (config_out_dir, config_build_type) = resolve_build(&config);
             let port = port
-                .or_else(|| config.as_ref().and_then(|c| c.server.as_ref()?.port))
+                .or_else(|| config.as_ref().and_then(|c| c.dev.as_ref()?.server_port))
                 .unwrap_or(DEFAULT_PORT);
             let ws_port = ws_port
                 .or_else(|| config.as_ref().and_then(|c| c.dev.as_ref()?.ws_port))

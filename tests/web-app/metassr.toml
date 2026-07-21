@@ -10,4 +10,5 @@ mode = "off"
 
 [dev]
 hmr = true
+server_port = 3000
 ws_port = 3001

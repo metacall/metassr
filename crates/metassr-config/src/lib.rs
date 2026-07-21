@@ -48,6 +48,7 @@ pub struct DebugConfig {
 #[derive(Debug, Deserialize)]
 pub struct DevConfig {
     pub hmr: Option<bool>,
+    pub server_port: Option<u16>,
     pub ws_port: Option<u16>,
 }
 
