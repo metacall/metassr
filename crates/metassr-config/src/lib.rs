@@ -2,7 +2,14 @@ use serde::Deserialize;
 use std::path::Path;
 
 const KNOWN_KEYS: &[&str] = &[
-    "build", "server", "debug", "dev", "middleware", "images", "lint", "plugins",
+    "build",
+    "server",
+    "debug",
+    "dev",
+    "middleware",
+    "images",
+    "lint",
+    "plugins",
 ];
 
 #[derive(Debug, Deserialize)]
