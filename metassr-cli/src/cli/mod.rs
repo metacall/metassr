@@ -51,19 +51,19 @@ pub enum Commands {
     /// Builds your web application into a deployable format.
     Build {
         /// The output directory where build files will be saved.
-        #[arg(long, default_value_t = String::from("dist"))]
-        out_dir: String,
+        #[arg(long)]
+        out_dir: Option<String>,
 
         /// The type of build to perform. Choose between Ssr (Server-Side Rendering) and Ssg (Static Site Generation).
-        #[arg(short = 't', long = "type", default_value_t = BuildingType::Ssr)]
-        build_type: BuildingType,
+        #[arg(short = 't', long = "type")]
+        build_type: Option<BuildingType>,
     },
 
     /// Runs the Server-Side Rendered (SSR) application.
     Run {
         /// The port number on which the HTTP server will run.
-        #[arg(long, default_value_t = 8080)]
-        port: u16,
+        #[arg(long)]
+        port: Option<u16>,
 
         /// Serve the generated static site directly.
         #[arg(long)]
@@ -91,20 +91,20 @@ pub enum Commands {
 
     Dev {
         /// port number on which the HTTP server will run
-        #[arg(long, default_value_t = 8080)]
-        port: u16,
+        #[arg(long)]
+        port: Option<u16>,
 
         /// port number for the WebSocket live reload server
-        #[arg(long, default_value_t = 3001)]
-        ws_port: u16,
+        #[arg(long)]
+        ws_port: Option<u16>,
 
         /// The output directory where build files will be saved.
-        #[arg(long, default_value_t = String::from("dist"))]
-        out_dir: String,
+        #[arg(long)]
+        out_dir: Option<String>,
 
         /// The type of build to perform. Choose between Ssr (Server-Side Rendering) and Ssg (Static Site Generation).
-        #[arg(short = 't', long = "type", default_value_t = BuildingType::Ssr)]
-        build_type: BuildingType,
+        #[arg(short = 't', long = "type")]
+        build_type: Option<BuildingType>,
     },
 }
 
@@ -127,8 +127,8 @@ mod tests {
             build_type,
         } = args.commands
         {
-            assert_eq!(out_dir, "dist");
-            assert_eq!(build_type, BuildingType::Ssr);
+            assert_eq!(out_dir, None);
+            assert_eq!(build_type, None);
         } else {
             panic!("expected Build command");
         }
@@ -138,7 +138,7 @@ mod tests {
     fn run_defaults() {
         let args = parse(&["run"]).unwrap();
         if let Commands::Run { port, serve } = args.commands {
-            assert_eq!(port, 8080);
+            assert_eq!(port, None);
             assert!(!serve);
         } else {
             panic!("expected Run command");
@@ -155,10 +155,10 @@ mod tests {
             build_type,
         } = args.commands
         {
-            assert_eq!(port, 8080);
-            assert_eq!(ws_port, 3001);
-            assert_eq!(out_dir, "dist");
-            assert_eq!(build_type, BuildingType::Ssr);
+            assert_eq!(port, None);
+            assert_eq!(ws_port, None);
+            assert_eq!(out_dir, None);
+            assert_eq!(build_type, None);
         } else {
             panic!("expected Dev command");
         }
