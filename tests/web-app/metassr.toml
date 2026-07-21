@@ -3,7 +3,7 @@ type = "ssr"
 out_dir = "dist"
 
 [server]
-port = 3000
+port = 8080
 
 [debug]
 mode = "off"
