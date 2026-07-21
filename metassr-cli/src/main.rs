@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
             .init();
         let project_root = Path::new(&args.root);
 
-        MetaSSRConfig::load(project_root)?;
+        let _config = MetaSSRConfig::load(project_root)?;
 
         set_current_dir(project_root)
             .map_err(|err| eprintln!("Cannot chdir: {err}"))
