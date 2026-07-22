@@ -135,13 +135,13 @@ mod tests {
     }
 
     #[test]
-    fn run_defaults() {
-        let args = parse(&["run"]).unwrap();
+    fn start_defaults() {
+        let args = parse(&["start"]).unwrap();
         if let Commands::Start { port, serve } = args.commands {
-            assert_eq!(port, 8080);
+            assert_eq!(port, None);
             assert!(!serve);
         } else {
-            panic!("expected Run command");
+            panic!("expected Start command");
         }
     }
 
