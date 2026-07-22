@@ -83,7 +83,7 @@ jobs:
         if: github.event_name == 'pull_request_target'
         run: |
           cp ${{ github.workspace }}/target/release/metassr /tmp/metassr-baseline
-          PATH="/tmp:$PATH" metassr-baseline run --port 8080 &
+          PATH="/tmp:$PATH" metassr-baseline start --port 8080 &
           for i in $(seq 1 30); do
             curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
             sleep 1

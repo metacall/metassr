@@ -40,7 +40,7 @@ export default function Index() {
 						Run your web application
 					</h2>
 
-					<code>$ metassr-cli run</code>
+					<code>$ metassr-cli start</code>
 				</div>
 			</div>
 		</div>

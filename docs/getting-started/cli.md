@@ -155,7 +155,7 @@ Here are some practical examples of how to use the MetaSSR CLI:
 2. **Run the SSR server on port 4000 with HTTP logging enabled:**
 
    ```bash
-   metassr --debug-mode=http run --port 4000 
+   metassr --debug-mode=http start --port 4000 
    ```
 
 3. **Create a new TypeScript-based MetaSSR project named `my-new-app`:**
