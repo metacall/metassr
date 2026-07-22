@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
 
             cli::Builder::new(build_type, out_dir).exec()?;
         }
-        Commands::Run { port, serve } => {
+        Commands::Start { port, serve } => {
             let port = port
                 .or_else(|| config.as_ref().and_then(|c| c.server.as_ref()?.port))
                 .unwrap_or(DEFAULT_PORT);

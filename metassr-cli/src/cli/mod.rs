@@ -59,8 +59,8 @@ pub enum Commands {
         build_type: Option<BuildingType>,
     },
 
-    /// Runs the Server-Side Rendered (SSR) application.
-    Run {
+    /// Starts the Server-Side Rendered (SSR) application.
+    Start {
         /// The port number on which the HTTP server will run.
         #[arg(long)]
         port: Option<u16>,
@@ -137,8 +137,8 @@ mod tests {
     #[test]
     fn run_defaults() {
         let args = parse(&["run"]).unwrap();
-        if let Commands::Run { port, serve } = args.commands {
-            assert_eq!(port, None);
+        if let Commands::Start { port, serve } = args.commands {
+            assert_eq!(port, 8080);
             assert!(!serve);
         } else {
             panic!("expected Run command");
