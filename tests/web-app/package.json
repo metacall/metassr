@@ -8,13 +8,13 @@
         "metassr:release": "cargo run --release --bin metassr --",
         "build": "npm run metassr:release -- build",
         "build:ssg": "npm run metassr:release -- build -t ssg",
-        "start": "npm run metassr:release -- run",
-        "start:ssr": "npm run metassr:release -- run --serve",
+        "start": "npm run metassr:release -- start",
+        "start:ssr": "npm run metassr:release -- start --serve",
         "build:debug": "npm run metassr -- --debug-mode=metacall build",
         "build:debug:ssg": "npm run metassr -- --debug-mode=metacall build -t ssg",
-        "start:debug": "npm run metassr -- --debug-mode=metacall run",
-        "start:debug:ssg": "npm run metassr -- --debug-mode=metacall run --serve",
-        "dev": "npm run metassr -- --debug-mode=metacall dev"
+        "start:debug": "npm run metassr -- --debug-mode=metacall start",
+        "start:debug:ssg": "npm run metassr -- --debug-mode=metacall start --serve",
+        "dev": "npm run metassr --debug-mode=metacall dev"
     },
     "devDependencies": {
         "@types/react": "^18.0.24",

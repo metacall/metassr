@@ -7,10 +7,10 @@
         "metassr": "cargo run --bin metassr --",
         "metassr:release": "cargo run --release --bin metassr --",
         "build": "npm run metassr:release -- build",
-        "start": "npm run metassr:release -- run",
-        "start:ssr": "npm run metassr:release -- run --serve",
+        "start": "npm run metassr:release -- start",
+        "start:ssr": "npm run metassr:release -- start --serve",
         "build:debug": "npm run metassr -- --debug-mode=metacall build",
-        "start:debug": "npm run metassr -- --debug-mode=metacall run",
+        "start:debug": "npm run metassr -- --debug-mode=metacall start",
         "dev": "npm run metassr --debug-mode=metacall dev"
     },
     "devDependencies": {
