@@ -1,0 +1,21 @@
+{
+    "name": "sales-dashboard",
+    "version": "1.0.0",
+    "description": "MetaSSR polyglot example: Python + JavaScript API routes with React frontend",
+    "main": "src/pages/index.tsx",
+    "scripts": {
+        "metassr": "cargo run --bin metassr --",
+        "metassr:release": "cargo run --release --bin metassr --",
+        "build": "npm run metassr:release -- build",
+        "start": "npm run metassr:release -- start",
+        "dev": "npm run metassr -- dev"
+    },
+    "dependencies": {
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    },
+    "devDependencies": {
+        "@types/react": "^18.0.24",
+        "@types/react-dom": "^18.0.8"
+    }
+}
