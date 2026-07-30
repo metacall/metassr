@@ -1,0 +1,359 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #f4f1ea;
+    color: #1f2933;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+code {
+    border-radius: 4px;
+    background: #e4e7eb;
+    padding: 2px 5px;
+    font-size: 0.95em;
+}
+
+h1,
+h2,
+p {
+    margin-top: 0;
+}
+
+h1 {
+    margin-bottom: 12px;
+    font-size: clamp(2rem, 7vw, 4rem);
+    line-height: 1;
+}
+
+h2 {
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.page {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 48px 0;
+}
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.heroCopy {
+    max-width: 760px;
+}
+
+.eyebrow {
+    margin: 0 0 10px;
+    color: #006d77;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.subtitle {
+    margin-bottom: 0;
+    color: #52616b;
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.filtersPanel,
+.card,
+.metricCard {
+    border: 1px solid #d1d7dc;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.filtersPanel {
+    padding: 20px;
+}
+
+.filtersGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+    color: #52616b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.field input,
+.field select {
+    width: 100%;
+    border: 1px solid #b8c0c8;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 9px 10px;
+    color: #1f2933;
+    font: inherit;
+    font-size: 0.95rem;
+    text-transform: none;
+}
+
+.filtersActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+button {
+    border: 0;
+    border-radius: 999px;
+    background: #006d77;
+    padding: 9px 14px;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.ghostButton,
+.secondaryButton {
+    border: 1px solid #b8c0c8;
+    background: #ffffff;
+    color: #1f2933;
+}
+
+.error {
+    margin-bottom: 16px;
+    border: 1px solid #ffb4a2;
+    border-radius: 8px;
+    background: #fff1ed;
+    padding: 14px 16px;
+    color: #9f1239;
+}
+
+.metricGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.metricCard {
+    display: grid;
+    gap: 8px;
+    padding: 18px;
+}
+
+.metricLabel {
+    margin-bottom: 0;
+    color: #52616b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.metricValue {
+    font-size: 1.7rem;
+    color: #1f2933;
+}
+
+.metricHint {
+    color: #52616b;
+    font-size: 0.88rem;
+}
+
+.chartGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.card {
+    padding: 20px;
+}
+
+.chartCard.wide {
+    grid-column: 1 / -1;
+}
+
+.cardHeader {
+    margin-bottom: 16px;
+}
+
+.cardHeader p {
+    margin-bottom: 0;
+    color: #52616b;
+}
+
+.loading {
+    margin-bottom: 0;
+    color: #52616b;
+}
+
+.barChart {
+    display: grid;
+    gap: 14px;
+}
+
+.barRow {
+    display: grid;
+    gap: 8px;
+}
+
+.barRowTop {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.barLabel,
+.barValue {
+    font-size: 0.92rem;
+}
+
+.barValue {
+    color: #52616b;
+}
+
+.barTrack {
+    position: relative;
+    height: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e4e7eb;
+}
+
+.barFill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    display: block;
+    border-radius: inherit;
+    background: #006d77;
+}
+
+.trendChart {
+    display: grid;
+    gap: 12px;
+}
+
+.trendChart svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.chartAxis {
+    stroke: #d1d7dc;
+    stroke-width: 1.5;
+}
+
+.trendLine {
+    fill: none;
+    stroke: #006d77;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.trendAverage {
+    fill: none;
+    stroke: #7b8794;
+    stroke-width: 2.5;
+    stroke-dasharray: 8 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.trendDot {
+    fill: #ffffff;
+    stroke: #006d77;
+    stroke-width: 2;
+}
+
+.trendLabels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 10px;
+}
+
+.trendLabel {
+    display: grid;
+    gap: 4px;
+    border-radius: 8px;
+    background: #faf9f6;
+    padding: 12px;
+}
+
+.trendLabel span {
+    color: #52616b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.trendLabel strong {
+    color: #1f2933;
+    font-size: 0.95rem;
+}
+
+.tableWrap {
+    overflow: auto;
+}
+
+.dataTable {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+}
+
+.dataTable th,
+.dataTable td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #d1d7dc;
+    text-align: left;
+}
+
+.dataTable th {
+    color: #52616b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dataTable tbody tr:hover {
+    background: #faf9f6;
+}
+
+@media (max-width: 960px) {
+    .hero,
+    .metricGrid,
+    .chartGrid,
+    .filtersGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .chartCard.wide {
+        grid-column: auto;
+    }
+}
