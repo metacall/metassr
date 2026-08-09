@@ -11,15 +11,37 @@ pub use runner::*;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
+/// ASCII art rendered by the `--version` flag.
+const VERSION_ART: &str = r#"
+███╗   ███╗███████╗████████╗ █████╗ ███████╗███████╗██████╗ 
+████╗ ████║██╔════╝╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔══██╗
+██╔████╔██║█████╗     ██║   ███████║███████╗███████╗██████╔╝
+██║╚██╔╝██║██╔══╝     ██║   ██╔══██║╚════██║╚════██║██╔══██╗
+██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████║███████║██║  ██║
+╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝
+"#;
+
+fn version() -> String {
+    format!("{VERSION_ART}\n{}\n", env!("CARGO_PKG_VERSION"))
+}
+
+/// Full `--version` output: ASCII art banner followed by the version number.
+pub fn version_banner() -> String {
+    version()
+}
+
 #[derive(Parser, Debug)]
 #[command(
     author,
-    version,
     about = "
 Command line interface application for MetaSSR framework. This CLI tool helps you manage and deploy your MetaSSR projects.
 "
 )]
 pub struct Args {
+    /// Print the MetaSSR version banner and exit.
+    #[arg(short = 'V', long = "version")]
+    pub version: bool,
+
     /// The path of the project root directory.
     #[arg(long, default_value_t = String::from("."))]
     pub root: String,
@@ -33,7 +55,7 @@ pub struct Args {
     pub log_file: Option<String>,
 
     #[command(subcommand)]
-    pub commands: Commands,
+    pub commands: Option<Commands>,
 }
 
 #[derive(Debug, ValueEnum, PartialEq, Eq, Clone)]
