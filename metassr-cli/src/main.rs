@@ -63,7 +63,18 @@ fn resolve_build(config: &Option<MetaSSRConfig>) -> (String, BuildingType) {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    let is_create = matches!(args.commands, Commands::Create { .. });
+
+    if args.version {
+        print!("{}", cli::version_banner());
+        return Ok(());
+    }
+
+    let commands = match args.commands {
+        Some(commands) => commands,
+        None => return Err(anyhow::anyhow!("no command provided; run --help for usage")),
+    };
+
+    let is_create = matches!(commands, Commands::Create { .. });
 
     let config = if !is_create {
         MetaSSRConfig::load(Path::new(&args.root))?
@@ -100,7 +111,7 @@ async fn main() -> Result<()> {
             version,
             description,
             template,
-        } = args.commands
+        } = commands
         {
             cli::Creator::new(project_name, version, description, template)?.exec()?;
         }
@@ -121,7 +132,7 @@ async fn main() -> Result<()> {
         set_var("METACALL_DEBUG", "1");
     }
 
-    match args.commands {
+    match commands {
         Commands::Build {
             out_dir,
             build_type,

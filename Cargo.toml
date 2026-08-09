@@ -12,7 +12,7 @@ authors = ["Mohamed Emad (hulxxv@gmail.com)"]
 [dependencies]
 anyhow = "1.0.82"
 chrono = "0.4.38"
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive", "string"] }
 metacall = "0.5.10"
 nu-ansi-term = "0.50.0"
 walkdir = "2.5.0"
