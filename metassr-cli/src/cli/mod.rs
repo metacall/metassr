@@ -144,10 +144,10 @@ mod tests {
     #[test]
     fn build_defaults() {
         let args = parse(&["build"]).unwrap();
-        if let Commands::Build {
+        if let Some(Commands::Build {
             out_dir,
             build_type,
-        } = args.commands
+        }) = args.commands
         {
             assert_eq!(out_dir, None);
             assert_eq!(build_type, None);
@@ -159,7 +159,7 @@ mod tests {
     #[test]
     fn start_defaults() {
         let args = parse(&["start"]).unwrap();
-        if let Commands::Start { port, serve } = args.commands {
+        if let Some(Commands::Start { port, serve }) = args.commands {
             assert_eq!(port, None);
             assert!(!serve);
         } else {
@@ -170,12 +170,12 @@ mod tests {
     #[test]
     fn dev_defaults() {
         let args = parse(&["dev"]).unwrap();
-        if let Commands::Dev {
+        if let Some(Commands::Dev {
             port,
             ws_port,
             out_dir,
             build_type,
-        } = args.commands
+        }) = args.commands
         {
             assert_eq!(port, None);
             assert_eq!(ws_port, None);
@@ -200,12 +200,12 @@ mod tests {
         ])
         .unwrap();
 
-        if let Commands::Create {
+        if let Some(Commands::Create {
             project_name,
             version,
             description,
             template,
-        } = args.commands
+        }) = args.commands
         {
             assert_eq!(project_name, Some("my-app".into()));
             assert_eq!(version, Some("2.0.0".into()));
