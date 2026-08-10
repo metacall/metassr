@@ -3,6 +3,7 @@
 Thank you for your interest in contributing to MetaSSR! We welcome contributions from the community to help improve and expand the framework. Please follow the guidelines below to ensure your contributions are effective and align with the project's goals.
 
 ## Table of contents
+
 - [Development Setup](#development-setup)
 - [How to Contribute](#how-to-contribute)
 
@@ -15,17 +16,20 @@ To set up your development environment for MetaSSR, choose one of the following 
 The fastest way to get started with a fully configured development environment:
 
 1. **Install Nix** (if not already installed):
+
    ```bash
    sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
    ```
-   
+
 2. **Enable Nix Flakes**:
+
    ```bash
    mkdir -p ~/.config/nix
    echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
    ```
 
 3. **Enter Development Shell**:
+
    ```bash
    nix develop
    ```
@@ -47,17 +51,20 @@ Run `./install.sh` to download MetaCall and link it for most distros without con
 If you prefer to set up dependencies manually:
 
 1. **Install Rust Toolchain**:
+
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    source ~/.cargo/env
    ```
 
 2. **Install MetaCall Runtime**:
+
    ```bash
    curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
    ```
 
 3. **Clone and Build**:
+
    ```bash
    git clone https://github.com/metacall/metassr.git
    cd metassr
@@ -65,6 +72,7 @@ If you prefer to set up dependencies manually:
    ```
 
 4. **Verify Installation**:
+
    ```bash
    cargo test
    ./target/release/metassr --help
@@ -123,6 +131,23 @@ Once your pull request is submitted, it will be reviewed by the project maintain
 
 - **Code Style**: Follow the coding style and conventions used in the existing codebase. This includes indentation, naming conventions, and code organization.
 - **Documentation**: Update or add documentation as needed. Ensure that your code changes are reflected in the project documentation.
+- **Windows Path Handling**: Windows paths require special handling when passed to JavaScript/MetaCall:
+
+  1. **Canonicalization**: Always use `dunce::canonicalize()` instead of `std::fs::canonicalize()`. On Windows, `std::fs::canonicalize()` returns paths with the `\\?\` extended-length prefix (e.g., `\\?\C:\path\to\file`), which causes issues when passed to MetaCall/esbuild. The `dunce` crate removes this prefix when safe, while being a no-op on other platforms.
+
+  2. **JavaScript String Safety**: When passing paths to JavaScript code (e.g., in templates, MetaCall FFI, or generated JS), always use `metassr_utils::js_path::to_js_path()`. This converts backslashes to forward slashes, preventing escape sequence interpretation in JavaScript strings (e.g., `\t` becoming a TAB character).
+
+  ```rust
+  use metassr_utils::js_path::to_js_path;
+
+  // ❌ Don't use:
+  let path = std::fs::canonicalize(&path)?;
+  let js_import = format!(r#"import Page from "{}""#, path.to_str().unwrap());
+
+  // ✅ Use instead:
+  let path = dunce::canonicalize(&path)?;
+  let js_import = format!(r#"import Page from "{}""#, to_js_path(&path));
+  ```
 
 ### 5. Commit Message Conventions
 
@@ -135,7 +160,7 @@ Use clear and descriptive commit messages that follow this format:
 **Examples:**
 
 ```
-feat(cli): new cool feature in the cli 
+feat(cli): new cool feature in the cli
 fix(builder): fix a bug in building operation
 ```
 
@@ -150,10 +175,10 @@ cargo test --workspace
 also, you can test one of web applications that located at [tests](../../tests/) directory.
 
 **Example:**
-```bash
-$ cargo run --bin metassr -- --root=tests/web-app --debug-mode=all run 
-```
 
+```bash
+cargo run --bin metassr -- --root=tests/web-app --debug-mode=all start
+```
 
 ### 7. Code of Conduct
 

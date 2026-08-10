@@ -12,8 +12,8 @@ authors = ["Mohamed Emad (hulxxv@gmail.com)"]
 [dependencies]
 anyhow = "1.0.82"
 chrono = "0.4.38"
-clap = { version = "4.5.4", features = ["derive"] }
-metacall = "0.5.6"
+clap = { version = "4.5.4", features = ["derive", "string"] }
+metacall = "0.5.10"
 nu-ansi-term = "0.50.0"
 walkdir = "2.5.0"
 serde_json = "1.0.120"
@@ -37,10 +37,13 @@ tower-service = "0.3.3"
 metassr-create = { path = "crates/metassr-create" }
 metassr-bundler = { path = "crates/metassr-bundler" }
 metassr-fs-analyzer = { path = "crates/metassr-fs-analyzer" }
+metassr-config = { path = "crates/metassr-config" }
 metassr-watcher = { path = "crates/metassr-watcher" }
+regex = "1.12.3"
+dunce = "1.0.5"
 
 [build-dependencies]
-metacall-sys = "0.1.4"
+metacall-sys = "0.1.5"
 
 [workspace]
 members = [
@@ -55,6 +58,7 @@ members = [
   "crates/metassr-fs-analyzer",
   "crates/metassr-watcher",
   "crates/metassr-api-handler",
+  "crates/metassr-config",
 ]
 
 [workspace.package]

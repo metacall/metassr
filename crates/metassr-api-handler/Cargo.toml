@@ -7,8 +7,15 @@ description = "API routes handler for MetaSSR with polyglot support"
 [dependencies]
 anyhow = "1.0.82"
 axum = "0.7.5"
-metacall = "0.5.6"
+lockfree = "0.5.1"
+metacall = "0.5.10"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.120"
 tokio = { version = "1.36.0", features = ["full"] }
 tracing = "0.1.40"
+
+[build-dependencies]
+metacall-sys = "0.1.5"
+
+[dev-dependencies]
+tempfile = "3"

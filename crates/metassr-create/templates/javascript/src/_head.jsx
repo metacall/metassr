@@ -1,5 +1,4 @@
-import React, { useState, ReactNode } from 'react';
-import { renderToString } from 'react-dom/server';
+import React from 'react';
 
 export default function Head() {
     return (
@@ -10,5 +9,4 @@ export default function Head() {
         </>
     );
 }
-
 

@@ -1,0 +1,140 @@
+name: Bench
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  pull_request_target:
+    branches: ["master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          path: head
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MetaCall
+        run: curl -sL https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install wrk
+        run: sudo apt-get update && sudo apt-get install -y wrk
+
+      - name: Build metassr
+        run: cargo build --release
+        working-directory: ./head
+
+      - name: Install binary
+        run: sudo cp ./head/target/release/metassr /usr/local/bin/metassr
+
+      - name: Setup benchmark app
+        working-directory: ./head/benchmarks/apps/metassr-app
+        run: |
+          npm install
+          npm run build
+
+      # --- Baseline run (pull_request_target only) ---
+      - name: Checkout base ref
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Build baseline metassr
+        if: github.event_name == 'pull_request_target'
+        run: cargo build --release
+        working-directory: ./base
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target
+
+      - name: Run baseline benchmarks
+        if: github.event_name == 'pull_request_target'
+        run: |
+          cp ${{ github.workspace }}/target/release/metassr /tmp/metassr-baseline
+          PATH="/tmp:$PATH" metassr-baseline start --port 8080 &
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+          python3 head/benchmarks/benchmark.py --skip-build --output ${{ github.workspace }}/.bench/baseline --port 8080
+          kill $(lsof -ti:8080) 2>/dev/null || true
+          sleep 2
+
+      # --- Current run (always) ---
+      - name: Build metassr (current)
+        run: cargo build --release
+        working-directory: ./head
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target
+
+      - name: Install binary (current)
+        run: sudo cp ${{ github.workspace }}/target/release/metassr /usr/local/bin/metassr
+
+      - name: Start server
+        working-directory: ./head/benchmarks/apps/metassr-app
+        run: |
+          npm start &
+          for i in $(seq 1 30); do
+            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
+            sleep 1
+          done
+
+      - name: Run benchmarks
+        run: python3 head/benchmarks/benchmark.py --skip-build --output ${{ github.workspace }}/.bench/current --port 8080
+
+      - name: Stop server
+        run: kill $(lsof -ti:8080) 2>/dev/null || true
+
+      # --- Comparison ---
+      - name: Generate comparison report
+        if: github.event_name == 'pull_request_target'
+        run: python3 head/benchmarks/benchmark.py --compare ${{ github.workspace }}/.bench/baseline/results.json ${{ github.workspace }}/.bench/current/results.json --output ${{ github.workspace }}/.bench/
+
+      - name: Copy current summary for push events
+        if: github.event_name != 'pull_request_target'
+        run: cp ${{ github.workspace }}/.bench/current/summary.md ${{ github.workspace }}/.bench/summary.md
+
+      - name: Post summary to job page
+        run: cat ${{ github.workspace }}/.bench/summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload results
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: ${{ github.workspace }}/.bench/
+          include-hidden-files: true
+          retention-days: 90

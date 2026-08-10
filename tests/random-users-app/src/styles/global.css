@@ -1,0 +1,225 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #f4f1ea;
+    color: #1f2933;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+code {
+    border-radius: 4px;
+    background: #e4e7eb;
+    padding: 2px 5px;
+    font-size: 0.95em;
+}
+
+.page {
+    width: min(1080px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 48px 0;
+}
+
+.intro {
+    max-width: 680px;
+    margin-bottom: 28px;
+}
+
+.eyebrow {
+    margin: 0 0 10px;
+    color: #006d77;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+    margin-top: 0;
+}
+
+h1 {
+    margin-bottom: 12px;
+    font-size: clamp(2rem, 7vw, 4rem);
+    line-height: 1;
+}
+
+.intro p:last-child {
+    color: #52616b;
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.panel {
+    border: 1px solid #d1d7dc;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.panelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid #d1d7dc;
+    padding: 18px 20px;
+}
+
+.panelHeader h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.panelHeader span {
+    color: #52616b;
+    font-size: 0.9rem;
+}
+
+.panelActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.userGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    background: #d1d7dc;
+    list-style: none;
+}
+
+.userCard {
+    display: grid;
+    min-height: 160px;
+    align-content: space-between;
+    gap: 20px;
+    background: #ffffff;
+    padding: 18px;
+}
+
+.userCard form {
+    margin: 0;
+}
+
+.userCard strong,
+.userCard small {
+    display: block;
+}
+
+.userCard strong {
+    margin-bottom: 5px;
+    font-size: 1rem;
+}
+
+.userCard small {
+    color: #52616b;
+    overflow-wrap: anywhere;
+}
+
+dl {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+}
+
+dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+dt {
+    color: #7b8794;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+dd {
+    margin: 0;
+    color: #1f2933;
+    text-align: right;
+}
+
+.cardActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+button {
+    border: 0;
+    border-radius: 999px;
+    background: #006d77;
+    padding: 9px 14px;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.secondaryButton {
+    border: 1px solid #b8c0c8;
+    background: #ffffff;
+    color: #1f2933;
+}
+
+.dangerButton {
+    background: #b42318;
+}
+
+.editForm {
+    display: grid;
+    gap: 10px;
+}
+
+.editForm label {
+    display: grid;
+    gap: 5px;
+    color: #52616b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.editForm input {
+    width: 100%;
+    border: 1px solid #b8c0c8;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 9px 10px;
+    color: #1f2933;
+    font: inherit;
+    font-size: 0.95rem;
+    text-transform: none;
+}
+
+.error {
+    border: 1px solid #ffb4a2;
+    border-radius: 8px;
+    background: #fff1ed;
+    padding: 14px 16px;
+    color: #9f1239;
+}
+
+@media (max-width: 640px) {
+    .panelHeader,
+    .panelActions {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

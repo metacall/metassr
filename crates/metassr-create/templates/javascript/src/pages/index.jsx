@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState } from 'react';
 import metacallLogo from "../../static/assets/metacall-logo.png"
 
 import { Link } from '../components/link';
@@ -40,13 +40,12 @@ export default function Index() {
 						Run your web application
 					</h2>
 
-					<code>$ metassr-cli run</code>
+					<code>$ metassr-cli start</code>
 				</div>
 			</div>
 		</div>
 	)
 
 }
-
 
 

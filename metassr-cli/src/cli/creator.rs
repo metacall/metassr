@@ -123,3 +123,20 @@ impl FromStr for Template {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_template() {
+        assert_eq!("js".parse::<Template>().unwrap(), Template::Javascript);
+        assert_eq!("ts".parse::<Template>().unwrap(), Template::Typescript);
+    }
+
+    #[test]
+    fn as_str_round_trips() {
+        assert_eq!(Template::Javascript.as_str(), "javascript");
+        assert_eq!(Template::Typescript.as_str(), "typescript");
+    }
+}

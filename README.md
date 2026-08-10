@@ -6,7 +6,7 @@
 <p align='center'> SSR framework for React.js built on <a href="https://github.com/metacall/core">MetaCall</a> </p>
 </div>
 
-MetaSSR is a powerful Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. Built on Rust and leveraging the Axum web framework, MetaSSR integrates seamlessly with the Metacall Runtime, showcasing a real-world use case for polyglot programming. It was created as part of [Google Summer of Code 2024](https://summerofcode.withgoogle.com/archive/2024/projects/yRWw2gPh) by [Mohamed Emad](https://github.com/hulxv), to demonstrate the capabilities of polyglot programming.
+MetaSSR is a powerful Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. Built on Rust and Axum, MetaSSR uses Metacall Runtime, showcasing a real-world use case for polyglot programming. MetaSSR was created as part of [Google Summer of Code 2024](https://summerofcode.withgoogle.com/archive/2024/projects/yRWw2gPh) by [Mohamed Emad](https://github.com/hulxv), to demonstrate the capabilities of polyglot programming.
 
 ## Why MetaSSR?
 
@@ -59,17 +59,20 @@ docker run --rm -it metacall/metassr:dev bash
 ### Nix
 
 1. **Install Nix** (if not already installed):
+
    ```bash
    sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
    ```
 
 2. **Enable Nix Flakes**:
+
    ```bash
    mkdir -p ~/.config/nix
    echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
    ```
 
 3. **Enter Development Shell**:
+
    ```bash
    nix develop
    ```

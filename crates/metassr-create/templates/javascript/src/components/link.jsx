@@ -1,11 +1,9 @@
-import React, { AnchorHTMLAttributes, ReactNode } from 'react';
-
-
+import React from 'react';
 
 export function Link({ children, href, ...args }) {
-    return (
-        <a target="_blank" rel="noopener noreferrer" href={href} {...args}>
-            {children}
-        </a>
-    );
+  return (
+    <a target="_blank" rel="noopener noreferrer" href={href} {...args}>
+      {children}
+    </a>
+  );
 };
