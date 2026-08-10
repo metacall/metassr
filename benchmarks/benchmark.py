@@ -340,7 +340,7 @@ xychart-beta
     
     return summary
 
-def generate_comparison(baseline_file, current_file, output_dir):
+def generate_comparison(baseline_file, current_file, output_dir, base_label="Baseline", current_label="Current"):
     """Generate comparison summary between two benchmark runs."""
     baseline = json.loads(Path(baseline_file).read_text())
     current = json.loads(Path(current_file).read_text())
@@ -396,7 +396,7 @@ def generate_comparison(baseline_file, current_file, output_dir):
         return f"{ms:.2f}ms"
 
     table_rows = []
-    for name, _ in SCENARIOS:
+    for name, *_ in SCENARIOS:
         b = base_index[name]
         c = curr_index[name]
         rps_d = delta_str(b["rps"], c["rps"])
@@ -423,7 +423,7 @@ def generate_comparison(baseline_file, current_file, output_dir):
 
 ## Performance Charts
 
-Legend: bars in order — **Baseline**, **Current**
+Legend: bars in order — **{base_label}**, **{current_label}**
 
 ### Requests per Second
 ```mermaid
@@ -477,13 +477,13 @@ xychart-beta
 
 ## Detailed Comparison
 
-| Test | Base RPS | PR RPS | RPS Δ | Base Latency | PR Latency | Lat Δ | Base P99 | PR P99 | P99 Δ | Base Mem | PR Mem | Mem Δ |
+| Test | {base_label} RPS | {current_label} RPS | RPS Δ | {base_label} Latency | {current_label} Latency | Lat Δ | {base_label} P99 | {current_label} P99 | P99 Δ | {base_label} Mem | {current_label} Mem | Mem Δ |
 |------|----------|--------|-------|-------------|-----------|-------|---------|-------|-------|----------|--------|-------|
 {chr(10).join(table_rows)}
 
 ## Summary
 
-| Metric | Baseline | Current | Delta |
+| Metric | {base_label} | {current_label} | Delta |
 |--------|----------|---------|-------|
 | Avg RPS | {avg_base_rps:,.0f} | {avg_curr_rps:,.0f} | {delta_str(avg_base_rps, avg_curr_rps)} |
 | Avg Latency | {fmt_lat(avg_base_lat)} | {fmt_lat(avg_curr_lat)} | {delta_str(avg_base_lat, avg_curr_lat)} |
@@ -530,6 +530,10 @@ def main():
     parser.add_argument("--analyze-only", metavar="FILE", help="Only analyze existing results.json")
     parser.add_argument("--compare", nargs=2, metavar=("BASELINE", "CURRENT"),
                         help="Compare two results.json files and generate comparison summary")
+    parser.add_argument("--base-label", default="Baseline",
+                        help="Label for the baseline in the comparison report (default: Baseline)")
+    parser.add_argument("--current-label", default="Current",
+                        help="Label for the current run in the comparison report (default: Current)")
     args = parser.parse_args()
     
     # Handle compare mode
@@ -539,7 +543,8 @@ def main():
             if not Path(f).exists():
                 error(f"File not found: {f}")
                 sys.exit(1)
-        generate_comparison(baseline_file, current_file, args.output)
+        generate_comparison(baseline_file, current_file, args.output,
+                            args.base_label, args.current_label)
         return
     
     # Handle analyze-only mode
