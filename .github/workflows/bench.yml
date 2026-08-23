@@ -2,15 +2,12 @@ name: Bench
 
 on:
   push:
-    branches: ["master"]
+    branches-ignore: ["benchmark-data"]
   pull_request:
-    branches: ["master"]
-  pull_request_target:
-    branches: ["master"]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
@@ -64,44 +61,6 @@ jobs:
           npm install
           npm run build
 
-      # --- Baseline run (pull_request_target only) ---
-      - name: Checkout base ref
-        if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          path: base
-
-      - name: Build baseline metassr
-        if: github.event_name == 'pull_request_target'
-        run: cargo build --release
-        working-directory: ./base
-        env:
-          CARGO_TARGET_DIR: ${{ github.workspace }}/target
-
-      - name: Run baseline benchmarks
-        if: github.event_name == 'pull_request_target'
-        run: |
-          cp ${{ github.workspace }}/target/release/metassr /tmp/metassr-baseline
-          PATH="/tmp:$PATH" metassr-baseline start --port 8080 &
-          for i in $(seq 1 30); do
-            curl --silent --output /dev/null http://localhost:8080 2>/dev/null && break
-            sleep 1
-          done
-          python3 head/benchmarks/benchmark.py --skip-build --output ${{ github.workspace }}/.bench/baseline --port 8080
-          kill $(lsof -ti:8080) 2>/dev/null || true
-          sleep 2
-
-      # --- Current run (always) ---
-      - name: Build metassr (current)
-        run: cargo build --release
-        working-directory: ./head
-        env:
-          CARGO_TARGET_DIR: ${{ github.workspace }}/target
-
-      - name: Install binary (current)
-        run: sudo cp ${{ github.workspace }}/target/release/metassr /usr/local/bin/metassr
-
       - name: Start server
         working-directory: ./head/benchmarks/apps/metassr-app
         run: |
@@ -117,17 +76,68 @@ jobs:
       - name: Stop server
         run: kill $(lsof -ti:8080) 2>/dev/null || true
 
-      # --- Comparison ---
-      - name: Generate comparison report
-        if: github.event_name == 'pull_request_target'
-        run: python3 head/benchmarks/benchmark.py --compare ${{ github.workspace }}/.bench/baseline/results.json ${{ github.workspace }}/.bench/current/results.json --output ${{ github.workspace }}/.bench/
-
-      - name: Copy current summary for push events
-        if: github.event_name != 'pull_request_target'
-        run: cp ${{ github.workspace }}/.bench/current/summary.md ${{ github.workspace }}/.bench/summary.md
-
       - name: Post summary to job page
-        run: cat ${{ github.workspace }}/.bench/summary.md >> $GITHUB_STEP_SUMMARY
+        run: cat ${{ github.workspace }}/.bench/current/summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Resolve branch and SHA
+        id: refs
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "branch=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
+            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch benchmark data branch
+        run: bash head/scripts/benchmark-results.sh fetch /tmp/bench-data
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Compare with latest master
+        run: |
+          if [ -f "/tmp/bench-data/results/master/latest.json" ]; then
+            if python3 head/benchmarks/benchmark.py \
+              --compare /tmp/bench-data/results/master/latest.json \
+              ${{ github.workspace }}/.bench/current/results.json \
+              --output ${{ github.workspace }}/.bench/compare-master \
+              --base-label "Master" \
+              --current-label "${{ steps.refs.outputs.branch }}"; then
+              echo "### Benchmark vs latest master commit" >> $GITHUB_STEP_SUMMARY
+              cat ${{ github.workspace }}/.bench/compare-master/summary.md >> $GITHUB_STEP_SUMMARY
+            else
+              echo "Comparison against latest master failed"
+            fi
+          else
+            echo "No benchmark for latest master commit yet"
+          fi
+
+      - name: Compare with previous branch commit
+        if: github.event_name == 'push'
+        run: |
+          branch="${{ steps.refs.outputs.branch }}"
+          if [ "$branch" != "master" ] && [ "$branch" != "main" ] && [ -f "/tmp/bench-data/results/$branch/latest.json" ]; then
+            if python3 head/benchmarks/benchmark.py \
+              --compare "/tmp/bench-data/results/$branch/latest.json" \
+              ${{ github.workspace }}/.bench/current/results.json \
+              --output ${{ github.workspace }}/.bench/compare-branch \
+              --base-label "Previous" \
+              --current-label "$branch"; then
+              echo "### Benchmark vs previous commit on branch" >> $GITHUB_STEP_SUMMARY
+              cat ${{ github.workspace }}/.bench/compare-branch/summary.md >> $GITHUB_STEP_SUMMARY
+            else
+              echo "Comparison against previous branch commit failed"
+            fi
+          else
+            echo "No previous benchmark for branch $branch"
+          fi
+
+      - name: Store benchmark results
+        if: github.event_name == 'push'
+        run: bash head/scripts/benchmark-results.sh store /tmp/bench-data ${{ steps.refs.outputs.sha }} ${{ steps.refs.outputs.branch }} ${{ github.workspace }}/.bench/current/results.json
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload results
         if: always()
