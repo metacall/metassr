@@ -30,10 +30,36 @@ use targets::{Targets, TargetsGenerator};
 
 use anyhow::{anyhow, Result};
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+use std::{fmt::Display, str::FromStr};
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, clap::ValueEnum)]
 pub enum BuildingType {
+    /// Server Side Rendering
+    #[value(name = "ssr")]
     ServerSideRendering,
+    /// Static Site Generation
+    #[value(name = "ssg")]
     StaticSiteGeneration,
+}
+
+impl Display for BuildingType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::ServerSideRendering => "ssr",
+            Self::StaticSiteGeneration => "ssg",
+        })
+    }
+}
+
+impl FromStr for BuildingType {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "ssr" | "server-side rendering" => Ok(BuildingType::ServerSideRendering),
+            "ssg" | "static-site generation" => Ok(BuildingType::StaticSiteGeneration),
+            _ => Err("unsupported option.".to_string()),
+        }
+    }
 }
 
 pub struct ServerSideBuilder {

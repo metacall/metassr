@@ -9,7 +9,6 @@ use anyhow::{self, Result};
 use crate::cli::traits::Exec;
 use crate::cli::{Builder, BuildingType};
 use metassr_build::rebuilder::{RebuildType, Rebuilder};
-use metassr_build::server::BuildingType as ServerBuildingType;
 use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_utils::ansi::ansi_regex;
@@ -43,18 +42,10 @@ impl Dev {
     ) -> Result<Self> {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
 
-        // There is a difference between BuildingType in CLI and Server crates. I remember trying to
-        // make them shared but i failed for some reason. The current pattern matching is for me to
-        // be able to pass building_type to the Server crate. This is not the best solution and sure needs to be improved later
-        let building_type: ServerBuildingType = match build_type {
-            BuildingType::Ssr => ServerBuildingType::ServerSideRendering,
-            BuildingType::Ssg => ServerBuildingType::StaticSiteGeneration,
-        };
-
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
         let rebuilder = Arc::new(Rebuilder::new(
             root_path.clone(),
-            building_type,
+            build_type,
             PathBuf::from(&out_dir),
         )?);
 

@@ -51,11 +51,11 @@ fn resolve_build(config: &Option<MetaSSRConfig>) -> (String, BuildingType) {
 
     let build_type = build
         .and_then(|b| b.r#type.as_deref())
-        .map(|t| match t {
-            "ssg" => cli::BuildingType::Ssg,
-            _ => cli::BuildingType::Ssr,
+        .map(|t| {
+            t.parse::<cli::BuildingType>()
+                .unwrap_or(cli::BuildingType::ServerSideRendering)
         })
-        .unwrap_or(cli::BuildingType::Ssr);
+        .unwrap_or(cli::BuildingType::ServerSideRendering);
 
     (out_dir, build_type)
 }

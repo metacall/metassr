@@ -972,6 +972,7 @@ name = "metassr-build"
 version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
+ "clap",
  "dunce",
  "lazy_static",
  "metacall",
