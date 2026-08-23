@@ -9,6 +9,8 @@ pub use creator::*;
 pub use dev::*;
 pub use runner::*;
 
+pub use metassr_build::server::BuildingType;
+
 use clap::{Parser, Subcommand, ValueEnum};
 
 /// ASCII art rendered by the `--version` flag.
