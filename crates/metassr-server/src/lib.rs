@@ -14,8 +14,10 @@ use axum::{http::StatusCode, response::Redirect, Router};
 use live_reload::LiveReloadServer;
 use metassr_build::rebuilder::Rebuilder;
 use router::RouterMut;
+use socket2::{Domain, Protocol, Socket, Type};
 use std::{
     io::{Error, ErrorKind},
+    net::{IpAddr, Ipv6Addr, SocketAddr},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -77,7 +79,7 @@ impl Server {
     pub async fn run(&self) -> Result<()> {
         let listener = match self.configs.mode {
             ServerMode::Development => bind_http_listener_with_fallback(self.configs.port).await?,
-            ServerMode::Production => bind_listener("0.0.0.0", self.configs.port).await?,
+            ServerMode::Production => bind_listener(self.configs.port).await?,
         };
 
         let static_dir = format!("{}/static", self.configs.root_path.to_str().unwrap());
@@ -203,15 +205,30 @@ impl Server {
     }
 }
 
-async fn bind_listener(host: &str, port: u16) -> std::result::Result<TcpListener, Error> {
-    TcpListener::bind((host, port)).await
+async fn bind_listener(port: u16) -> std::result::Result<TcpListener, Error> {
+    let socket = Socket::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
+
+    socket.set_only_v6(false)?;
+
+    #[cfg(unix)]
+    socket.set_reuse_address(true)?;
+
+    let address = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), port);
+
+    socket.bind(&address.into())?;
+    socket.listen(1024)?;
+    socket.set_nonblocking(true)?;
+
+    let std_listener: std::net::TcpListener = socket.into();
+
+    TcpListener::from_std(std_listener)
 }
 
 async fn bind_http_listener_with_fallback(start_port: u16) -> Result<TcpListener> {
     let mut port = start_port;
 
     loop {
-        match bind_listener("0.0.0.0", port).await {
+        match bind_listener(port).await {
             Ok(listener) => return Ok(listener),
             Err(error) if error.kind() == ErrorKind::AddrInUse => {
                 let next_port = port.checked_add(1).ok_or_else(|| {
@@ -232,13 +249,32 @@ async fn bind_http_listener_with_fallback(start_port: u16) -> Result<TcpListener
 mod tests {
     use super::{bind_http_listener_with_fallback, bind_listener};
     use std::io::ErrorKind;
-    use tokio::net::TcpListener;
+    use tokio::net::{TcpListener, TcpStream};
 
     #[tokio::test]
     async fn binds_to_requested_port_when_available() {
         let listener = bind_http_listener_with_fallback(0).await.unwrap();
 
         assert_ne!(listener.local_addr().unwrap().port(), 0);
+    }
+
+    #[tokio::test]
+    async fn listener_accepts_ipv4_and_ipv6_connections() {
+        let listener = bind_http_listener_with_fallback(0).await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let ipv4_connection = TcpStream::connect(("127.0.0.1", port)).await;
+        let ipv6_connection = TcpStream::connect(("::1", port)).await;
+
+        assert!(
+            ipv4_connection.is_ok(),
+            "listener should accept IPv4 connections"
+        );
+
+        assert!(
+            ipv6_connection.is_ok(),
+            "listener should accept IPv6 connections"
+        );
     }
 
     #[tokio::test]
@@ -262,7 +298,7 @@ mod tests {
         let occupied_listener = TcpListener::bind(("0.0.0.0", 0)).await.unwrap();
         let occupied_port = occupied_listener.local_addr().unwrap().port();
 
-        let error = bind_listener("0.0.0.0", occupied_port).await.unwrap_err();
+        let error = bind_listener(occupied_port).await.unwrap_err();
 
         assert_eq!(error.kind(), ErrorKind::AddrInUse);
     }
