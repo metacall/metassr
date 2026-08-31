@@ -2,7 +2,7 @@
 > this project under development, **Using it is your responsibility**.
 
 <div align="center">
-<img src="assets/logo.png" alt="MetaSSR">
+<img src="assets/logo.svg" alt="MetaSSR">
 <p align='center'> SSR framework for React.js built on <a href="https://github.com/metacall/core">MetaCall</a> </p>
 </div>
 
