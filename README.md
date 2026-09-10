@@ -6,11 +6,11 @@
 <p align='center'> SSR framework for React.js built on <a href="https://github.com/metacall/core">MetaCall</a> </p>
 </div>
 
-MetaSSR is a powerful Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. Built on Rust and Axum, MetaSSR uses Metacall Runtime, showcasing a real-world use case for polyglot programming. MetaSSR was created as part of [Google Summer of Code 2024](https://summerofcode.withgoogle.com/archive/2024/projects/yRWw2gPh) by [Mohamed Emad](https://github.com/hulxv), to demonstrate the capabilities of polyglot programming.
+MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. MetaSSR uses Metacall Runtime, exploring web-based use cases for polyglot programming.
 
 ## Why MetaSSR?
 
-MetaSSR delivers exceptional performance that sets it apart from traditional SSR solutions. Built with Rust and optimized for speed, it significantly outperforms conventional Node.js-based SSR frameworks.
+MetaSSR has a great performance potential, performing significantly better than other more mature production frameworks.
 
 Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s):
 
@@ -31,8 +31,7 @@ Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connect
 
 - **Rust-Powered Performance**: Enjoy the speed and safety of Rust in your server-side rendering tasks.
 - **High Performance**: Achieve fast load times and excellent user experiences with optimized server-side rendering.
-- **Comprehensive CLI**: Manage your MetaSSR projects effortlessly using our powerful command-line interface.
-- **API Route with Polyglot Programming (SOON)**: Integrate multiple languages seamlessly with Metacall's support.
+- **API Route with Polyglot Programming**: Integrate multiple languages in the backend with Metacall's support.
 
 ## Getting Started
 
@@ -44,8 +43,6 @@ To get started with MetaSSR, follow these steps:
 ## Contributing
 
 We welcome contributions from the community! If you're interested in helping out, please check out our [Contributing Guide](CONTRIBUTING.md) for information on how to get involved.
-
-## Development
 
 For running a development environment:
 
@@ -77,13 +74,15 @@ docker run --rm -it metacall/metassr:dev bash
    nix develop
    ```
 
-This will automatically set up Rust, MetaCall, and all required dependencies in an isolated environment.
+This will automatically set up Rust, MetaCall, and all required dependencies, same dependencies for all of us developing.
 
 ## Code of Conduct
 
 To ensure a positive and inclusive environment, please review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Community
+
+MetaSSR is essentially a community project, initially created as part of [Google Summer of Code 2024](https://summerofcode.withgoogle.com/archive/2024/projects/yRWw2gPh) by [Mohamed Emad](https://github.com/hulxv), to demonstrate the capabilities of polyglot programming.
 
 - **Discussion Forum**: [Join the Conversation](https://github.com/metacall/metassr/discussions)
 - **Twitter**: [Follow US](https://twitter.com/metacallio)
