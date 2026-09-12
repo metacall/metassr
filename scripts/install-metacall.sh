@@ -20,16 +20,16 @@
 #   METACALL_INSTALL_REF  Git ref of metacall/install to run (default: master).
 #
 # Defaults:
-#   linux  0.9.11  latest metacall/distributable-linux release
+#   linux  0.9.23  target metacall/core version
 #   macos  0.1.6   latest metacall/distributable-macos release
 #
-# Note: metacall/core tags newer than the distributable releases (for example
-# v0.9.23) have no prebuilt tarball and cannot be installed by the official
-# installer. Bump the defaults below once a newer tarball is published.
+# Note: MetaCall's prebuilt "distributable" tarballs can lag behind metacall/core
+# tags. If the pinned version has no published tarball yet, the official
+# installer fails; override with --version or build MetaCall from source.
 
 set -euo pipefail
 
-DEFAULT_VERSION_LINUX="0.9.11"
+DEFAULT_VERSION_LINUX="0.9.23"
 DEFAULT_VERSION_MACOS="0.1.6"
 INSTALL_REF="${METACALL_INSTALL_REF:-master}"
 
