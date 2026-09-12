@@ -5,6 +5,7 @@ Welcome to the MetaSSR Getting Started guide! This folder provides essential inf
 
 - [Overview](#overview)
 - [Installation Guide](#installation-guide)
+- [Containers](#containers)
 - [Folder Structure](#folder-structure)
 - [Command-Line Interface (CLI) Documentation](#command-line-interface-cli-documentation)
 - [Getting Help](#getting-help)
@@ -23,6 +24,12 @@ To get MetaSSR up and running on your system, follow the detailed installation i
 - Building and installing MetaSSR from source
 
 You can find the installation guide [here](installation.md).
+
+## Containers
+
+If you would rather not install MetaCall, Node and the CLI by hand, you can use the MetaSSR base image, which already has them. The `docker.md` file explains what the base image is and how to build an app image from it.
+
+You can read the containers guide [here](docker.md).
 
 ## Folder Structure
 
