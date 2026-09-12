@@ -20,16 +20,20 @@
 #   METACALL_INSTALL_REF  Git ref of metacall/install to run (default: master).
 #
 # Defaults:
-#   linux  0.9.23  target metacall/core version
+#   linux  0.9.11  latest metacall/distributable-linux release
 #   macos  0.1.6   latest metacall/distributable-macos release
 #
-# Note: MetaCall's prebuilt "distributable" tarballs can lag behind metacall/core
-# tags. If the pinned version has no published tarball yet, the official
-# installer fails; override with --version or build MetaCall from source.
+# Note: MetaCall's prebuilt "distributable" tarballs lag behind metacall/core
+# tags. 0.9.23 is not installable via install.sh: the latest distributable-linux
+# release is v0.9.11, and the v0.9.23 core release assets are stale (0.9.22).
+# The genuine 0.9.23 build only ships as the metacall/core:0.9.23-runtime image.
+#
+# TODO(#192): support installing 0.9.23 (Docker image extraction or source build)
+# and bump DEFAULT_VERSION_LINUX back to 0.9.23.
 
 set -euo pipefail
 
-DEFAULT_VERSION_LINUX="0.9.23"
+DEFAULT_VERSION_LINUX="0.9.11"
 DEFAULT_VERSION_MACOS="0.1.6"
 INSTALL_REF="${METACALL_INSTALL_REF:-master}"
 
