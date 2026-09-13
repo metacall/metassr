@@ -192,4 +192,40 @@ mod tests {
         let route = build_route_path(relative, full);
         assert_eq!(route, "/api/users/profile");
     }
+
+    fn create_test_api_dir_multi_lang() -> TempDir {
+        let temp_dir = TempDir::new().unwrap();
+
+        fs::write(temp_dir.path().join("hello.js"), "function GET() {}").unwrap();
+        fs::write(temp_dir.path().join("hello.rb"), "def GET(req_string); end").unwrap();
+
+        let users_dir = temp_dir.path().join("users");
+        fs::create_dir(&users_dir).unwrap();
+        fs::write(users_dir.join("list.js"), "function GET() {}").unwrap();
+
+        fs::write(temp_dir.path().join("readme.txt"), "ignore me").unwrap();
+
+        temp_dir
+    }
+
+    #[test]
+    fn test_ruby_file_scanning_finds_rb_files() {
+        let temp_dir = create_test_api_dir_multi_lang();
+        let routes = scan_api_dir(temp_dir.path());
+
+        let rb_count = routes.iter().filter(|r| matches!(r.tag, Tag::Ruby)).count();
+        assert_eq!(rb_count, 1, "Should find exactly 1 Ruby file");
+    }
+
+    #[test]
+    fn test_ruby_file_gets_correct_tag() {
+        let temp_dir = create_test_api_dir_multi_lang();
+        let routes = scan_api_dir(temp_dir.path());
+
+        let rb_route = routes
+            .iter()
+            .find(|r| r.file_path.extension().unwrap() == "rb");
+        assert!(rb_route.is_some(), "Should find a Ruby file");
+        assert!(matches!(rb_route.unwrap().tag, Tag::Ruby));
+    }
 }
