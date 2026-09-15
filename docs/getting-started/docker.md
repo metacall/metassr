@@ -2,14 +2,14 @@
 
 MetaSSR can run in a container, so you don't have to install MetaCall, Node and the CLI by hand on every machine.
 
-> **Status:** the base image is available now for linux/amd64. The app image pattern below is upcoming.
+> **Status:** the base image and the app image are available for linux/amd64.
 
 ## The images
 
 There are two kinds of images:
 
 - **Base image** — a MetaSSR installation, packaged. MetaCall, Node + npm, and the `metassr` CLI. No app, no source.
-- **App image** — your built app on top of the base image. *(upcoming)*
+- **App image** — your built app on top of the base image.
 
 People building MetaSSR itself use `Dockerfile.dev` instead.
 
@@ -52,29 +52,21 @@ docker run --rm -v "$PWD":/app -w /app --entrypoint sh \
 
 The entrypoint is `metassr`, so use `--entrypoint sh` when you want a shell.
 
-## Building an app image (upcoming)
+## Building an app image
 
-An app image is a two-stage build: build the app with the base image, then copy the result into a fresh base image.
+An app image is a two-stage build, and one generic Dockerfile covers it: `docker/app.Dockerfile`. The build context is your app directory.
 
-```dockerfile
-FROM metacall/metassr:1.0.0-alpha AS build
-WORKDIR /app
-COPY . .
-RUN npm install && metassr build -t ssr
-
-FROM metacall/metassr:1.0.0-alpha AS runtime
-WORKDIR /app
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/src/api ./src/api
-COPY --from=build /app/metassr.toml .
-EXPOSE 8080
-CMD ["start"]
+```sh
+docker build -f docker/app.Dockerfile -t my-app path/to/my-app
+docker run --rm -p 8080:8080 my-app
 ```
+
+The build stage runs `npm install` and `metassr build -t ssr`. The runtime stage copies `dist/`, `src/api` and `metassr.toml` (plus `static/` if you have it) into a fresh base image.
 
 Two things to remember:
 
 - `metassr start` scans `src/api` to register API routes, so the runtime image needs that folder too.
-- Python API routes bring their own packages (for example `numpy` or `pandas`). The base image keeps Python bare on purpose — install what your app needs in its own image.
+- Python API routes bring their own packages. List them in `requirements.txt` and the app image installs them; the base image keeps Python bare on purpose.
 
 ## Building the base image
 
