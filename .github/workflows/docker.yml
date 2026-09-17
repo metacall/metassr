@@ -1,0 +1,116 @@
+name: Docker
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker.yml"
+      - ".dockerignore"
+      - "rust-toolchain.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - "metassr-cli/**"
+      - "tests/web-app/**"
+      - "examples/sales-dashboard/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASE_IMAGE: metacall/metassr:1.0.0-alpha
+
+jobs:
+  docker:
+    name: Build & smoke-test containers
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # The base image is the expensive build. It is cached with mode=max so the
+      # cargo-chef cook layer (compiled dependencies) survives across runs.
+      - name: Build base image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/base.Dockerfile
+          platforms: linux/amd64
+          tags: ${{ env.BASE_IMAGE }}
+          load: true
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,mode=max,scope=base
+
+      # The GHA cache has been exported already; drop the local build cache to
+      # reclaim disk before building the (large) app images.
+      - name: Prune local Buildx cache
+        run: docker buildx prune --all --force
+
+      # App images are built with the default builder so they can use the base
+      # image that was just loaded into the local Docker image store.
+
+      - name: Smoke test web-app (SSR)
+        run: |
+          set -euo pipefail
+          docker buildx build --builder default \
+            --build-arg BUILD_TYPE=ssr \
+            -f docker/app.Dockerfile \
+            -t metassr-web-app-ssr \
+            tests/web-app
+          docker run -d --name web-app-ssr -p 8080:8080 metassr-web-app-ssr
+          trap 'docker rm -f web-app-ssr' EXIT
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null http://localhost:8080/ && break
+            docker inspect -f '{{.State.Running}}' web-app-ssr | grep -q true \
+              || { docker logs web-app-ssr; exit 1; }
+            sleep 2
+          done
+          bash tests/web-app/tests/ssr.sh
+
+      - name: Smoke test web-app (SSG)
+        run: |
+          set -euo pipefail
+          docker buildx build --builder default \
+            --build-arg BUILD_TYPE=ssg \
+            -f docker/app.Dockerfile \
+            -t metassr-web-app-ssg \
+            tests/web-app
+          docker create --name web-app-ssg -p 8080:8080 metassr-web-app-ssg
+          trap 'docker rm -f web-app-ssg' EXIT
+          docker cp web-app-ssg:/app/dist tests/web-app/dist
+          docker start web-app-ssg
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null http://localhost:8080/ && break
+            docker inspect -f '{{.State.Running}}' web-app-ssg | grep -q true \
+              || { docker logs web-app-ssg; exit 1; }
+            sleep 2
+          done
+          bash tests/web-app/tests/ssg.sh
+
+      - name: Smoke test sales-dashboard (polyglot)
+        run: |
+          set -euo pipefail
+          docker buildx build --builder default \
+            -f docker/app.Dockerfile \
+            -t metassr-sales-dashboard \
+            examples/sales-dashboard
+          docker run -d --name sales-dashboard -p 8080:8080 metassr-sales-dashboard
+          trap 'docker rm -f sales-dashboard' EXIT
+          for _ in $(seq 1 90); do
+            curl -fsS -o /dev/null http://localhost:8080/ && break
+            docker inspect -f '{{.State.Running}}' sales-dashboard | grep -q true \
+              || { docker logs sales-dashboard; exit 1; }
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/ | grep -qi "Sales Dashboard"
+          curl -fsS http://localhost:8080/api/stats | grep -q "Hello from JavaScript!"
+          curl -fsS http://localhost:8080/api/sales | grep -q "totalRevenue"
