@@ -5,8 +5,17 @@
 #
 # The base image is built from docker/base.Dockerfile.
 # See docs/getting-started/docker.md for details.
+#
+# BUILD_TYPE selects the build target and how the runtime serves it:
+#   ssr (default) -> `metassr build -t ssr` + `metassr start`
+#   ssg           -> `metassr build -t ssg` + `metassr start --serve`
 
-FROM metacall/metassr:1.0.0-alpha AS build
+ARG BASE_IMAGE=metacall/metassr:1.0.0-alpha
+ARG BUILD_TYPE=ssr
+
+FROM ${BASE_IMAGE} AS build
+
+ARG BUILD_TYPE
 
 WORKDIR /app
 
@@ -14,7 +23,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-RUN metassr build -t ssr
+RUN metassr build -t "${BUILD_TYPE}"
 
 # Collect only what the runtime needs. `static/`, `src/api` and `requirements.txt`
 # are optional, so guard each one.
@@ -25,7 +34,10 @@ RUN mkdir -p /out \
 	&& if [ -d static ]; then cp -r static /out/; fi \
 	&& if [ -f requirements.txt ]; then cp requirements.txt /out/; else : > /out/requirements.txt; fi
 
-FROM metacall/metassr:1.0.0-alpha AS runtime
+FROM ${BASE_IMAGE} AS runtime
+
+ARG BUILD_TYPE
+ENV METASSR_BUILD_TYPE=${BUILD_TYPE}
 
 WORKDIR /app
 
@@ -41,4 +53,19 @@ RUN if [ -s /tmp/requirements.txt ]; then \
 COPY --from=build /out/ ./
 
 EXPOSE 8080
-CMD ["start"]
+
+# The base image entrypoint is `metassr`; replace it with a tiny launcher so SSG
+# builds serve the pre-rendered files (`metassr start --serve`) while SSR builds
+# run the renderer (`metassr start`).
+RUN printf '%s\n' \
+	'#!/bin/sh' \
+	'set -e' \
+	'if [ "$METASSR_BUILD_TYPE" = "ssg" ]; then' \
+	'	exec metassr start --serve' \
+	'else' \
+	'	exec metassr start' \
+	'fi' \
+	> /usr/local/bin/metassr-run \
+	&& chmod +x /usr/local/bin/metassr-run
+
+ENTRYPOINT ["/usr/local/bin/metassr-run"]

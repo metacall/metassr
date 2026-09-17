@@ -7,7 +7,12 @@
 # replace that stage with a download/copy of the prebuilt binary (tracked in #193).
 #
 # Dependencies are compiled with cargo-chef so the expensive dependency layer
-# survives source-only changes.
+# survives source-only changes. `cargo chef cook` is a normal image layer on
+# purpose: that is what lets CI restore it with a GitHub Actions `mode=max`
+# layer cache. BuildKit `type=cache` mounts are intentionally not used for the
+# Cargo registry/target here, because cache mounts are not exported to the GHA
+# cache backend and would move the dependency artifacts out of the cacheable
+# layer (see https://docs.docker.com/build/cache/backends/gha/#cache-mounts).
 
 ARG METACALL_VERSION=0.9.23
 ARG CARGO_CHEF_VERSION=0.1.78
