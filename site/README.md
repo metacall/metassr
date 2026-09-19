@@ -30,13 +30,14 @@ site/
 The landing page and the `metassr create` templates share one visual identity,
 driven by CSS custom properties in `src/styles/global.css`:
 
-- **Surfaces**: cream `--color-surface` cards with a strong
-  `--color-border-strong` outline and `--radius-lg` corners on a white canvas.
+- **Background**: a flat, full-bleed `--color-canvas` (`#f4f1ea`, the same warm
+  tone as the sales-dashboard example) with no cards, borders or chrome.
 - **Ink & accent**: `--color-ink` / `--color-ink-muted` text with a teal
   `--color-accent` for links, buttons and the benchmark table.
-- **Type**: Inter with a system-sans fallback; `--font-mono` for code.
-- **Spacing & radius**: the `--space-*` and `--radius-*` scales keep the
-  layout and components consistent.
+- **Type**: Inter with a system-sans fallback; the hero heading is 26px and
+  inline logos match it. `--font-mono` is kept for code.
+- **Layout**: content is centred and constrained to `--content` (820px); the
+  `--space-*` scale keeps spacing consistent.
 
 To rebrand, change the tokens in `:root`; components only reference variables.
 
