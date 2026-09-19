@@ -20,8 +20,9 @@ site/
 │   ├── pages/index.tsx     # landing page
 │   ├── pages/_notfound.tsx # 404 page
 │   └── styles/global.css   # same stylesheet as the create templates
-├── static/assets/          # served at /static/assets (metacall + metassr logos)
+├── static/assets/          # served at /static/assets (logos + og-image.png)
 ├── scripts/export-pages.mjs
+├── scripts/generate-og.mjs # regenerates the social preview image
 └── metassr.toml            # build.type = "ssg"
 ```
 
@@ -40,6 +41,10 @@ driven by CSS custom properties in `src/styles/global.css`:
   `--space-*` scale keeps spacing consistent.
 
 To rebrand, change the tokens in `:root`; components only reference variables.
+
+The social preview image (`static/assets/og-image.png`, 2400x1260) is rendered
+from the hero with `npm run og:image`; it needs a local Chromium/Chrome. The
+result is committed, so CI does not regenerate it.
 
 ## Local development
 
