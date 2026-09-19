@@ -2,7 +2,12 @@ export default function Head() {
     return (
         <>
             <meta charSet="UTF-8" />
-            <link rel="icon" type="image/png" href="/static/assets/metacall-logo.png" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <meta
+                name="description"
+                content="MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications."
+            />
+            <link rel="icon" type="image/png" href="/static/assets/metassr-logo.png" />
             <title>MetaSSR</title>
         </>
     );
