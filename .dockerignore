@@ -7,6 +7,9 @@ node_modules
 dist
 **/dist
 
+# Project website (built separately in the Pages workflow)
+site
+
 # Python bytecode
 __pycache__
 **/__pycache__

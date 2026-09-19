@@ -1,0 +1,6 @@
+[build]
+type = "ssg"
+out_dir = "dist"
+
+[server]
+port = 8080

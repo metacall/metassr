@@ -1,0 +1,13 @@
+# dependencies
+/node_modules
+
+# metassr build output
+/dist
+
+# GitHub Pages export
+/_site
+
+# misc
+.DS_Store
+npm-debug.log*
+metassr.log*

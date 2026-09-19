@@ -1,0 +1,107 @@
+name: Deploy Site
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - "site/**"
+      - "docker/**"
+      - "crates/**"
+      - "metassr-cli/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  BASE_IMAGE: metacall/metassr:1.0.0-alpha
+
+# GitHub Pages deployment needs these scopes. The repository must also set
+# Settings -> Pages -> Source to "GitHub Actions".
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build static site
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # The base image is built from source because metacall/metassr is not
+      # published to a registry. cargo-chef and the GHA layer cache keep it
+      # cheap on repeat runs; `site` is excluded via .dockerignore so site-only
+      # edits do not invalidate the compiled layer.
+      - name: Build MetaSSR base image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/base.Dockerfile
+          platforms: linux/amd64
+          tags: ${{ env.BASE_IMAGE }}
+          load: true
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,mode=max,scope=base
+
+      - name: Prune local buildx cache
+        run: docker buildx prune --all --force
+
+      - name: Build site image (SSG)
+        run: |
+          docker buildx build --builder default \
+            --build-arg BUILD_TYPE=ssg \
+            -f docker/app.Dockerfile \
+            -t metassr-site \
+            site
+
+      - name: Extract build output
+        run: |
+          docker create --name metassr-site-export metassr-site
+          docker cp metassr-site-export:/app/dist site/dist
+          docker rm metassr-site-export
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Export for GitHub Pages
+        working-directory: site
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: node scripts/export-pages.mjs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/_site
+          include-hidden-files: true
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
