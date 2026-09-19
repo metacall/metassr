@@ -149,6 +149,83 @@ pre {
     font-size: 1.05rem;
 }
 
+.benchmarks {
+    display: grid;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 820px;
+    text-align: left;
+}
+
+.sectionTitle {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.sectionLead {
+    margin: 0;
+    color: var(--color-ink-muted);
+    font-size: 0.95rem;
+}
+
+.tableWrap {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+}
+
+.dataTable {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+}
+
+.dataTable th,
+.dataTable td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+.dataTable thead th {
+    color: var(--color-ink-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dataTable tbody th {
+    font-weight: 600;
+}
+
+.dataTable tbody tr:last-child th,
+.dataTable tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.dataTable tbody tr:hover {
+    background: var(--color-surface-sunken);
+}
+
+.isAccent {
+    color: var(--color-accent);
+    font-weight: 700;
+}
+
+.pill {
+    display: inline-block;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-sunken);
+    padding: 2px 10px;
+    color: var(--color-ink);
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 .button {
     display: inline-block;
     padding: 10px 20px;
