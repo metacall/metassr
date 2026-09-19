@@ -14,15 +14,31 @@ site/
 ├── src/
 │   ├── _app.tsx            # wraps every page in PageLayout
 │   ├── _head.tsx           # global <head> content
-│   ├── components/         # header, footer, github, link, clock
+│   ├── components/         # footer (github CTA), github, link
+│   ├── data/benchmarks.ts  # benchmark figures shown on the landing page
 │   ├── layout/             # PageLayout
 │   ├── pages/index.tsx     # landing page
 │   ├── pages/_notfound.tsx # 404 page
 │   └── styles/global.css   # same stylesheet as the create templates
-├── static/assets/          # served at /static/assets (e.g. metacall-logo.png)
+├── static/assets/          # served at /static/assets (metacall + metassr logos)
 ├── scripts/export-pages.mjs
 └── metassr.toml            # build.type = "ssg"
 ```
+
+## Design system
+
+The landing page and the `metassr create` templates share one visual identity,
+driven by CSS custom properties in `src/styles/global.css`:
+
+- **Surfaces**: cream `--color-surface` cards with a strong
+  `--color-border-strong` outline and `--radius-lg` corners on a white canvas.
+- **Ink & accent**: `--color-ink` / `--color-ink-muted` text with a teal
+  `--color-accent` for links, buttons and the benchmark table.
+- **Type**: Inter with a system-sans fallback; `--font-mono` for code.
+- **Spacing & radius**: the `--space-*` and `--radius-*` scales keep the
+  layout and components consistent.
+
+To rebrand, change the tokens in `:root`; components only reference variables.
 
 ## Local development
 
