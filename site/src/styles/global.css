@@ -2,21 +2,13 @@
     --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-    --color-canvas: #ffffff;
-    --color-surface: #fcfce4;
-    --color-surface-raised: #ffffff;
-    --color-surface-sunken: #f4f1ea;
+    --color-canvas: #f4f1ea;
     --color-ink: #1f2933;
     --color-ink-muted: #52616b;
-    --color-border-strong: #1f2933;
-    --color-border: #d1d7dc;
     --color-accent: #006d77;
     --color-accent-strong: #00565e;
     --color-accent-contrast: #ffffff;
 
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 20px;
     --radius-pill: 999px;
 
     --space-1: 4px;
@@ -27,9 +19,7 @@
     --space-6: 32px;
     --space-7: 48px;
 
-    --shadow-card: 0 1px 2px rgba(31, 41, 51, 0.05), 0 16px 40px rgba(31, 41, 51, 0.06);
-
-    --maxw: 1180px;
+    --content: 820px;
 }
 
 *,
@@ -52,7 +42,8 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-#root {
+#root,
+.site {
     min-height: 100vh;
 }
 
@@ -78,55 +69,34 @@ pre {
     font-family: var(--font-mono);
 }
 
-.site {
-    min-height: 100vh;
-}
-
 .page {
-    width: min(var(--maxw), calc(100% - 32px));
-    margin: 0 auto;
-    padding: var(--space-7) 0;
-}
-
-.heroCard {
-    display: grid;
-    justify-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: var(--space-5);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-lg);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-    padding: var(--space-7) var(--space-6);
+    min-height: 100vh;
+    padding: var(--space-7) var(--space-5);
     text-align: center;
 }
 
-.logoFrame {
-    display: grid;
-    place-items: center;
-    width: min(460px, 100%);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    padding: var(--space-5) var(--space-6);
-}
-
-.brandLogo {
-    width: min(320px, 100%);
+.logo {
+    width: min(360px, 70vw);
     height: auto;
 }
 
 .heroTitle {
-    max-width: 760px;
+    max-width: var(--content);
     margin: 0;
-    font-size: clamp(1.35rem, 3vw, 2rem);
+    font-size: 26px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.35;
 }
 
 .brandLink {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: 6px;
     color: var(--color-accent);
     font-weight: 700;
 }
@@ -137,23 +107,23 @@ pre {
 }
 
 .brandMark {
-    width: 80px;
-    height: 80px;
+    width: 26px;
+    height: 26px;
     object-fit: contain;
 }
 
 .heroLead {
-    max-width: 720px;
+    max-width: var(--content);
     margin: 0;
-    color: var(--color-ink-muted);
-    font-size: 1.05rem;
+    color: var(--color-ink);
+    font-size: 1rem;
 }
 
 .benchmarks {
     display: grid;
     gap: var(--space-3);
     width: 100%;
-    max-width: 820px;
+    max-width: var(--content);
     text-align: left;
 }
 
@@ -170,9 +140,6 @@ pre {
 
 .tableWrap {
     overflow-x: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-raised);
 }
 
 .dataTable {
@@ -184,7 +151,6 @@ pre {
 .dataTable th,
 .dataTable td {
     padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--color-border);
     font-size: 0.95rem;
     text-align: left;
 }
@@ -201,13 +167,12 @@ pre {
     font-weight: 600;
 }
 
-.dataTable tbody tr:last-child th,
-.dataTable tbody tr:last-child td {
-    border-bottom: 0;
+.dataTable tbody tr:nth-child(even) {
+    background: rgba(31, 41, 51, 0.035);
 }
 
 .dataTable tbody tr:hover {
-    background: var(--color-surface-sunken);
+    background: rgba(31, 41, 51, 0.06);
 }
 
 .isAccent {
@@ -218,12 +183,35 @@ pre {
 .pill {
     display: inline-block;
     border-radius: var(--radius-pill);
-    background: var(--color-surface-sunken);
+    background: rgba(0, 109, 119, 0.12);
     padding: 2px 10px;
-    color: var(--color-ink);
+    color: var(--color-accent);
     font-size: 0.8rem;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-ink-muted);
+    font-size: 0.95rem;
+}
+
+.cta:hover {
+    color: var(--color-ink);
+}
+
+.cta .github {
+    display: inline-flex;
+    color: var(--color-ink);
+}
+
+.cta .github svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
 }
 
 .eyebrow {
@@ -235,50 +223,8 @@ pre {
     text-transform: uppercase;
 }
 
-.cta {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-3);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    padding: var(--space-2) var(--space-5) var(--space-2) var(--space-2);
-    color: var(--color-ink);
-}
-
-.cta .github {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--color-ink);
-    color: var(--color-surface);
-}
-
-.cta .github svg {
-    width: 22px;
-    height: 22px;
-    fill: currentColor;
-}
-
-.ctaCopy {
-    display: grid;
-    text-align: left;
-}
-
-.ctaCopy strong {
-    font-size: 0.95rem;
-}
-
-.ctaCopy span {
-    color: var(--color-ink-muted);
-    font-size: 0.85rem;
-}
-
 .button {
     display: inline-block;
-    border: 1px solid var(--color-accent);
     border-radius: var(--radius-pill);
     background: var(--color-accent);
     padding: 10px 22px;
@@ -288,11 +234,10 @@ pre {
     font-weight: 700;
     text-align: center;
     cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+    transition: background-color 0.2s, transform 0.2s;
 }
 
 .button:hover {
-    border-color: var(--color-accent-strong);
     background: var(--color-accent-strong);
 }
 
@@ -307,34 +252,4 @@ pre {
 .button:focus-visible {
     outline: 2px solid var(--color-accent-strong);
     outline-offset: 2px;
-}
-
-code {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 1em;
-    background-color: #f5f5f5;
-    color: #d63384;
-    padding: 2px 4px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    word-wrap: break-word;
-}
-
-code.inline {
-    background-color: #e9ecef;
-    border: none;
-    padding: 0;
-    font-size: 0.9em;
-}
-
-pre {
-    font-family: 'Courier New', Courier, monospace;
-    background-color: #f5f5f5;
-    color: #333;
-    padding: 16px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    margin: 1em 0;
 }

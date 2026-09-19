@@ -7,7 +7,7 @@ export default function Head() {
                 name="description"
                 content="MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications."
             />
-            <link rel="icon" type="image/png" href="/static/assets/metassr-logo.png" />
+            <link rel="icon" type="image/svg+xml" href="/static/assets/metassr-logo.svg" />
             <title>MetaSSR</title>
         </>
     );
