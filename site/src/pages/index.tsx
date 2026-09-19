@@ -2,6 +2,7 @@ import React from 'react';
 
 import metacallLogo from '../../static/assets/metacall-logo.png';
 import metassrLogo from '../../static/assets/metassr-logo.png';
+import { Footer } from '../components/footer';
 import { Link } from '../components/link';
 import { benchmarks } from '../data/benchmarks';
 
@@ -57,6 +58,8 @@ export default function Index() {
 						</table>
 					</div>
 				</section>
+
+				<Footer />
 			</article>
 		</main>
 	);

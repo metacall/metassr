@@ -226,22 +226,74 @@ pre {
     white-space: nowrap;
 }
 
+.eyebrow {
+    margin: 0;
+    color: var(--color-accent);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+    padding: var(--space-2) var(--space-5) var(--space-2) var(--space-2);
+    color: var(--color-ink);
+}
+
+.cta .github {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-ink);
+    color: var(--color-surface);
+}
+
+.cta .github svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+.ctaCopy {
+    display: grid;
+    text-align: left;
+}
+
+.ctaCopy strong {
+    font-size: 0.95rem;
+}
+
+.ctaCopy span {
+    color: var(--color-ink-muted);
+    font-size: 0.85rem;
+}
+
 .button {
     display: inline-block;
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    padding: 10px 22px;
+    color: var(--color-accent-contrast);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
     text-align: center;
-    color: #fff;
-    background-color: #007bff;
-    border: none;
-    border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
 }
 
 .button:hover {
-    background-color: #0056b3;
+    border-color: var(--color-accent-strong);
+    background: var(--color-accent-strong);
 }
 
 .button:active {
@@ -253,7 +305,8 @@ pre {
 }
 
 .button:focus-visible {
-    box-shadow: 0 0 0 2px #0056b3;
+    outline: 2px solid var(--color-accent-strong);
+    outline-offset: 2px;
 }
 
 code {
