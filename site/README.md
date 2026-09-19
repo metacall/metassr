@@ -14,15 +14,37 @@ site/
 ├── src/
 │   ├── _app.tsx            # wraps every page in PageLayout
 │   ├── _head.tsx           # global <head> content
-│   ├── components/         # header, footer, github, link, clock
+│   ├── components/         # footer (github CTA), github, link
+│   ├── data/benchmarks.ts  # benchmark figures shown on the landing page
 │   ├── layout/             # PageLayout
 │   ├── pages/index.tsx     # landing page
 │   ├── pages/_notfound.tsx # 404 page
 │   └── styles/global.css   # same stylesheet as the create templates
-├── static/assets/          # served at /static/assets (e.g. metacall-logo.png)
+├── static/assets/          # served at /static/assets (logos + og-image.png)
 ├── scripts/export-pages.mjs
+├── scripts/generate-og.mjs # regenerates the social preview image
 └── metassr.toml            # build.type = "ssg"
 ```
+
+## Design system
+
+The landing page and the `metassr create` templates share one visual identity,
+driven by CSS custom properties in `src/styles/global.css`:
+
+- **Background**: a flat, full-bleed `--color-canvas` (`#f4f1ea`, the same warm
+  tone as the sales-dashboard example) with no cards, borders or chrome.
+- **Ink & accent**: `--color-ink` / `--color-ink-muted` text with a teal
+  `--color-accent` for links, buttons and the benchmark table.
+- **Type**: Inter with a system-sans fallback; the hero heading is 26px and
+  inline logos match it. `--font-mono` is kept for code.
+- **Layout**: content is centred and constrained to `--content` (820px); the
+  `--space-*` scale keeps spacing consistent.
+
+To rebrand, change the tokens in `:root`; components only reference variables.
+
+The social preview image (`static/assets/og-image.png`, 2400x1260) is rendered
+from the hero with `npm run og:image`; it needs a local Chromium/Chrome. The
+result is committed, so CI does not regenerate it.
 
 ## Local development
 
