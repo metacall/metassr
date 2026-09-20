@@ -111,7 +111,7 @@ jobs:
           done
           bash tests/ssr.sh
           kill $SERVER_PID 2>/dev/null || true
-          pkill -f "metassr.*run" 2>/dev/null || true
+          pkill -f "metassr.*start" 2>/dev/null || true
 
       - name: SSR server tests (Linux)
         if: runner.os == 'Linux'
@@ -127,7 +127,7 @@ jobs:
           done
           bash tests/ssr.sh
           kill $SERVER_PID 2>/dev/null || true
-          pkill -f "metassr.*run" 2>/dev/null || true
+          pkill -f "metassr.*start" 2>/dev/null || true
 
       - name: SSR server tests (Windows)
         if: runner.os == 'Windows'
@@ -146,7 +146,7 @@ jobs:
           done
           bash tests/ssr.sh
           kill $SERVER_PID 2>/dev/null || true
-          pkill -f "metassr.*run" 2>/dev/null || true
+          pkill -f "metassr.*start" 2>/dev/null || true
 
       - name: Force kill metassr processes (Windows)
         if: always() && runner.os == 'Windows'
@@ -190,7 +190,7 @@ jobs:
           done
           bash tests/ssg.sh
           kill $SERVER_PID 2>/dev/null || true
-          pkill -f "metassr.*run" 2>/dev/null || true
+          pkill -f "metassr.*start" 2>/dev/null || true
 
       - name: SSG server tests (Linux)
         if: runner.os == 'Linux'
@@ -206,7 +206,7 @@ jobs:
           done
           bash tests/ssg.sh
           kill $SERVER_PID 2>/dev/null || true
-          pkill -f "metassr.*run" 2>/dev/null || true
+          pkill -f "metassr.*start" 2>/dev/null || true
 
       - name: SSG server tests (Windows)
         if: runner.os == 'Windows'
@@ -225,5 +225,5 @@ jobs:
           done
           bash tests/ssg.sh
           kill $SERVER_PID 2>/dev/null || true
-          pkill -f "metassr.*run" 2>/dev/null || true
+          pkill -f "metassr.*start" 2>/dev/null || true
 

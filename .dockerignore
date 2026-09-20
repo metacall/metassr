@@ -1,1 +1,21 @@
+# Rust build output
 target
+
+# Node / frontend build output
+node_modules
+**/node_modules
+dist
+**/dist
+
+# Project website (built separately in the Pages workflow)
+site
+
+# Python bytecode
+__pycache__
+**/__pycache__
+
+# VCS / editor / OS noise
+.git
+.gitignore
+*.swp
+.DS_Store

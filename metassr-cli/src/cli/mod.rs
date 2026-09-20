@@ -9,17 +9,41 @@ pub use creator::*;
 pub use dev::*;
 pub use runner::*;
 
+pub use metassr_build::server::BuildingType;
+
 use clap::{Parser, Subcommand, ValueEnum};
+
+/// ASCII art rendered by the `--version` flag.
+const VERSION_ART: &str = r#"
+███╗   ███╗███████╗████████╗ █████╗ ███████╗███████╗██████╗ 
+████╗ ████║██╔════╝╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔══██╗
+██╔████╔██║█████╗     ██║   ███████║███████╗███████╗██████╔╝
+██║╚██╔╝██║██╔══╝     ██║   ██╔══██║╚════██║╚════██║██╔══██╗
+██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████║███████║██║  ██║
+╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝
+"#;
+
+fn version() -> String {
+    format!("{VERSION_ART}\n{}\n", env!("CARGO_PKG_VERSION"))
+}
+
+/// Full `--version` output: ASCII art banner followed by the version number.
+pub fn version_banner() -> String {
+    version()
+}
 
 #[derive(Parser, Debug)]
 #[command(
     author,
-    version,
     about = "
 Command line interface application for MetaSSR framework. This CLI tool helps you manage and deploy your MetaSSR projects.
 "
 )]
 pub struct Args {
+    /// Print the MetaSSR version banner and exit.
+    #[arg(short = 'V', long = "version")]
+    pub version: bool,
+
     /// The path of the project root directory.
     #[arg(long, default_value_t = String::from("."))]
     pub root: String,
@@ -33,7 +57,7 @@ pub struct Args {
     pub log_file: Option<String>,
 
     #[command(subcommand)]
-    pub commands: Commands,
+    pub commands: Option<Commands>,
 }
 
 #[derive(Debug, ValueEnum, PartialEq, Eq, Clone)]
@@ -51,19 +75,19 @@ pub enum Commands {
     /// Builds your web application into a deployable format.
     Build {
         /// The output directory where build files will be saved.
-        #[arg(long, default_value_t = String::from("dist"))]
-        out_dir: String,
+        #[arg(long)]
+        out_dir: Option<String>,
 
         /// The type of build to perform. Choose between Ssr (Server-Side Rendering) and Ssg (Static Site Generation).
-        #[arg(short = 't', long = "type", default_value_t = BuildingType::Ssr)]
-        build_type: BuildingType,
+        #[arg(short = 't', long = "type")]
+        build_type: Option<BuildingType>,
     },
 
-    /// Runs the Server-Side Rendered (SSR) application.
-    Run {
+    /// Starts the Server-Side Rendered (SSR) application.
+    Start {
         /// The port number on which the HTTP server will run.
-        #[arg(long, default_value_t = 8080)]
-        port: u16,
+        #[arg(long)]
+        port: Option<u16>,
 
         /// Serve the generated static site directly.
         #[arg(long)]
@@ -91,20 +115,20 @@ pub enum Commands {
 
     Dev {
         /// port number on which the HTTP server will run
-        #[arg(long, default_value_t = 8080)]
-        port: u16,
+        #[arg(long)]
+        port: Option<u16>,
 
         /// port number for the WebSocket live reload server
-        #[arg(long, default_value_t = 3001)]
-        ws_port: u16,
+        #[arg(long)]
+        ws_port: Option<u16>,
 
         /// The output directory where build files will be saved.
-        #[arg(long, default_value_t = String::from("dist"))]
-        out_dir: String,
+        #[arg(long)]
+        out_dir: Option<String>,
 
         /// The type of build to perform. Choose between Ssr (Server-Side Rendering) and Ssg (Static Site Generation).
-        #[arg(short = 't', long = "type", default_value_t = BuildingType::Ssr)]
-        build_type: BuildingType,
+        #[arg(short = 't', long = "type")]
+        build_type: Option<BuildingType>,
     },
 }
 
@@ -122,43 +146,43 @@ mod tests {
     #[test]
     fn build_defaults() {
         let args = parse(&["build"]).unwrap();
-        if let Commands::Build {
+        if let Some(Commands::Build {
             out_dir,
             build_type,
-        } = args.commands
+        }) = args.commands
         {
-            assert_eq!(out_dir, "dist");
-            assert_eq!(build_type, BuildingType::Ssr);
+            assert_eq!(out_dir, None);
+            assert_eq!(build_type, None);
         } else {
             panic!("expected Build command");
         }
     }
 
     #[test]
-    fn run_defaults() {
-        let args = parse(&["run"]).unwrap();
-        if let Commands::Run { port, serve } = args.commands {
-            assert_eq!(port, 8080);
+    fn start_defaults() {
+        let args = parse(&["start"]).unwrap();
+        if let Some(Commands::Start { port, serve }) = args.commands {
+            assert_eq!(port, None);
             assert!(!serve);
         } else {
-            panic!("expected Run command");
+            panic!("expected Start command");
         }
     }
 
     #[test]
     fn dev_defaults() {
         let args = parse(&["dev"]).unwrap();
-        if let Commands::Dev {
+        if let Some(Commands::Dev {
             port,
             ws_port,
             out_dir,
             build_type,
-        } = args.commands
+        }) = args.commands
         {
-            assert_eq!(port, 8080);
-            assert_eq!(ws_port, 3001);
-            assert_eq!(out_dir, "dist");
-            assert_eq!(build_type, BuildingType::Ssr);
+            assert_eq!(port, None);
+            assert_eq!(ws_port, None);
+            assert_eq!(out_dir, None);
+            assert_eq!(build_type, None);
         } else {
             panic!("expected Dev command");
         }
@@ -178,12 +202,12 @@ mod tests {
         ])
         .unwrap();
 
-        if let Commands::Create {
+        if let Some(Commands::Create {
             project_name,
             version,
             description,
             template,
-        } = args.commands
+        }) = args.commands
         {
             assert_eq!(project_name, Some("my-app".into()));
             assert_eq!(version, Some("2.0.0".into()));

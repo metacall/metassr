@@ -1,6 +1,6 @@
 [package]
 name = "metassr-api-handler"
-version = "1.0.0-alpha"
+version.workspace = true
 edition = "2021"
 description = "API routes handler for MetaSSR with polyglot support"
 

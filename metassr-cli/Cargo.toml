@@ -24,6 +24,7 @@ metassr-bundler = { path = "../crates/metassr-bundler" }
 metassr-create = { path = "../crates/metassr-create" }
 metassr-watcher = { path = "../crates/metassr-watcher" }
 metassr-utils = { path = "../crates/metassr-utils" }
+metassr-config = { path = "../crates/metassr-config" }
 regex = "1.12.3"
 
 [build-dependencies]

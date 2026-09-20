@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "metassr build",
-    "start": "metassr run --port 8080"
+    "start": "metassr start --port 8080"
   },
   "dependencies": {
     "react": "^18.3.1",

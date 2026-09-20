@@ -177,7 +177,7 @@ also, you can test one of web applications that located at [tests](../../tests/)
 **Example:**
 
 ```bash
-cargo run --bin metassr -- --root=tests/web-app --debug-mode=all run
+cargo run --bin metassr -- --root=tests/web-app --debug-mode=all start
 ```
 
 ### 7. Code of Conduct

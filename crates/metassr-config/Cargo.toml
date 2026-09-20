@@ -1,0 +1,12 @@
+[package]
+name = "metassr-config"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.1.3"
+anyhow = "1.0.82"
+
+[dev-dependencies]
+tempfile = "3"

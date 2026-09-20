@@ -1,12 +1,10 @@
-use std::{fmt::Display, mem, str::FromStr};
+use std::mem;
 
 use super::traits::Exec;
-use anyhow::{anyhow, Result};
-use clap::ValueEnum;
+use anyhow::anyhow;
 use metacall::initialize;
-use metassr_build::server;
 
-use metassr_build::{client::ClientBuilder, server::ServerSideBuilder};
+use metassr_build::{client::ClientBuilder, server::BuildingType, server::ServerSideBuilder};
 use metassr_bundler::WebBundler;
 
 use std::time::Instant;
@@ -30,7 +28,7 @@ impl Exec for Builder {
         let instant = Instant::now();
 
         let client_builder = ClientBuilder::new("", &self.out_dir, false)?;
-        let server_builder = ServerSideBuilder::new("", &self.out_dir, self._type.into(), false)?;
+        let server_builder = ServerSideBuilder::new("", &self.out_dir, self._type, false)?;
 
         // Generate targets for both client and server
         let client_targets = client_builder.generate_targets().map_err(|e| {
@@ -103,63 +101,24 @@ impl Exec for Builder {
     }
 }
 
-#[derive(Debug, ValueEnum, PartialEq, Eq, Clone, Copy)]
-pub enum BuildingType {
-    /// Static Site Generation
-    Ssg,
-    /// Server Side Rendering
-    Ssr,
-}
-
-impl From<BuildingType> for server::BuildingType {
-    fn from(val: BuildingType) -> Self {
-        match val {
-            BuildingType::Ssg => server::BuildingType::StaticSiteGeneration,
-            BuildingType::Ssr => server::BuildingType::ServerSideRendering,
-        }
-    }
-}
-
-impl Display for BuildingType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match *self {
-            Self::Ssg => "ssg",
-            Self::Ssr => "ssr",
-        })
-    }
-}
-
-impl FromStr for BuildingType {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "ssr" | "server-side rendering" => Ok(BuildingType::Ssr),
-            "ssg" | "static-site generation" => Ok(BuildingType::Ssg),
-            _ => Err("unsupported option.".to_string()),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn parse_building_type() {
-        assert_eq!("ssr".parse::<BuildingType>().unwrap(), BuildingType::Ssr);
-        assert_eq!("ssg".parse::<BuildingType>().unwrap(), BuildingType::Ssg);
+        assert_eq!(
+            "ssr".parse::<BuildingType>().unwrap(),
+            BuildingType::ServerSideRendering
+        );
+        assert_eq!(
+            "ssg".parse::<BuildingType>().unwrap(),
+            BuildingType::StaticSiteGeneration
+        );
     }
 
     #[test]
     fn parse_unsupported_option_returns_err() {
         assert!("csr".parse::<BuildingType>().is_err());
-    }
-
-    #[test]
-    fn convert_to_server_building_type() {
-        let ssr: server::BuildingType = BuildingType::Ssr.into();
-        let ssg: server::BuildingType = BuildingType::Ssg.into();
-        assert_eq!(ssr, server::BuildingType::ServerSideRendering);
-        assert_eq!(ssg, server::BuildingType::StaticSiteGeneration);
     }
 }
