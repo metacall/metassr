@@ -20,7 +20,7 @@ Think of it as a machine that already has MetaSSR installed:
 | | |
 | --- | --- |
 | Base OS | Debian 13 (trixie) |
-| MetaCall | 0.9.23 |
+| MetaCall | 0.9.24 |
 | Node / npm | v20 / 9.x |
 | MetaSSR CLI | `metassr` on `PATH` |
 | Working dir | `/app` |
