@@ -14,7 +14,7 @@
 # cache backend and would move the dependency artifacts out of the cacheable
 # layer (see https://docs.docker.com/build/cache/backends/gha/#cache-mounts).
 
-ARG METACALL_VERSION=0.9.23
+ARG METACALL_VERSION=0.9.24
 ARG CARGO_CHEF_VERSION=0.1.78
 
 # MetaCall runtime, also the source of /usr/local for the builder.
@@ -67,7 +67,7 @@ RUN cargo build --release --locked
 # Runtime stage
 FROM metacall/core:${METACALL_VERSION}-runtime AS runtime
 
-ARG METACALL_VERSION=0.9.23
+ARG METACALL_VERSION=0.9.24
 ARG METASSR_VERSION=1.0.0-alpha
 
 RUN apt-get update \
