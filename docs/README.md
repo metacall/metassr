@@ -5,6 +5,7 @@ Welcome to the official documentation for MetaSSR Framework. This guide will hel
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Getting Started](#getting-started)
+- [Reference](#reference)
 - [Contributing](#contributing)
 
 ---
@@ -17,6 +18,12 @@ If you're new to the SSR Framework, start here! The [Getting Started](./getting-
 - [Containers](./getting-started/docker.md)
 - [Command line interface](./getting-started/cli.md)
 - [Folder Structure](./getting-started/folder-structure.md)
+
+
+
+## Reference
+
+- [The `.metassr` directory](./metassr-directory.md)
 
 
 
