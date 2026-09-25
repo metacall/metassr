@@ -42,7 +42,7 @@ cp "$VENDOR_BUNDLER/node_modules/@esbuild/linux-x64/bin/esbuild" "$PAYLOAD/bin/e
 chmod 755 "$PAYLOAD/bin/metassr" "$PAYLOAD/bin/esbuild"
 
 mkdir -p "$PAYLOAD/vendor"
-cp -a "$VENDOR_BUNDLER" "$PAYLOAD/vendor/bundler"
+cp -rL --no-preserve=links "$VENDOR_BUNDLER" "$PAYLOAD/vendor/bundler"
 rm -f "$PAYLOAD/vendor/bundler/package-lock.json"
 
 cp "$HERE/../linux-x64-gnu/package.json" "$PAYLOAD/package.json"
