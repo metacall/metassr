@@ -111,9 +111,10 @@ async fn main() -> Result<()> {
             version,
             description,
             template,
+            install,
         } = commands
         {
-            cli::Creator::new(project_name, version, description, template)?.exec()?;
+            cli::Creator::new(project_name, version, description, template, install)?.exec()?;
         }
         return Ok(());
     }

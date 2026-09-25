@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use metassr_create::Creator as MetassrCreator;
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{collections::HashMap, fmt::Display, process::Command, str::FromStr};
 use tracing::{error, info};
 
 use super::traits::Exec;
@@ -14,6 +14,7 @@ pub struct Creator {
     version: String,
     description: String,
     template: Template,
+    install: bool,
 }
 
 impl Creator {
@@ -22,6 +23,7 @@ impl Creator {
         version: Option<String>,
         description: Option<String>,
         template: Option<Template>,
+        install: bool,
     ) -> anyhow::Result<Self> {
         let project_name = match project_name {
             Some(name) => name,
@@ -62,6 +64,7 @@ impl Creator {
             version,
             description,
             template,
+            install,
         })
     }
 }
@@ -79,6 +82,20 @@ impl Exec for Creator {
             Ok(_) => info!("Project has been created."),
             Err(e) => error!("Couldn't create your project: {e}"),
         };
+
+        if self.install {
+            info!("Installing dependencies with npm...");
+            let status = Command::new("npm")
+                .arg("install")
+                .current_dir(&self.project_name)
+                .status()
+                .map_err(|e| anyhow::anyhow!("failed to run npm install: {e}"))?;
+
+            if !status.success() {
+                anyhow::bail!("npm install failed in {}", self.project_name);
+            }
+        }
+
         Ok(())
     }
 }
