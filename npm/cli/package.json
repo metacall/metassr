@@ -1,0 +1,26 @@
+{
+  "name": "metassr",
+  "version": "1.0.0-alpha.1",
+  "description": "MetaSSR CLI: polyglot server-side rendering framework powered by MetaCall",
+  "license": "MIT",
+  "bin": {
+    "metassr": "bin/metassr.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "optionalDependencies": {
+    "@metassr/linux-x64-gnu": "1.0.0-alpha.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/metacall/metassr.git"
+  },
+  "homepage": "https://metacall.github.io/metassr",
+  "keywords": [
+    "metassr",
+    "metacall",
+    "ssr",
+    "polyglot"
+  ]
+}

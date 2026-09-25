@@ -1,0 +1,27 @@
+{
+  "name": "@metassr/linux-x64-gnu",
+  "version": "1.0.0-alpha.1",
+  "description": "MetaSSR runtime payload for linux x64 (glibc): metassr binary, MetaCall runtime, Node loader, and esbuild",
+  "license": "MIT",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "files": [
+    "bin/",
+    "lib/",
+    "node/",
+    "share/",
+    "vendor/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/metacall/metassr.git"
+  },
+  "homepage": "https://github.com/metacall/metassr"
+}
