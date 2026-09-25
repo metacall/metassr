@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use metassr_create::Creator as MetassrCreator;
-use std::{collections::HashMap, fmt::Display, process::Command, str::FromStr};
+use std::{collections::HashMap, fmt::Display, io::IsTerminal, process::Command, str::FromStr};
 use tracing::{error, info};
 
 use super::traits::Exec;
@@ -57,6 +57,17 @@ impl Creator {
                 .with_default("A web application built with MetaSSR framework")
                 .with_help_message("Enter a brief description of your application")
                 .prompt()?,
+        };
+
+        let install = if install {
+            true
+        } else if std::io::stdin().is_terminal() {
+            inquire::Select::new("Install dependencies with npm?", vec!["Yes", "No"])
+                .with_starting_cursor(0)
+                .prompt()?
+                == "Yes"
+        } else {
+            false
         };
 
         Ok(Self {
