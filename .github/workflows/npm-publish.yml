@@ -1,0 +1,97 @@
+name: Publish npm
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+  push:
+    tags:
+      - v[0-9]+.*
+  workflow_dispatch:
+
+env:
+  METACALL_IMAGE: ${{ vars.METACALL_IMAGE || 'metacall/core:0.9.24-runtime' }}
+  NODE_VERSION: 24.20.0
+  NODE_SONAME: libnode.so.137
+
+jobs:
+  publish:
+    name: Build payload and publish npm packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Pull MetaCall runtime image
+        run: |
+          if ! docker pull --platform linux/amd64 "${METACALL_IMAGE}"; then
+            echo "::error::cannot pull ${METACALL_IMAGE} for linux/amd64; set the METACALL_IMAGE repository variable to an amd64 mirror"
+            exit 1
+          fi
+
+      - name: Build metassr (Docker)
+        env:
+          METACALL_IMAGE: ${{ env.METACALL_IMAGE }}
+          METASSR_BIN: target/release/metassr
+        run: sh npm/scripts/build-metassr.sh
+
+      - name: Vendor esbuild
+        working-directory: crates/metassr-bundler/vendor
+        run: npm install --no-audit --no-fund
+
+      - name: Build libnode
+        env:
+          OUT: ${{ runner.temp }}/out/libnode
+          WORK: ${{ runner.temp }}/libnode-work
+          JOBS: 4
+          BASE_IMAGE: debian:bookworm-slim
+        run: sh npm/scripts/build-libnode.sh
+
+      - name: Assemble payload
+        env:
+          OUT: ${{ runner.temp }}/out
+          LIB_NODE: ${{ runner.temp }}/out/libnode/libnode.so
+          METASSR_BIN: target/release/metassr
+          VENDOR_BUNDLER: crates/metassr-bundler/vendor
+          VERSION: ${{ steps.version.outputs.value }}
+        run: sh npm/scripts/assemble-payload.sh
+
+      - name: Stage platform package
+        run: |
+          rm -rf npm/linux-x64-gnu/bin npm/linux-x64-gnu/lib npm/linux-x64-gnu/node npm/linux-x64-gnu/share npm/linux-x64-gnu/vendor
+          cp -a "${{ runner.temp }}/out/payload/linux-x64-gnu/." npm/linux-x64-gnu/
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish platform package
+        working-directory: npm/linux-x64-gnu
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
+
+      - name: Publish CLI package
+        working-directory: npm/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
+
+      - name: Upload runtime tarball to release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: ${{ runner.temp }}/out/*.tar.gz
