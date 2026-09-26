@@ -17,10 +17,14 @@ If the registry lookup fails, assume `node` and `typescript`.
 | --- | --- | --- | --- |
 | `node` | `.js` | `package.json` | shipped |
 | `typescript` | `.ts` | `package.json` | shipped |
-| `python` | `.py` | `requirements.txt` | reserved (not in the npm payload yet) |
+| `python` | `.py` | `requirements.txt` | shipped |
 | `ruby` | `.rb` | `Gemfile` | reserved |
 | `rust` | `.rs` | `Cargo.toml` | reserved |
 | `go` | `.go` | `go.mod` | reserved |
+
+Python routes run on the bundled Python 3.14 runtime; `requirements.txt`
+dependencies are installed into it (the container flow does this in the app
+image).
 
 ## Using a reserved loader
 

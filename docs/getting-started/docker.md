@@ -25,7 +25,7 @@ Think of it as a machine that already has MetaSSR installed, ready to serve your
 
 It is the same set of dependencies the [installation guide](./installation.md) asks you to install by hand, just baked into an image. It installs the published `metassr` package with `npm install -g metassr`, which bundles the MetaCall runtime, Node loader and esbuild (`@metassr/linux-x64-gnu`).
 
-The npm runtime payload ships MetaCall's Node and TypeScript loaders; Python is not included yet, so Python API routes don't run in containers for now.
+The npm runtime payload ships MetaCall's Node, TypeScript and Python loaders; Python API routes run on the bundled Python 3.14 runtime.
 
 It is **NOT**:
 
@@ -61,7 +61,7 @@ docker build --build-arg METASSR_VERSION=1.0.0-alpha.1 -f docker/app.Dockerfile 
 Two things to remember:
 
 - `metassr start` scans `src/api` to register API routes, so the runtime image needs that directory too.
-- JavaScript (and TypeScript) API routes work in containers; Python API routes are not supported yet because the npm runtime payload does not bundle MetaCall's Python loader.
+- JavaScript (and TypeScript) API routes work in containers; Python API routes run on the bundled Python 3.14 — list their packages in `requirements.txt` and the app image installs them.
 
 ## CI
 

@@ -20,10 +20,15 @@ routes in these languages run out of the box:
 | --- | --- | --- |
 | `node` | JavaScript | shipped |
 | `typescript` | TypeScript | shipped |
-| `python` | Python | reserved — not in the payload yet |
+| `python` | Python | shipped |
 | `ruby` | Ruby | reserved — not in the payload yet |
 | `rust` | Rust | reserved — not in the payload yet |
 | `go` | Go | reserved — not in the payload yet |
+
+Python API routes run on the bundled Python 3.14 runtime. Third-party
+packages are declared in a `requirements.txt` next to the app and installed
+with `pip install --target <python-site-packages> --python-version 3.14`
+(see the containers guide for the app image flow).
 
 Check the list programmatically:
 

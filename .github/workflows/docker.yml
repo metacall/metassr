@@ -71,14 +71,14 @@ jobs:
           done
           bash tests/web-app/tests/ssg.sh
 
-      # The npm runtime payload ships MetaCall's Node/TypeScript loaders only,
-      # so only the JavaScript route is exercised here.
+      # The sales-dashboard example exercises both the JavaScript and the
+      # Python routes; the example's own image installs requirements.txt.
       - name: Smoke test sales-dashboard
         run: |
           set -euo pipefail
           docker build \
             --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
-            -f docker/app.Dockerfile \
+            -f examples/sales-dashboard/Dockerfile \
             -t metassr-sales-dashboard \
             examples/sales-dashboard
           docker run -d --name sales-dashboard -p 8080:8080 metassr-sales-dashboard
@@ -91,3 +91,10 @@ jobs:
           done
           curl -fsS http://localhost:8080/ | grep -qi "Sales Dashboard"
           curl -fsS http://localhost:8080/api/stats | grep -q "Hello from JavaScript!"
+          # The Python route runs once the pinned metassr version carries the
+          # Python loader (published as 1.0.0-alpha.2); skip gracefully before.
+          if npm view "metassr@${{ env.METASSR_VERSION }}" loaders | grep -q python; then
+            curl -fsS http://localhost:8080/api/sales | grep -q "totalRevenue"
+          else
+            echo "skipping /api/sales: python loader not in metassr@${{ env.METASSR_VERSION }}"
+          fi

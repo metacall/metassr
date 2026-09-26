@@ -43,6 +43,19 @@ function libnodePath(payload) {
 	return path.join(dir, entry);
 }
 
+function libpythonPath(payload) {
+	const dir = path.join(payload, "lib");
+	const entry = fs
+		.readdirSync(dir)
+		.filter((name) => /^libpython3\.\d+\.so/.test(name))
+		.sort()
+		.pop();
+	if (!entry) {
+		fail(`runtime payload is incomplete: no libpython3.*.so in ${dir}`);
+	}
+	return path.join(dir, entry);
+}
+
 function writeConfigs(payload) {
 	const dir = path.join(os.homedir(), ".metassr", "runtime", "configurations");
 	fs.mkdirSync(dir, { recursive: true });
@@ -53,13 +66,30 @@ function writeConfigs(payload) {
 			{ name: "NODE_PATH", value: path.join(payload, "lib", "node_modules") }
 		]
 	};
+	const pythonPaths = [
+		path.join(payload, "lib", "python3.14", "site-packages"),
+		path.join(payload, "lib", "python3.14", "dist-packages")
+	];
+	const pyLoader = {
+		search_paths: [],
+		dependencies: { python: [libpythonPath(payload)] },
+		environment: [
+			{ name: "PYTHONHOME", value: payload },
+			{ name: "PYTHONPATH", value: pythonPaths.join(path.delimiter) }
+		]
+	};
 	const global = {
 		node_loader: path.join(dir, "node_loader.json"),
+		py_loader: path.join(dir, "py_loader.json"),
 		log_level: "Error"
 	};
 	fs.writeFileSync(
 		path.join(dir, "node_loader.json"),
 		JSON.stringify(nodeLoader, null, "\t")
+	);
+	fs.writeFileSync(
+		path.join(dir, "py_loader.json"),
+		JSON.stringify(pyLoader, null, "\t")
 	);
 	fs.writeFileSync(path.join(dir, "global.json"), JSON.stringify(global, null, "\t"));
 	return path.join(dir, "global.json");

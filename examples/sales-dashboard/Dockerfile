@@ -1,18 +1,16 @@
-# MetaSSR app image: builds a MetaSSR app and serves it.
+# Sales dashboard example image: a standalone MetaSSR app image for the
+# sales-dashboard example.
 #
-# The build context is the app directory, for example:
-#   docker build -f docker/app.Dockerfile -t my-app path/to/my-app
+# The build context is the example directory:
+#   docker build -f examples/sales-dashboard/Dockerfile -t sales-dashboard examples/sales-dashboard
 #
-# The image installs the published `metassr` CLI from npm (no base image, no
-# Rust build). It ships Node + npm and Python 3 (for installing the app's
-# requirements.txt into the bundled Python runtime).
+# It mirrors docker/app.Dockerfile. The example's Python API route (/api/sales)
+# needs numpy + pandas, declared in requirements.txt; the runtime stage installs
+# them into the bundled Python 3.14 runtime shipped in the metassr npm payload.
 #
 # BUILD_TYPE selects the build target and how the runtime serves it:
 #   ssr (default) -> `metassr build -t ssr` + `metassr start`
 #   ssg           -> `metassr build -t ssg` + `metassr start --serve`
-#
-# METASSR_VERSION pins the `metassr` npm package version. See
-# docs/getting-started/docker.md for details.
 
 ARG METASSR_VERSION=1.0.0-alpha.1
 ARG BUILD_TYPE=ssr

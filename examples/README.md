@@ -48,7 +48,7 @@ docker build -f docker/app.Dockerfile -t sales-dashboard examples/sales-dashboar
 docker run --rm -p 8080:8080 sales-dashboard
 ```
 
-Open `http://localhost:8080`. The JavaScript `/api/stats` route works in the container. The Python `/api/sales` route needs MetaCall's Python runtime, which the npm `metassr` payload does not bundle yet, so it only runs with a local install (`npm run dev`).
+Open `http://localhost:8080`. Both routes work in the container: `/api/stats` runs on MetaCall's Node runtime and `/api/sales` on the bundled Python 3.14 (numpy + pandas from `requirements.txt`).
 
 ### What it demonstrates
 
