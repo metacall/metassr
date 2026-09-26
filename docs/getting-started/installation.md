@@ -69,7 +69,7 @@ $ metassr create <project-name>
 
 ## Containers
 
-Instead of installing MetaCall, Node and the CLI by hand, you can use the MetaSSR base image, which already has them. It is the same installation, packaged. See the [containers guide](./docker.md) for the base image and the app image pattern.
+Instead of installing Node and the CLI by hand, you can package your app with the MetaSSR app image, which already has them. See the [containers guide](./docker.md) for how to build an app image.
 
 ## Deployment
 
