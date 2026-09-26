@@ -8,11 +8,6 @@ on:
       - "docker/**"
       - ".github/workflows/docker.yml"
       - ".dockerignore"
-      - "rust-toolchain.toml"
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - "crates/**"
-      - "metassr-cli/**"
       - "tests/web-app/**"
       - "examples/sales-dashboard/**"
   workflow_dispatch:
@@ -20,9 +15,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
-env:
-  BASE_IMAGE: metacall/metassr:1.0.0-alpha
 
 jobs:
   docker:
@@ -34,35 +26,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # The base image is the expensive build. It is cached with mode=max so the
-      # cargo-chef cook layer (compiled dependencies) survives across runs.
-      - name: Build base image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/base.Dockerfile
-          platforms: linux/amd64
-          tags: ${{ env.BASE_IMAGE }}
-          load: true
-          cache-from: type=gha,scope=base
-          cache-to: type=gha,mode=max,scope=base
-
-      # The GHA cache has been exported already; drop the local build cache to
-      # reclaim disk before building the (large) app images.
-      - name: Prune local Buildx cache
-        run: docker buildx prune --all --force
-
-      # App images are built with the default builder so they can use the base
-      # image that was just loaded into the local Docker image store.
+      # The app image installs the published `metassr` CLI from npm; pin it to
+      # the version being released from this repository.
+      - name: Compute metassr version
+        run: echo "METASSR_VERSION=$(node -p \"require('./npm/cli/package.json').version\")" >> "$GITHUB_ENV"
 
       - name: Smoke test web-app (SSR)
         run: |
           set -euo pipefail
-          docker buildx build --builder default \
+          docker build \
             --build-arg BUILD_TYPE=ssr \
+            --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
             -f docker/app.Dockerfile \
             -t metassr-web-app-ssr \
             tests/web-app
@@ -79,8 +53,9 @@ jobs:
       - name: Smoke test web-app (SSG)
         run: |
           set -euo pipefail
-          docker buildx build --builder default \
+          docker build \
             --build-arg BUILD_TYPE=ssg \
+            --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
             -f docker/app.Dockerfile \
             -t metassr-web-app-ssg \
             tests/web-app
@@ -96,10 +71,13 @@ jobs:
           done
           bash tests/web-app/tests/ssg.sh
 
-      - name: Smoke test sales-dashboard (polyglot)
+      # The npm runtime payload ships MetaCall's Node/TypeScript loaders only,
+      # so only the JavaScript route is exercised here.
+      - name: Smoke test sales-dashboard
         run: |
           set -euo pipefail
-          docker buildx build --builder default \
+          docker build \
+            --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
             -f docker/app.Dockerfile \
             -t metassr-sales-dashboard \
             examples/sales-dashboard
@@ -113,4 +91,3 @@ jobs:
           done
           curl -fsS http://localhost:8080/ | grep -qi "Sales Dashboard"
           curl -fsS http://localhost:8080/api/stats | grep -q "Hello from JavaScript!"
-          curl -fsS http://localhost:8080/api/sales | grep -q "totalRevenue"
