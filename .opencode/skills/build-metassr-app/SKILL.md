@@ -19,7 +19,7 @@ Ask, in order, stopping as soon as the picture is clear:
 2. **The idea** — what the app is: main pages and features (e.g. "a dashboard with cards, a chart page, and a settings page").
 3. Only if still ambiguous: **SSR vs SSG** — SSR (default) for dynamic/API-driven apps, SSG for mostly static content.
 
-Do not front-load questions about styling, dependencies, or architecture. React is built in; add CSS, components, or small libraries only when the idea requires them.
+Do not front-load questions about styling, dependencies, or architecture. The app gets the MetaSSR design system (`reference/design.md`) unless the user explicitly asks for a different look; React is built in; add CSS, components, or small libraries only when the idea requires them.
 
 ## Loaders (languages for API routes)
 
@@ -38,12 +38,14 @@ Do not front-load questions about styling, dependencies, or architecture. React 
    - `src/_app.tsx` (app shell), `src/_head.tsx` (document `<head>`), `src/layout/` (shared layouts), `src/components/`, `src/styles/`.
    - `static/` — assets served at `/static/...`.
    - `metassr.toml` — project config (see `reference/structure.md`).
+   - **Style it with the MetaSSR design system**: replace the scaffolded `src/styles/global.css` with the stylesheet in `reference/global.css` and build pages/components against `reference/design.md` (tokens, layout rules, pattern classes). Only deviate if the user explicitly asked for a different look.
 4. **Build** — `metassr build -t ssr` (or `-t ssg`). Fix errors until it builds.
 5. **Run & verify** — `metassr start` (SSR, port 8080) or `metassr start --serve` (SSG), then run the smoke checks in `reference/verify.md`.
 6. **Iterate** — start `metassr dev` (dev server on :3000 with live reload), apply the user's edit requests, and re-verify.
 
 ## Rules
 
+- Enforce the MetaSSR design system (`reference/design.md`) by default. If the user explicitly states a different look (dark mode, own brand colors, "like X"), follow the user's request instead.
 - Commit one logical step at a time when working in a git repo (scaffold first, then app code).
 - Never commit `node_modules/`, `dist/`, or `target/`.
 - If the user picks a loader marked `reserved` in `npm view metassr loaders`, tell them it isn't shipped yet; offer to structure the route so the dependency can be added when it ships.
