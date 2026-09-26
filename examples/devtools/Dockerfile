@@ -14,7 +14,7 @@
 #   ssr (default) -> `metassr build -t ssr` + `metassr start`
 #   ssg           -> `metassr build -t ssg` + `metassr start --serve`
 
-ARG METASSR_VERSION=1.0.0-alpha.1
+ARG METASSR_VERSION=1.0.0-alpha.2
 ARG BUILD_TYPE=ssr
 
 FROM node:22-trixie-slim AS build
