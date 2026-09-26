@@ -37,7 +37,7 @@ jobs:
       # The site image installs the published `metassr` CLI from npm; pin it to
       # the version being released from this repository.
       - name: Compute metassr version
-        run: echo "METASSR_VERSION=$(node -p \"require('./npm/cli/package.json').version\")" >> "$GITHUB_ENV"
+        run: echo "METASSR_VERSION=$(jq -r .version npm/cli/package.json)" >> "$GITHUB_ENV"
 
       - name: Build site image (SSG)
         run: |
