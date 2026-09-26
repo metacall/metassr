@@ -92,9 +92,15 @@ Ask the user before **each** of these steps:
 3. Create a branch `examples/<name>`.
 4. Copy the example in; never commit `node_modules/`, `dist/`, or `target/`.
 5. Re-verify locally (build + container smoke test).
-6. Open the PR: `gh pr create --base master` with a title like
-   `example: <name>` and a short description (match the style of existing
-   PRs in this repo).
+6. Open the PR: `gh pr create --base master --template example` with a
+   title like `example: <name>`. The template lives at
+   `.github/PULL_REQUEST_TEMPLATE/example.md` — it is opt-in (folder form,
+   selected via the `template` query parameter), so it never auto-applies to
+   other PRs in the repo.
+7. The PR description is the contributor's **own words** — the project idea
+   comes from the user, not AI boilerplate. This is a community gallery;
+   never ghost-write a clanker description. Ask the user to explain their
+   project and keep their voice in the PR.
 
 ## Constraints
 
