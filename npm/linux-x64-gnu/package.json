@@ -12,6 +12,10 @@
   "libc": [
     "glibc"
   ],
+  "loaders": [
+    "node",
+    "typescript"
+  ],
   "files": [
     "bin/",
     "lib/",

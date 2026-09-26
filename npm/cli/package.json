@@ -12,6 +12,10 @@
   "optionalDependencies": {
     "@metassr/linux-x64-gnu": "1.0.0-alpha.1"
   },
+  "loaders": [
+    "node",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/metacall/metassr.git"
