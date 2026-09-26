@@ -1,21 +1,28 @@
-# MetaSSR app image: builds a MetaSSR app and serves it with the base image.
+# MetaSSR app image: builds a MetaSSR app and serves it.
 #
 # The build context is the app directory, for example:
 #   docker build -f docker/app.Dockerfile -t my-app path/to/my-app
 #
-# The base image is built from docker/base.Dockerfile.
-# See docs/getting-started/docker.md for details.
+# The image installs the published `metassr` CLI from npm (no base image, no
+# Rust build). It ships Node + npm. The npm runtime payload bundles MetaCall's
+# Node and TypeScript loaders; Python is not included yet.
 #
 # BUILD_TYPE selects the build target and how the runtime serves it:
 #   ssr (default) -> `metassr build -t ssr` + `metassr start`
 #   ssg           -> `metassr build -t ssg` + `metassr start --serve`
+#
+# METASSR_VERSION pins the `metassr` npm package version. See
+# docs/getting-started/docker.md for details.
 
-ARG BASE_IMAGE=metacall/metassr:1.0.0-alpha
+ARG METASSR_VERSION=1.0.0-alpha.1
 ARG BUILD_TYPE=ssr
 
-FROM ${BASE_IMAGE} AS build
+FROM node:22-trixie-slim AS build
 
 ARG BUILD_TYPE
+ARG METASSR_VERSION
+
+RUN npm install -g "metassr@${METASSR_VERSION}"
 
 WORKDIR /app
 
@@ -25,38 +32,30 @@ RUN npm install
 COPY . .
 RUN metassr build -t "${BUILD_TYPE}"
 
-# Collect only what the runtime needs. `static/`, `src/api` and `requirements.txt`
-# are optional, so guard each one.
+# Collect only what the runtime needs. `static/` and `src/api` are optional,
+# so guard each one.
 RUN mkdir -p /out \
 	&& cp -r dist /out/ \
 	&& if [ -d src/api ]; then mkdir -p /out/src && cp -r src/api /out/src/; fi \
 	&& if [ -f metassr.toml ]; then cp metassr.toml /out/; fi \
-	&& if [ -d static ]; then cp -r static /out/; fi \
-	&& if [ -f requirements.txt ]; then cp requirements.txt /out/; else : > /out/requirements.txt; fi
+	&& if [ -d static ]; then cp -r static /out/; fi
 
-FROM ${BASE_IMAGE} AS runtime
+FROM node:22-trixie-slim AS runtime
 
 ARG BUILD_TYPE
+ARG METASSR_VERSION
 ENV METASSR_BUILD_TYPE=${BUILD_TYPE}
 
-WORKDIR /app
+RUN npm install -g "metassr@${METASSR_VERSION}"
 
-# Install Python dependencies for polyglot API routes, if any.
-COPY --from=build /out/requirements.txt /tmp/requirements.txt
-RUN if [ -s /tmp/requirements.txt ]; then \
-		apt-get update \
-		&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip \
-		&& python3 -m pip install --break-system-packages --no-cache-dir -r /tmp/requirements.txt \
-		&& rm -rf /var/lib/apt/lists/* /tmp/requirements.txt; \
-	fi
+WORKDIR /app
 
 COPY --from=build /out/ ./
 
 EXPOSE 8080
 
-# The base image entrypoint is `metassr`; replace it with a tiny launcher so SSG
-# builds serve the pre-rendered files (`metassr start --serve`) while SSR builds
-# run the renderer (`metassr start`).
+# Launcher: SSG builds serve the pre-rendered files (`metassr start --serve`)
+# while SSR builds run the renderer (`metassr start`).
 RUN printf '%s\n' \
 	'#!/bin/sh' \
 	'set -e' \
