@@ -62,7 +62,7 @@ WORKDIR /app
 # installs cp314 wheels straight into the payload's site-packages.
 COPY --from=build /out/requirements.txt /tmp/requirements.txt
 RUN if [ -s /tmp/requirements.txt ]; then \
-		PAYLOAD="$(NODE_PATH="$(npm root -g)" node -e "process.stdout.write(require('path').dirname(require('@metassr/linux-x64-gnu/package.json')))")" \
+		PAYLOAD="$(dirname "$(find "$(npm root -g)" -path "*/@metassr/linux-x64-gnu/package.json" | head -1)")" \
 		&& python3 -m pip install --break-system-packages --no-cache-dir \
 			--target "$PAYLOAD/lib/python3.14/site-packages" \
 			--python-version 3.14 --implementation cp --only-binary=:all: \
