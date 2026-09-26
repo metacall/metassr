@@ -5,7 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 on:
@@ -13,6 +13,11 @@ on:
     tags:
       - v[0-9]+.*
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build and publish (e.g. 1.0.0-alpha.2). Defaults to the pushed tag."
+        required: false
+        type: string
 
 env:
   METACALL_IMAGE: ${{ vars.METACALL_IMAGE || 'metacall/core:0.9.24-runtime' }}
@@ -23,6 +28,9 @@ jobs:
   publish:
     name: Build payload and publish npm packages
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,7 +39,10 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        env:
+          REF_VERSION: ${GITHUB_REF_NAME#v}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: echo "value=${INPUT_VERSION:-$REF_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Pull MetaCall runtime image
         run: |
@@ -82,13 +93,23 @@ jobs:
         working-directory: npm/linux-x64-gnu
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public --provenance
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN not set; skipping publish"
+          else
+            npm publish --access public --provenance
+          fi
 
       - name: Publish CLI package
         working-directory: npm/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public --provenance
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN not set; skipping publish"
+          else
+            npm publish --access public --provenance
+          fi
 
       - name: Upload runtime tarball to release
         uses: softprops/action-gh-release@v2
