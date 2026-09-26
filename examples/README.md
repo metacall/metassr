@@ -57,3 +57,41 @@ Open `http://localhost:8080`. Both routes work in the container: `/api/stats` ru
 | `GET/POST /api/sales` | **Python** | Sales analytics (numpy + pandas) loaded via MetaCall's Python runtime |
 | `GET/POST /api/stats` | **JavaScript** | Stats endpoint loaded via MetaCall's Node.js runtime |
 | `/` | React + TS | Frontend that fetches from both API routes and renders the data |
+
+## data-dashboard
+
+A data-analysis dashboard that puts both backend runtimes to work: NumPy
+computes the analytics in Python, and Node renders the Open Graph image
+server-side — a 1200×630 PNG drawn pixel by pixel with a pure-JS encoder (no
+image library, no external service).
+
+### Start the example
+
+```sh
+cd examples/data-dashboard
+npm install
+npm run dev
+```
+
+The dev server starts at `http://localhost:3000` and includes live reload.
+
+### Run with Docker
+
+Build the app image (it installs the `metassr` CLI from npm):
+
+```sh
+docker build -f examples/data-dashboard/Dockerfile -t data-dashboard examples/data-dashboard
+docker run --rm -p 8080:8080 data-dashboard
+```
+
+Open `http://localhost:8080`. Both routes work in the container: `/api/og`
+runs on MetaCall's Node runtime and `/api/analysis` on the bundled Python
+3.14 (numpy from `requirements.txt`).
+
+### What it demonstrates
+
+| Route | Language | Description |
+|---|---|---|
+| `GET /api/analysis` | **Python** | Deterministic sample dataset analyzed with NumPy (KPIs, monthly/category/region series, product ranking) |
+| `GET /api/og` | **JavaScript** | Renders a 1200×630 Open Graph PNG in pure Node — zlib PNG encoder + 5×7 bitmap font, `?page=` selects the card |
+| `/` | React + TS | Dashboard fetching from both backends, with a live OG-image preview card |
