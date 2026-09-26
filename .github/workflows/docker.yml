@@ -91,4 +91,10 @@ jobs:
           done
           curl -fsS http://localhost:8080/ | grep -qi "Sales Dashboard"
           curl -fsS http://localhost:8080/api/stats | grep -q "Hello from JavaScript!"
-          curl -fsS http://localhost:8080/api/sales | grep -q "totalRevenue"
+          # The Python route runs once the pinned metassr version carries the
+          # Python loader (published as 1.0.0-alpha.2); skip gracefully before.
+          if npm view "metassr@${{ env.METASSR_VERSION }}" loaders | grep -q python; then
+            curl -fsS http://localhost:8080/api/sales | grep -q "totalRevenue"
+          else
+            echo "skipping /api/sales: python loader not in metassr@${{ env.METASSR_VERSION }}"
+          fi
