@@ -128,6 +128,9 @@ Creates a new MetaSSR project. This command scaffolds a project directory with t
   - `typescript`
   > Explore [templates](../../crates/metassr-create/templates/) directory for more details
 
+- **`-i`, `--install`**  
+  Run `npm install` in the new project directory after scaffolding. When this flag is omitted and the terminal is interactive, `create` asks whether to install the dependencies (default: Yes). Non-interactive runs without the flag skip the prompt and do not install.
+
 **Usage:**
 
 ```bash
@@ -137,7 +140,7 @@ metassr create <project_name> [OPTIONS]
 **Example:**
 
 ```bash
-metassr create my-app --version 1.0.1 --description "My first MetaSSR app" --template typescript
+metassr create my-app --version 1.0.1 --description "My first MetaSSR app" --template typescript --install
 ```
 
 ---
