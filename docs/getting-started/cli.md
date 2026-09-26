@@ -131,6 +131,11 @@ Creates a new MetaSSR project. This command scaffolds a project directory with t
 - **`-i`, `--install`**  
   Run `npm install` in the new project directory after scaffolding. When this flag is omitted and the terminal is interactive, `create` asks whether to install the dependencies (default: Yes). Non-interactive runs without the flag skip the prompt and do not install.
 
+- **`-y`, `--yes`**  
+  Accept defaults for anything not provided and never prompt. Useful for scripts and agents.
+
+**Non-interactive behaviour:** when `stdin` is not a terminal (e.g. run from a script or an agent), unanswered questions fall back to defaults instead of erroring: template `javascript`, version `1.0.0`, description `A web application built with MetaSSR framework`, no install unless `--install` is given. The project name is always required.
+
 **Usage:**
 
 ```bash

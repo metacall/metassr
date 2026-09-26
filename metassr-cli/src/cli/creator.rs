@@ -24,44 +24,56 @@ impl Creator {
         description: Option<String>,
         template: Option<Template>,
         install: bool,
+        yes: bool,
     ) -> anyhow::Result<Self> {
+        // Prompts require an interactive terminal. In scripts and agent shells
+        // stdin is not a TTY, so fall back to defaults instead of dying on an
+        // unanswered prompt; `-y/--yes` forces the same behaviour in a TTY.
+        let interactive = std::io::stdin().is_terminal() && !yes;
+
         let project_name = match project_name {
             Some(name) => name,
-            None => inquire::Text::new("Project name:")
+            None if interactive => inquire::Text::new("Project name:")
                 .with_help_message("Enter the name of your new project")
                 .prompt()?,
+            None => anyhow::bail!(
+                "project name is required when not running interactively (pass it as an argument)"
+            ),
         };
 
         let template = match template {
             Some(template) => template,
-            None => {
+            None if interactive => {
                 let options = vec![Template::Javascript, Template::Typescript];
                 inquire::Select::new("Template:", options)
                     .with_help_message("Choose a template for your new project")
                     .with_starting_cursor(0)
                     .prompt()?
             }
+            None => Template::Javascript,
         };
 
         let version = match version {
             Some(version) => version,
-            None => inquire::Text::new("Version:")
+            None if interactive => inquire::Text::new("Version:")
                 .with_help_message("Enter the version of your application")
                 .with_default("1.0.0")
                 .prompt()?,
+            None => "1.0.0".to_string(),
         };
 
         let description = match description {
             Some(desc) => desc,
-            None => inquire::Text::new("Description:")
+            None if interactive => inquire::Text::new("Description:")
                 .with_default("A web application built with MetaSSR framework")
                 .with_help_message("Enter a brief description of your application")
                 .prompt()?,
+            None => "A web application built with MetaSSR framework".to_string(),
         };
 
         let install = if install {
             true
-        } else if std::io::stdin().is_terminal() {
+        } else if interactive {
             inquire::Select::new("Install dependencies with npm?", vec!["Yes", "No"])
                 .with_starting_cursor(0)
                 .prompt()?
@@ -166,5 +178,39 @@ mod tests {
     fn as_str_round_trips() {
         assert_eq!(Template::Javascript.as_str(), "javascript");
         assert_eq!(Template::Typescript.as_str(), "typescript");
+    }
+
+    #[test]
+    fn non_interactive_uses_defaults() {
+        let creator = Creator::new(Some("my-app".into()), None, None, None, false, true).unwrap();
+        assert_eq!(creator.version, "1.0.0");
+        assert_eq!(
+            creator.description,
+            "A web application built with MetaSSR framework"
+        );
+        assert_eq!(creator.template, Template::Javascript);
+        assert!(!creator.install);
+    }
+
+    #[test]
+    fn non_interactive_requires_name() {
+        assert!(Creator::new(None, None, None, None, false, true).is_err());
+    }
+
+    #[test]
+    fn explicit_flags_win_over_defaults() {
+        let creator = Creator::new(
+            Some("my-app".into()),
+            Some("2.0.0".into()),
+            Some("custom".into()),
+            Some(Template::Typescript),
+            true,
+            true,
+        )
+        .unwrap();
+        assert_eq!(creator.version, "2.0.0");
+        assert_eq!(creator.description, "custom");
+        assert_eq!(creator.template, Template::Typescript);
+        assert!(creator.install);
     }
 }
