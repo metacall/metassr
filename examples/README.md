@@ -2,6 +2,23 @@
 
 Example projects built with MetaSSR.
 
+## Contribute an example (agent-assisted)
+
+Tell an agent (opencode, Claude Code, Codex) to "build me an app" and, when
+it's running and you like it, ask to share it with the community. The agent
+follows `AGENTS.md` (and the `build-metassr-app` skill) to:
+
+- scaffold the app into `examples/<name>/`;
+- give it its own `Dockerfile` with the dependencies its loaders need;
+- run and smoke-test it in the container;
+- fork the repo and open a PR (`example: <name>`), with your confirmation at
+  every step.
+
+Each example is a standalone app: standard layout (`src/pages`, `src/api`,
+`src/_app.tsx`, `src/_head.tsx`, `static/`, `metassr.toml`, `package.json`),
+its own image, and a README of its own when it demonstrates something worth
+explaining.
+
 ## sales-dashboard
 
 A polyglot fullstack app demonstrating MetaSSR's API handler with Python and JavaScript backend routes and a React frontend.
