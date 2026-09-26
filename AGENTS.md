@@ -54,18 +54,18 @@ Each loader brings its own dependency file and runtime for the app image:
 | --- | --- | --- | --- | --- |
 | `node` | `.js` | `package.json` | nothing extra | shipped |
 | `typescript` | `.ts` | `package.json` | nothing extra | shipped |
-| `python` | `.py` | `requirements.txt` | `python3` + `python3-pip`; `pip install -r requirements.txt` | reserved |
+| `python` | `.py` | `requirements.txt` | the generic app image installs it into the bundled Python 3.14 | shipped |
 | `ruby` | `.rb` | `Gemfile` | ruby; `bundle install` | reserved |
 | `rust` | `.rs` | `Cargo.toml` | rust toolchain; `cargo build` | reserved |
 | `go` | `.go` | `go.mod` | golang; `go build` | reserved |
 
-- **Shipped** loaders (currently `node`, `typescript`) run in the npm payload
-  and in the generic app image as-is.
+- **Shipped** loaders (currently `node`, `typescript`, `python`) run in the
+  npm payload and in the generic app image as-is.
 - **Reserved** loaders are not in the npm payload yet: their routes will not
   run in containers until the loader ships. Say so, and keep the dependency
   wiring in place so the example works the moment it does.
 
-The runtime payload currently ships only the Node and TypeScript loaders —
+The runtime payload currently ships the Node, TypeScript and Python loaders —
 confirm with `npm view metassr loaders`.
 
 ## Example app image
