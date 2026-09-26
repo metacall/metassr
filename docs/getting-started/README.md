@@ -27,7 +27,7 @@ You can find the installation guide [here](installation.md).
 
 ## Containers
 
-If you would rather not install MetaCall, Node and the CLI by hand, you can use the MetaSSR base image, which already has them. The `docker.md` file explains what the base image is and how to build an app image from it.
+If you would rather not install Node and the CLI by hand, you can package your app with the MetaSSR app image, which already has them. The `docker.md` file explains how to build an app image from your app.
 
 You can read the containers guide [here](docker.md).
 

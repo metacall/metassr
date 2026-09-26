@@ -1,67 +1,47 @@
 # Containers
 
-MetaSSR can run in a container, so you don't have to install MetaCall, Node and the CLI by hand on every machine.
+MetaSSR can run in a container, so you don't have to install Node and the CLI by hand on every machine.
 
-> **Status:** the base image and the app image are available for linux/amd64.
+> **Status:** the app image is available for linux/amd64.
 
-## The images
+## The image
 
-There are two kinds of images:
+There is one kind of image:
 
-- **Base image** — a MetaSSR installation, packaged. MetaCall, Node + npm, and the `metassr` CLI. No app, no source.
-- **App image** — your built app on top of the base image.
+- **App image** — your built app, packaged with Node + npm and the `metassr` CLI (installed from npm). No source, no Rust toolchain.
 
 People building MetaSSR itself use `Dockerfile.dev` instead.
 
-## What the base image is
+## What the app image is
 
-Think of it as a machine that already has MetaSSR installed:
+Think of it as a machine that already has MetaSSR installed, ready to serve your app:
 
 | | |
 | --- | --- |
 | Base OS | Debian 13 (trixie) |
-| MetaCall | 0.9.24 |
-| Node / npm | v20 / 9.x |
-| MetaSSR CLI | `metassr` on `PATH` |
+| Node / npm | v22 |
+| MetaSSR CLI | `metassr` from npm, on `PATH` |
 | Working dir | `/app` |
-| Entrypoint | `metassr` |
 
-It is the same set of dependencies the [installation guide](./installation.md) asks you to install by hand, just baked into an image.
+It is the same set of dependencies the [installation guide](./installation.md) asks you to install by hand, just baked into an image. It installs the published `metassr` package with `npm install -g metassr`, which bundles the MetaCall runtime, Node loader and esbuild (`@metassr/linux-x64-gnu`).
+
+The npm runtime payload ships MetaCall's Node and TypeScript loaders; Python is not included yet, so Python API routes don't run in containers for now.
 
 It is **NOT**:
 
 - an installer — it doesn't put `metassr` on your host;
-- an app image — it has no `dist/`, `src/api` or `metassr.toml`;
 - an image for building & developing MetaSSR itself (that's `Dockerfile.dev`).
 
-## Using the base image
+## Building your app image
 
-Run the CLI:
-
-```sh
-docker run --rm metacall/metassr:1.0.0-alpha --version
-```
-
-Build an app without installing anything on your host:
-
-```sh
-docker run --rm -v "$PWD":/app -w /app --entrypoint sh \
-  metacall/metassr:1.0.0-alpha \
-  -c "npm install && metassr build -t ssr"
-```
-
-The entrypoint is `metassr`, so use `--entrypoint sh` when you want a shell.
-
-## Building your own app image
-
-An app image is a two-stage build, and one generic Dockerfile covers it: `docker/app.Dockerfile`. The build context is your app directory.
+One generic Dockerfile covers any app: `docker/app.Dockerfile`. The build context is your app directory.
 
 ```sh
 docker build -f docker/app.Dockerfile -t my-app path/to/my-app
 docker run --rm -p 8080:8080 my-app
 ```
 
-The build stage runs `npm install` and `metassr build`. The runtime stage copies `dist/`, `src/api` and `metassr.toml` (plus `static/` if you have it) into a fresh base image.
+The build stage installs the app's npm dependencies and runs `metassr build`. The runtime stage copies `dist/`, `src/api` and `metassr.toml` (plus `static/` if you have it) into a fresh image.
 
 `BUILD_TYPE` selects the build target and how the runtime serves it:
 
@@ -72,30 +52,21 @@ The build stage runs `npm install` and `metassr build`. The runtime stage copies
 docker build --build-arg BUILD_TYPE=ssg -f docker/app.Dockerfile -t my-app-ssg path/to/my-app
 ```
 
-`BASE_IMAGE` overrides the base image tag if you are not using the default
-`metacall/metassr:1.0.0-alpha`.
+`METASSR_VERSION` pins the `metassr` npm package version. It defaults to a published release; pass it explicitly for reproducible builds:
+
+```sh
+docker build --build-arg METASSR_VERSION=1.0.0-alpha.1 -f docker/app.Dockerfile -t my-app path/to/my-app
+```
 
 Two things to remember:
 
 - `metassr start` scans `src/api` to register API routes, so the runtime image needs that directory too.
-- Python API routes bring their own packages. List them in `requirements.txt` and the app image installs them; the base image keeps Python bare on purpose.
-
-## Building the base image
-
-The base image is built locally; nothing is pushed to a registry:
-
-```sh
-docker build --platform linux/amd64 -f docker/base.Dockerfile -t metacall/metassr:1.0.0-alpha .
-```
+- JavaScript (and TypeScript) API routes work in containers; Python API routes are not supported yet because the npm runtime payload does not bundle MetaCall's Python loader.
 
 ## CI
 
-The [`Docker` workflow](../../.github/workflows/docker.yml) builds the base image, then builds and smoke-tests the SSR app image, the SSG app image and the `sales-dashboard` polyglot example.
-
-The base image build uses [`cargo-chef`](https://github.com/LukeMathWalker/cargo-chef) so dependencies are compiled in their own layer. CI caches that layer with the GitHub Actions cache backend (`mode=max`), which means a source-only change does not recompile every dependency.
+The [`Docker` workflow](../../.github/workflows/docker.yml) builds and smoke-tests the SSR app image, the SSG app image and the `sales-dashboard` example. The [`Deploy Site` workflow](../../.github/workflows/pages.yml) builds the SSG output for this site's landing page. Both pin `METASSR_VERSION` to the version in `npm/cli/package.json`.
 
 ## Notes
 
-- **Architecture:** linux/amd64 only for now; linux/arm64 is tracked in [#193](https://github.com/metacall/metassr/issues/193).
-- **Size:** large (~2.8 GB) because it bundles the MetaCall runtime.
-- **Temporary:** the image currently compiles `metassr` from source in a builder stage. Once release binaries exist it will just download one ([#193](https://github.com/metacall/metassr/issues/193)).
+- **Architecture:** linux/amd64 only for now because the npm runtime payload is linux-x64 (glibc); linux/arm64 is tracked in [#193](https://github.com/metacall/metassr/issues/193).

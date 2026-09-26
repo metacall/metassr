@@ -60,7 +60,7 @@ npm run serve          # serves the pre-rendered site on :8080
 
 ## Deployment
 
-CI builds the SSG output inside the MetaSSR Docker base image, then runs
+CI builds the SSG output inside the MetaSSR Docker app image, then runs
 `scripts/export-pages.mjs` to turn `dist/` into a GitHub Pages-ready `_site/`:
 
 - flattens `dist/pages/<route>/index.html` to `_site/<route>/index.html`;
