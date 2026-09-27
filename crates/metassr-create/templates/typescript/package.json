@@ -4,6 +4,7 @@
   "description": "%DESC%",
   "scripts": {
     "build": "metassr build",
+    "dev": "metassr dev",
     "start": "metassr start"
   },
   "devDependencies": {},
