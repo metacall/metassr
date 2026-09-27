@@ -1,0 +1,85 @@
+# git-cliff ~ configuration file
+# https://git-cliff.org/docs/configuration
+#
+# Usage:
+#   git-cliff -o CHANGELOG.md          # regenerate the full changelog
+#   git-cliff --unreleased -c          # preview the unreleased section
+#
+# Release structure: an [unreleased] (pre-release) section followed by one
+# section per git tag (v1.0.0-alpha.1, v1.0.0-alpha.2, ...).
+
+[changelog]
+# A Tera template rendered for each release in the changelog.
+# See https://keats.github.io/tera/docs/#introduction
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## [unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
+            {% if commit.breaking %}[**breaking**] {% endif %}\
+            {{ commit.message | upper_first }}\
+    {% endfor %}
+{% endfor %}
+"""
+# Remove leading and trailing whitespaces from the changelog's body.
+trim = true
+# Render body even when there are no releases to process.
+render_always = true
+# Output file path.
+output = "CHANGELOG.md"
+
+[git]
+# Parse commits according to the conventional commits specification.
+# See https://www.conventionalcommits.org
+conventional_commits = true
+# Exclude commits that do not match the conventional commits specification.
+filter_unconventional = false
+# Require all commits to be conventional.
+require_conventional = false
+# Split commits on newlines, treating each line as an individual commit.
+split_commits = false
+# An array of regex based parsers to modify commit messages prior to further processing.
+commit_preprocessors = []
+# Prevent commits that are breaking from being excluded by commit parsers.
+protect_breaking_commits = false
+# Only consider tags matching this pattern (e.g. v1.0.0-alpha.1).
+tag_pattern = "v[0-9]+(\\.[0-9]+)*(-[0-9A-Za-z.-]+)?"
+# A regex to extract the version out of the tag.
+version_parser = "v?(?P<version>[0-9]+(\\.[0-9]+)*(-[0-9A-Za-z.-]+)?)"
+# An array of regex based parsers for extracting data from the commit message.
+# Assigns commits to groups, optionally setting the commit's scope.
+commit_parsers = [
+  { message = "^feat", group = "<!-- 00 -->🚀 Features" },
+  { message = "^fix", group = "<!-- 01 -->🪲 Bug Fixes" },
+  { message = "^perf", group = "<!-- 02 -->⚡ Performance" },
+  { message = "^refactor", group = "<!-- 03 -->🔨 Refactor" },
+  { message = "^docs?\\(", group = "<!-- 04 -->📚 Documentation" },
+  { message = "^docs?[!: ]", group = "<!-- 04 -->📚 Documentation" },
+  { message = "^test", group = "<!-- 05 -->🧪 Testing" },
+  { message = "^ci", group = "<!-- 06 -->🔁 CI" },
+  { message = "^build|^bump", group = "<!-- 07 -->🏗️ Builds" },
+  { message = "^chore\\(deps", group = "<!-- 50 -->Ignored" },
+  { message = "^chore", group = "<!-- 08 -->🧹 Chores" },
+  { message = "^revert", group = "<!-- 09 -->◀️ Revert" },
+  { message = ".*", group = "<!-- 10 -->💼 Other" },
+]
+# Exclude commits that are not matched by any commit parser.
+filter_commits = false
+# An array of link parsers for extracting external references and turning them into URLs.
+link_parsers = []
+# Include only the tags that belong to the current branch.
+use_branch_tags = false
+# Order releases topologically instead of chronologically.
+topo_order = false
+# Order commits topologically instead of chronologically.
+topo_order_commits = true
+# Order of commits in each group/release within the changelog.
+# Allowed values: newest, oldest
+sort_commits = "oldest"
+# Process submodules commits.
+recurse_submodules = false

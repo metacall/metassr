@@ -57,6 +57,7 @@
             nodejs_22
             # dev tools
             git curl
+            git-cliff
             less
           ];
 

@@ -180,7 +180,25 @@ also, you can test one of web applications that located at [tests](../../tests/)
 cargo run --bin metassr -- --root=tests/web-app --debug-mode=all start
 ```
 
-### 7. Code of Conduct
+### 7. Changelog
+
+The changelog is generated with [git-cliff](https://git-cliff.org) from the commit history, so
+[conventional commit messages](#5-commit-message-conventions) are required — they drive the
+feature/bugfix/refactor grouping.
+
+- The config lives in `.git-cliff.toml`.
+- Regenerate `CHANGELOG.md` with:
+
+  ```bash
+  ./scripts/changelog.sh          # writes CHANGELOG.md
+  ./scripts/changelog.sh --preview  # print to stdout without writing
+  ```
+
+- Run it before tagging a release so the release section exists in `CHANGELOG.md` — the release
+  workflows (`npm-publish.yml`, `release.yml`) extract the release notes for the GitHub release
+  from it.
+
+### 8. Code of Conduct
 
 Please adhere to our [Code of Conduct](code-of-conduct.md) while participating in the MetaSSR community.
 
