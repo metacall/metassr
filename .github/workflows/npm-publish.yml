@@ -45,6 +45,17 @@ jobs:
           REF_VERSION="${GITHUB_REF_NAME#v}"
           echo "value=${INPUT_VERSION:-$REF_VERSION}" >> "$GITHUB_OUTPUT"
 
+      - name: Extract release notes
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          awk "/^## \\[${VERSION}\]/{flag=1; next} /^## / && flag{exit} flag" CHANGELOG.md > "$RUNNER_TEMP/REL.md"
+          if [ ! -s "$RUNNER_TEMP/REL.md" ]; then
+            echo "::error::CHANGELOG.md has no section for ${VERSION}. Run ./scripts/changelog.sh before tagging."
+            exit 1
+          fi
+          echo "REL=$RUNNER_TEMP/REL.md" >> "$GITHUB_ENV"
+
       - name: Pull MetaCall runtime image
         run: |
           if ! docker pull --platform linux/amd64 "${METACALL_IMAGE}"; then
@@ -127,4 +138,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
+          body_path: ${{ env.REL }}
           files: ${{ runner.temp }}/out/*.tar.gz
