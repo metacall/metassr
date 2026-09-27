@@ -186,7 +186,7 @@ The changelog is generated with [git-cliff](https://git-cliff.org) from the comm
 [conventional commit messages](#5-commit-message-conventions) are required — they drive the
 feature/bugfix/refactor grouping.
 
-- The config lives in `.git-cliff.toml`.
+- The config lives in `cliff.toml`.
 - Regenerate `CHANGELOG.md` with:
 
   ```bash

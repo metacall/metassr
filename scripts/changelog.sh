@@ -7,7 +7,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONFIG="$ROOT/.git-cliff.toml"
+CONFIG="$ROOT/cliff.toml"
 
 if ! command -v git-cliff >/dev/null 2>&1; then
     echo "error: git-cliff is not installed" >&2

@@ -1,18 +1,64 @@
-## [unreleased]
+## [1.0.0-alpha.2] - 2026-09-26
 
 ### 🚀 Features
 
-- *(create)* Scaffold metassr.toml and npm dev script
-- *(dev)* Default websocket port to 8561
+- *(cli)* Add --install option to metassr create (#202)
+- *(agent)* Example-gallery workflow — skill, AGENTS.md, loader metadata (#204)
+- Ship the Python loader in the npm payload and release (#206)
+
+### 🔨 Refactor
+
+- *(docker)* Retire base image, npm-install metassr in app image (#203)
 
 ### 🔁 CI
 
-- *(npm)* Cache libnode between releases; fix manual-dispatch version
+- *(npm)* Support manual dispatch with a version input
+
+### 💼 Other
+
+- Document ~/.metassr directory
+- Update npm package README
+- Cleanup install-metacall.sh and rspack logo
+
+## [1.0.0-alpha.1] - 2026-09-25
+
+### 🚀 Features
+
+- *(docker)* Add MetaSSR base image (#194)
+- *(docker)* Add generic app image (#195)
+- *(docker)* Compile dependencies with cargo-chef (#196)
+- *(site)* Add landing site deployed to GitHub Pages (#197)
+- *(site)* Redesign landing page with MetaSSR design system (#198)
+
+### 🪲 Bug Fixes
+
+- *(npm)* Assemble-payload remove hardlinks due to npm annyoed about hardlinking esbuild
 
 ### 🧹 Chores
 
-- Template for new added examples (#207)
-## [1.0.0-alpha.2] - 2026-09-26
+- Inherit workspace version in metassr-api-handler (#190)
+- *(scripts)* Add pinned MetaCall installer (#191)
+- *(docker)* Bump MetaCall runtime to 0.9.24 (#199)
+
+### 💼 Other
+
+- Add non-background logo (#188)
+- Update Docs (#189)
+
+* edit README.md
+
+* edit TODO.md
+- Publish MetaSSR on npm (#200)
+
+* chore(docker): bump MetaCall runtime to 0.9.24
+
+* publish metassr on npm.
+
+npm package: metassr -> CLi
+npm package: metassr linux-64 with glibc package for prebuild deps
+- Update metassr-create templates' json scripts to match the current state of the project (#201)
+
+## [pre-release] - 2026-08-23
 
 ### 🚀 Features
 
@@ -82,14 +128,6 @@ Co-authored-by: Mohamed Emad <hulxxv@gmail.com>
 * test(config): default the server port to 8080 so it doesn't break integration tests on the CI
 - *(cli)* Version argument with cool ASCI art (#185)
 - *(bench-ci)* Persist benchmark results and compare against latest master (#186)
-- *(docker)* Add MetaSSR base image (#194)
-- *(docker)* Add generic app image (#195)
-- *(docker)* Compile dependencies with cargo-chef (#196)
-- *(site)* Add landing site deployed to GitHub Pages (#197)
-- *(site)* Redesign landing page with MetaSSR design system (#198)
-- *(cli)* Add --install option to metassr create (#202)
-- *(agent)* Example-gallery workflow — skill, AGENTS.md, loader metadata (#204)
-- Ship the Python loader in the npm payload and release (#206)
 
 ### 🪲 Bug Fixes
 
@@ -135,7 +173,6 @@ Co-authored-by: Mohamed Emad <hulxxv@gmail.com>
 - Fix imports
 - *(bench-ci)* Ensure benchmark artifacts are uploaded (#176)
 - Fix clippy error
-- *(npm)* Assemble-payload remove hardlinks due to npm annyoed about hardlinking esbuild
 
 ### 🔨 Refactor
 
@@ -167,7 +204,6 @@ Co-authored-by: Mohamed Emad <hulxxv@gmail.com>
 
 * change package.json for tests
 - Unify BuildingType enum into metassr-build (#187)
-- *(docker)* Retire base image, npm-install metassr in app image (#203)
 
 ### 📚 Documentation
 
@@ -211,7 +247,6 @@ Co-authored-by: Mohamed Emad <hulxxv@gmail.com>
 - Create label.yml
 - Improving testing workflow (#46)
 - *(bench)* Remove comment
-- *(npm)* Support manual dispatch with a version input
 
 ### 🏗️ Builds
 
@@ -238,9 +273,6 @@ Co-authored-by: Mohamed Emad <hulxxv@gmail.com>
 - Typos in error messages across multiple files (#125)
 - Add __pycache__ to gitignore due to running benchmarks via python
 - Update all tsconfig and jsconfig from es2016 to es2018 (#184)
-- Inherit workspace version in metassr-api-handler (#190)
-- *(scripts)* Add pinned MetaCall installer (#191)
-- *(docker)* Bump MetaCall runtime to 0.9.24 (#199)
 
 ### 💼 Other
 
@@ -836,26 +868,9 @@ Co-authored-by: Mayank <mayank.jha@sellergeni.com>
 - *(metassr-config)* Add server port under dev settings (#181)
 - *(metassr-cli)* Rename `metassr run` command to `metassr start` (#182)
 - Init sales-dashboard example (#183)
-- Add non-background logo (#188)
-- Update Docs (#189)
-
-* edit README.md
-
-* edit TODO.md
-- Publish MetaSSR on npm (#200)
-
-* chore(docker): bump MetaCall runtime to 0.9.24
-
-* publish metassr on npm.
-
-npm package: metassr -> CLi
-npm package: metassr linux-64 with glibc package for prebuild deps
-- Update metassr-create templates' json scripts to match the current state of the project (#201)
-- Document ~/.metassr directory
-- Update npm package README
-- Cleanup install-metacall.sh and rspack logo
 
 ### Ignored
 
 - *(deps)* Bump `rspack` to 1.5.5 (#57)
 - *(deps)* Update all metacall crates (#70)
+
