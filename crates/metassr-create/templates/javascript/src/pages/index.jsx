@@ -22,8 +22,7 @@ export default function Index() {
 			</h1>
 
 			<p className="heroLead">
-				Your new MetaSSR app is running. Edit <code>src/pages/index.jsx</code> and the
-				server will hot-reload.
+				Your new MetaSSR app is running. Edit <code>src/pages/index.jsx</code> — run <code>npm run dev</code> to hot-reload, or <code>npm run build</code> + <code>npm run start</code> for production.
 			</p>
 
 			<section className="demos" aria-labelledby="demo-title">
