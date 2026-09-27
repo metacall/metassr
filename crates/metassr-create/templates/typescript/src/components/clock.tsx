@@ -4,13 +4,10 @@ const Clock: React.FC = () => {
     const [time, setTime] = useState<Date>(new Date());
 
     useEffect(() => {
-        // Function to update time
         const tick = () => setTime(new Date());
 
-        // Set up an interval to update the clock every second
         const intervalId = setInterval(tick, 1000);
 
-        // Clear the interval on component unmount
         return () => clearInterval(intervalId);
     }, []);
 
@@ -23,20 +20,10 @@ const Clock: React.FC = () => {
     };
 
     return (
-        <div style={styles.clock}>
+        <span className="clock">
             {formatTime(time)}
-        </div>
+        </span>
     );
-};
-
-// Basic styles for the clock
-const styles = {
-    clock: {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '2em',
-        textAlign: 'center',
-        margin: '20px',
-    },
 };
 
 export default Clock;

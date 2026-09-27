@@ -20,19 +20,10 @@ export function Clock() {
     };
 
     return (
-        <div style={styles.clock}>
+        <span className="clock">
             {formatTime(time)}
-        </div>
+        </span>
     );
-};
-
-const styles = {
-    clock: {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '2em',
-        textAlign: 'center',
-        margin: '20px',
-    },
 };
 
 export default Clock;
