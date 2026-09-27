@@ -1,0 +1,19 @@
+{
+  "timestamp": "20260927-091907",
+  "ops_per_thread": 300000,
+  "keys": 30000,
+  "tests": [
+    {"name": "Insert", "threads": 1, "lockfree_ops": 2278471, "lock_freedom_ops": 3634502, "lockfree_secs": 0.1317, "lock_freedom_secs": 0.0825},
+    {"name": "Get", "threads": 1, "lockfree_ops": 16854471, "lock_freedom_ops": 13315504, "lockfree_secs": 0.0178, "lock_freedom_secs": 0.0225},
+    {"name": "Mixed", "threads": 1, "lockfree_ops": 14864959, "lock_freedom_ops": 15696061, "lockfree_secs": 0.0202, "lock_freedom_secs": 0.0191},
+    {"name": "Insert", "threads": 2, "lockfree_ops": 4896573, "lock_freedom_ops": 5061922, "lockfree_secs": 0.1225, "lock_freedom_secs": 0.1185},
+    {"name": "Get", "threads": 2, "lockfree_ops": 12816391, "lock_freedom_ops": 13325491, "lockfree_secs": 0.0468, "lock_freedom_secs": 0.0450},
+    {"name": "Mixed", "threads": 2, "lockfree_ops": 13399287, "lock_freedom_ops": 12598897, "lockfree_secs": 0.0448, "lock_freedom_secs": 0.0476},
+    {"name": "Insert", "threads": 4, "lockfree_ops": 10279473, "lock_freedom_ops": 8993386, "lockfree_secs": 0.1167, "lock_freedom_secs": 0.1334},
+    {"name": "Get", "threads": 4, "lockfree_ops": 17173340, "lock_freedom_ops": 16774977, "lockfree_secs": 0.0699, "lock_freedom_secs": 0.0715},
+    {"name": "Mixed", "threads": 4, "lockfree_ops": 15077535, "lock_freedom_ops": 14256008, "lockfree_secs": 0.0796, "lock_freedom_secs": 0.0842},
+    {"name": "Insert", "threads": 8, "lockfree_ops": 9775863, "lock_freedom_ops": 9633378, "lockfree_secs": 0.2455, "lock_freedom_secs": 0.2491},
+    {"name": "Get", "threads": 8, "lockfree_ops": 14197094, "lock_freedom_ops": 16377514, "lockfree_secs": 0.1690, "lock_freedom_secs": 0.1465},
+    {"name": "Mixed", "threads": 8, "lockfree_ops": 15044481, "lock_freedom_ops": 13122034, "lockfree_secs": 0.1595, "lock_freedom_secs": 0.1829}
+  ]
+}

@@ -842,13 +842,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "lockfree"
-version = "0.5.1"
+name = "lock_freedom"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74ee94b5ad113c7cb98c5a040f783d0952ee4fe100993881d1673c2cb002dd23"
-dependencies = [
- "owned-alloc",
-]
+checksum = "ae660832d88e34fe389ffbab7406e84209a6e2eb6db908ab0d604345b686190d"
 
 [[package]]
 name = "log"
@@ -957,7 +954,7 @@ version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "axum",
- "lockfree",
+ "lock_freedom",
  "metacall",
  "metacall-sys",
  "serde",
@@ -1229,12 +1226,6 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
-
-[[package]]
-name = "owned-alloc"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30fceb411f9a12ff9222c5f824026be368ff15dc2f13468d850c7d3f502205d6"
 
 [[package]]
 name = "parking_lot"
