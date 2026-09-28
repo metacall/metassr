@@ -1,7 +1,8 @@
 const TITLE = "MetaSSR";
 const DESCRIPTION =
     "MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications.";
-const IMAGE = "/static/assets/og-image.png";
+const SITE_URL = "https://metacall.github.io/metassr";
+const IMAGE = `${SITE_URL}/static/assets/og-image.png`;
 
 export default function Head() {
     return (
