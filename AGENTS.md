@@ -26,6 +26,19 @@ follow the `build-metassr-app` skill for the app itself (intake questions,
 scaffold, build, run, iterate). Then, if the user wants it shared with the
 community, bring it into the example gallery with the flow below.
 
+Two rules apply to every app build:
+
+1. **Consent before downloading.** Always ask the user before downloading
+   any dependencies (npm/`npm install`, `pip install`, `bundle install`,
+   `cargo fetch`, `go mod download`, etc.). Never start a download
+   unprompted.
+2. **Build in a container by default.** Prefer scaffolding, building and
+   running the app inside a Docker container based on the App image
+   (`docker/app.Dockerfile`) rather than the host. This keeps the user's
+   machine clean — no `metacall`, runtimes/compilers or loaders installed
+   in userspace. Fall back to the host only if the user asks or Docker is
+   unavailable, and say why.
+
 ## The example-gallery loop (generate → verify → PR)
 
 1. **Intake** — project name + idea. If the user does not name a backend
