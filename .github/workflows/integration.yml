@@ -152,8 +152,9 @@ jobs:
         if: always() && runner.os == 'Windows'
         shell: pwsh
         run: |
-          taskkill /F /IM metassr.exe /T 2>$null
+          taskkill /F /IM metassr.exe /T 2>$null | Out-Null
           Start-Sleep -Seconds 3
+          $global:LASTEXITCODE = 0
 
       - name: Clean dist for SSG
         working-directory: ./tests/web-app

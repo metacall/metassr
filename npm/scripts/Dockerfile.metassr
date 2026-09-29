@@ -1,0 +1,14 @@
+ARG METACALL_IMAGE=metacall/core:0.9.24-runtime
+FROM ${METACALL_IMAGE} AS metacall
+
+FROM rust:bookworm AS builder
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libclang-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=metacall /usr/local /usr/local
+
+WORKDIR /src
+COPY . .
+RUN cargo build --release --locked

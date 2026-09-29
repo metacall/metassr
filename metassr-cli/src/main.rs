@@ -19,7 +19,7 @@ use tracing_subscriber::{
 };
 
 const DEFAULT_PORT: u16 = 8080;
-const DEFAULT_DEV_WS_PORT: u16 = 3001;
+const DEFAULT_DEV_WS_PORT: u16 = 8561;
 const DEFAULT_OUT_DIR: &str = "dist";
 
 fn debug_mode_from_config(config: &Option<MetaSSRConfig>) -> Option<DebugMode> {
@@ -111,9 +111,12 @@ async fn main() -> Result<()> {
             version,
             description,
             template,
+            install,
+            yes,
         } = commands
         {
-            cli::Creator::new(project_name, version, description, template)?.exec()?;
+            cli::Creator::new(project_name, version, description, template, install, yes)?
+                .exec()?;
         }
         return Ok(());
     }

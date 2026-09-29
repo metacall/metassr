@@ -181,9 +181,17 @@ fi
 
 echo ""
 echo "=== Validating JavaScript syntax ==="
-find "$DIST_DIR" -name "*.js" -not -name "*.js.map" | head -5 | while read -r js_file; do
-    validate_js "$js_file"
-done
+# Only validate esbuild output bundles (`server/*.js` and `pages/*/index.js.js`).
+# The `cache/` scripts are bundler inputs (ESM imports + JSX), so they are not
+# valid standalone JavaScript and must be skipped.
+while IFS= read -r js_file; do
+    if ! validate_js "$js_file"; then
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+done < <(
+    find "$DIST_DIR/server" -name "*.js" -not -name "*.js.map" 2>/dev/null
+    find "$DIST_DIR/pages" -name "index.js.js" 2>/dev/null
+)
 
 echo ""
 echo "=== Dist directory structure ==="

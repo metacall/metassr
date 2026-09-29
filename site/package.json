@@ -1,0 +1,16 @@
+{
+  "name": "metassr-site",
+  "version": "1.0.0-alpha",
+  "private": true,
+  "description": "MetaSSR landing page, built with the MetaSSR static-site generator.",
+  "scripts": {
+    "build:ssg": "metassr --debug-mode=metacall build -t ssg",
+    "serve": "metassr --debug-mode=http start --serve",
+    "export:pages": "node scripts/export-pages.mjs",
+    "og:image": "node scripts/generate-og.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

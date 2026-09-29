@@ -14,6 +14,7 @@ Welcome to _**MetaSSR**_! This guide will walk you through the installation proc
     - [2. Compiling](#2-compiling)
     - [3. Add the CLI Binary to PATH (Linux)](#3-add-the-cli-binary-to-path-linux)
     - [4. Create Your First Project](#4-create-your-first-project)
+  - [Containers](#containers)
   - [Conclusion](#conclusion)
 
 ## Manual Installation Steps from Source
@@ -65,6 +66,10 @@ After completing the above steps, you'll be able to create your first web applic
 ```bash
 $ metassr create <project-name>
 ```
+
+## Containers
+
+Instead of installing Node and the CLI by hand, you can package your app with the MetaSSR app image, which already has them. See the [containers guide](./docker.md) for how to build an app image.
 
 ## Deployment
 

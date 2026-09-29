@@ -1,0 +1,100 @@
+name: Docker
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker.yml"
+      - ".dockerignore"
+      - "tests/web-app/**"
+      - "examples/sales-dashboard/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker:
+    name: Build & smoke-test containers
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The app image installs the published `metassr` CLI from npm; pin it to
+      # the version being released from this repository.
+      - name: Compute metassr version
+        run: echo "METASSR_VERSION=$(jq -r .version npm/cli/package.json)" >> "$GITHUB_ENV"
+
+      - name: Smoke test web-app (SSR)
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg BUILD_TYPE=ssr \
+            --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
+            -f docker/app.Dockerfile \
+            -t metassr-web-app-ssr \
+            tests/web-app
+          docker run -d --name web-app-ssr -p 8080:8080 metassr-web-app-ssr
+          trap 'docker rm -f web-app-ssr' EXIT
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null http://localhost:8080/ && break
+            docker inspect -f '{{.State.Running}}' web-app-ssr | grep -q true \
+              || { docker logs web-app-ssr; exit 1; }
+            sleep 2
+          done
+          bash tests/web-app/tests/ssr.sh
+
+      - name: Smoke test web-app (SSG)
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg BUILD_TYPE=ssg \
+            --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
+            -f docker/app.Dockerfile \
+            -t metassr-web-app-ssg \
+            tests/web-app
+          docker create --name web-app-ssg -p 8080:8080 metassr-web-app-ssg
+          trap 'docker rm -f web-app-ssg' EXIT
+          docker cp web-app-ssg:/app/dist tests/web-app/dist
+          docker start web-app-ssg
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null http://localhost:8080/ && break
+            docker inspect -f '{{.State.Running}}' web-app-ssg | grep -q true \
+              || { docker logs web-app-ssg; exit 1; }
+            sleep 2
+          done
+          bash tests/web-app/tests/ssg.sh
+
+      # The sales-dashboard example exercises both the JavaScript and the
+      # Python routes; the example's own image installs requirements.txt.
+      - name: Smoke test sales-dashboard
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
+            -f examples/sales-dashboard/Dockerfile \
+            -t metassr-sales-dashboard \
+            examples/sales-dashboard
+          docker run -d --name sales-dashboard -p 8080:8080 metassr-sales-dashboard
+          trap 'docker rm -f sales-dashboard' EXIT
+          for _ in $(seq 1 90); do
+            curl -fsS -o /dev/null http://localhost:8080/ && break
+            docker inspect -f '{{.State.Running}}' sales-dashboard | grep -q true \
+              || { docker logs sales-dashboard; exit 1; }
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/ | grep -qi "Sales Dashboard"
+          curl -fsS http://localhost:8080/api/stats | grep -q "Hello from JavaScript!"
+          # The Python route runs once the pinned metassr version carries the
+          # Python loader (published as 1.0.0-alpha.2); skip gracefully before.
+          if npm view "metassr@${{ env.METASSR_VERSION }}" loaders | grep -q python; then
+            curl -fsS http://localhost:8080/api/sales | grep -q "totalRevenue"
+          else
+            echo "skipping /api/sales: python loader not in metassr@${{ env.METASSR_VERSION }}"
+          fi

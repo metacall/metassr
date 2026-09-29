@@ -1,0 +1,85 @@
+name: Deploy Site
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - "site/**"
+      - "docker/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+# GitHub Pages deployment needs these scopes. The repository must also set
+# Settings -> Pages -> Source to "GitHub Actions".
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build static site
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      # The site image installs the published `metassr` CLI from npm; pin it to
+      # the version being released from this repository.
+      - name: Compute metassr version
+        run: echo "METASSR_VERSION=$(jq -r .version npm/cli/package.json)" >> "$GITHUB_ENV"
+
+      - name: Build site image (SSG)
+        run: |
+          docker build \
+            --build-arg BUILD_TYPE=ssg \
+            --build-arg METASSR_VERSION=${{ env.METASSR_VERSION }} \
+            -f docker/app.Dockerfile \
+            -t metassr-site \
+            site
+
+      - name: Extract build output
+        run: |
+          docker create --name metassr-site-export metassr-site
+          docker cp metassr-site-export:/app/dist site/dist
+          docker rm metassr-site-export
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Export for GitHub Pages
+        working-directory: site
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: node scripts/export-pages.mjs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/_site
+          include-hidden-files: true
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

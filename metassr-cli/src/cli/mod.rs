@@ -111,6 +111,14 @@ pub enum Commands {
         /// The template to use for creating the new project.
         #[arg(long, short)]
         template: Option<Template>,
+
+        /// Run `npm install` in the new project after scaffolding.
+        #[arg(long, short)]
+        install: bool,
+
+        /// Accept defaults for anything not provided; never prompt. Useful for scripts and agents.
+        #[arg(short = 'y', long)]
+        yes: bool,
     },
 
     Dev {
@@ -199,6 +207,8 @@ mod tests {
             "test project",
             "--template",
             "typescript",
+            "--install",
+            "--yes",
         ])
         .unwrap();
 
@@ -207,12 +217,16 @@ mod tests {
             version,
             description,
             template,
+            install,
+            yes,
         }) = args.commands
         {
             assert_eq!(project_name, Some("my-app".into()));
             assert_eq!(version, Some("2.0.0".into()));
             assert_eq!(description, Some("test project".into()));
             assert_eq!(template, Some(Template::Typescript));
+            assert!(install);
+            assert!(yes);
         } else {
             panic!("expected Create command");
         }

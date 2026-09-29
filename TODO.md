@@ -81,15 +81,15 @@
 - [ ] Proper Documentation for how to deploy MetaSSR
 - [ ] Middleware for Auth & Security
 - [ ] Update templates
-- [ ] add `metassr.config.js` to do everything the CLI does. Arguments sent in the CLI overrides the config.
-  - [ ] custom port
-  - [ ] http logging
+- [ ] add `metassr.toml` to do everything the CLI does. Arguments sent in the CLI overrides the config.
+  - [x] custom port
+  - [x] http logging
   - [ ] middleware
-  - [ ] output dir
+  - [x] output dir
   - [ ] images allowed URLs (like Nextjs)
-  - [ ] override our opinionated Rspack config (?)
+  - [ ] override our opinionated esbuild config (?)
 
-- [ ] examples for metassr polyglot usage
+- [x] examples for metassr polyglot usage
   - really really late-stage
 
 - tests for:
@@ -100,4 +100,3 @@
     - 404 pages work
     - static files received
     - live reload
-
