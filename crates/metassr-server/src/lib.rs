@@ -259,21 +259,44 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn listener_accepts_ipv4_and_ipv6_connections() {
+    async fn listener_accepts_ipv4_and_ipv6_connections_when_available() {
+        // Skip on hosts without an IPv6 loopback (IPv4-only CI/containers).
+        // Probing a standalone [::1] bind distinguishes "no IPv6 here" from
+        // "our listener does not accept IPv6".
+        if TcpListener::bind(("::1", 0)).await.is_err() {
+            eprintln!("skipping IPv6 assertions: [::1] is unavailable");
+            return;
+        }
+
         let listener = bind_http_listener_with_fallback(0).await.unwrap();
         let port = listener.local_addr().unwrap().port();
 
         let ipv4_connection = TcpStream::connect(("127.0.0.1", port)).await;
-        let ipv6_connection = TcpStream::connect(("::1", port)).await;
-
         assert!(
             ipv4_connection.is_ok(),
             "listener should accept IPv4 connections"
         );
 
+        let ipv6_connection = TcpStream::connect(("::1", port)).await;
         assert!(
             ipv6_connection.is_ok(),
             "listener should accept IPv6 connections"
+        );
+    }
+
+    #[tokio::test]
+    async fn production_bind_listener_binds_unspecified_ipv6() {
+        let listener = bind_listener(0).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        assert_ne!(
+            addr.port(),
+            0,
+            "should bind an ephemeral port when asked for 0"
+        );
+        assert!(
+            matches!(addr.ip(), std::net::IpAddr::V6(ip) if ip.is_unspecified()),
+            "production listener should bind the IPv6 unspecified address [::], got {addr}"
         );
     }
 
