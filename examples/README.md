@@ -58,17 +58,16 @@ Open `http://localhost:8080`. Both routes work in the container: `/api/stats` ru
 | `GET/POST /api/stats` | **JavaScript** | Stats endpoint loaded via MetaCall's Node.js runtime |
 | `/` | React + TS | Frontend that fetches from both API routes and renders the data |
 
-## data-dashboard
+## devtools
 
-A data-analysis dashboard that puts both backend runtimes to work: NumPy
-computes the analytics in Python, and Node renders the Open Graph image
-server-side — a 1200×630 PNG drawn pixel by pixel with a pure-JS encoder (no
-image library, no external service).
+A polyglot toolbox — small developer utilities, each backed by an API route
+running on a different MetaSSR loader (Python, Node.js), with a TypeScript
+React frontend.
 
 ### Start the example
 
 ```sh
-cd examples/data-dashboard
+cd examples/devtools
 npm install
 npm run dev
 ```
@@ -80,18 +79,18 @@ The dev server starts at `http://localhost:3000` and includes live reload.
 Build the app image (it installs the `metassr` CLI from npm):
 
 ```sh
-docker build -f examples/data-dashboard/Dockerfile -t data-dashboard examples/data-dashboard
-docker run --rm -p 8080:8080 data-dashboard
+docker build -f examples/devtools/Dockerfile -t devtools examples/devtools
+docker run --rm -p 8080:8080 devtools
 ```
 
-Open `http://localhost:8080`. Both routes work in the container: `/api/og`
-runs on MetaCall's Node runtime and `/api/analysis` on the bundled Python
-3.14 (numpy from `requirements.txt`).
+Open `http://localhost:8080`.
 
 ### What it demonstrates
 
 | Route | Language | Description |
 |---|---|---|
-| `GET /api/analysis` | **Python** | Deterministic sample dataset analyzed with NumPy (KPIs, monthly/category/region series, product ranking) |
-| `GET /api/og` | **JavaScript** | Renders a 1200×630 Open Graph PNG in pure Node — zlib PNG encoder + 5×7 bitmap font, `?page=` selects the card |
-| `/` | React + TS | Dashboard fetching from both backends, with a live OG-image preview card |
+| `GET/POST /api/csvconvert` | **Python** | CSV ⇄ JSON conversion (standard library) |
+| `GET/POST /api/jsontools` | **Python** | JSON format / minify / validate |
+| `GET/POST /api/base64` | **JavaScript** | Base64, hex, and URL encode / decode |
+| `GET/POST/DELETE /api/snippets` | **JavaScript** | In-memory snippet store (Node.js loader) |
+| `/`, `/csv`, `/json`, `/base64`, `/snippets` | React + TS | Tool pages that fetch from the routes above |

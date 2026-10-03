@@ -1,0 +1,15 @@
+{
+  "name": "devtools",
+  "version": "1.0.0",
+  "description": "A web application built with MetaSSR framework",
+  "scripts": {
+    "build": "metassr build",
+    "start": "metassr start"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "metassr": "^1.0.0-alpha.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

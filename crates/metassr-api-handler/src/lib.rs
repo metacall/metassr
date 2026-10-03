@@ -37,7 +37,7 @@ use axum::{
     routing::{get, MethodRouter},
     Router,
 };
-use lockfree::{self, map::Map};
+use lock_freedom::map::Map;
 use metacall::{
     load::{self, Handle, Tag},
     metacall_handle,
@@ -145,12 +145,11 @@ impl ApiRoutes {
 
         // Call the handler function with the request JSON
         // MetaCall looks up the function by name in all loaded scripts
-        let handle = &self
+        let guard = &self
             .handles
             .get(file_path)
-            .ok_or_else(|| anyhow!("No loaded handle for API script: {}", file_path))?
-            .1;
-        let result: String = metacall_handle(handle, method, vec![request_json])
+            .ok_or_else(|| anyhow!("No loaded handle for API script: {}", file_path))?;
+        let result: String = metacall_handle(guard.val(), method, vec![request_json])
             .map_err(|e| anyhow!("Failed to call {}: {:?}", method, e))?;
 
         let response: ApiResponse = serde_json::from_str(&result)
@@ -410,5 +409,19 @@ mod tests {
             .call_handler("src/api/hello.js", "GET", request)
             .await;
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn handles_map_insert_get_remove() {
+        let routes = ApiRoutes::new();
+        let path = "src/api/hello.js".to_string();
+
+        assert!(routes.handles.get(&path).is_none());
+
+        routes.handles.insert(path.clone(), Handle::new());
+        assert!(routes.handles.get(&path).is_some());
+
+        routes.handles.remove(&path);
+        assert!(routes.handles.get(&path).is_none());
     }
 }

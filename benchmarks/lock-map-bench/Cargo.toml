@@ -1,0 +1,12 @@
+[package]
+name = "lock-map-bench"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Benchmark comparing lockfree and lock_freedom map implementations"
+
+[workspace]
+
+[dependencies]
+lockfree = "0.5.1"
+lock_freedom = "0.1.1"
