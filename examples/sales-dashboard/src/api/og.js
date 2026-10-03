@@ -209,8 +209,8 @@ function renderOG(page) {
   img.fillRect(0, 0, 1200, 630, canvas);
   img.fillRect(0, 0, 28, 630, accent);
 
-  fillText(img, 'DATA DASHBOARD', 96, 74, 3, accent);
-  fillText(img, 'SALES & REVENUE', 96, 114, 7, ink);
+  fillText(img, 'SALES DASHBOARD', 96, 74, 3, accent);
+  fillText(img, 'REVENUE DASHBOARD', 96, 114, 7, ink);
   fillText(img, 'NUMPY ANALYTICS + NODE OG IMAGE', 96, 212, 3, muted);
 
   var maxRev = Math.max.apply(null, data.months);
@@ -259,4 +259,4 @@ function GET(req) {
   });
 }
 
-module.exports = { GET: GET };
+module.exports = { GET: GET, renderOG: renderOG };

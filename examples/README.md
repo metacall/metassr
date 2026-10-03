@@ -21,11 +21,13 @@ explaining.
 
 ## sales-dashboard
 
-A polyglot fullstack app demonstrating MetaSSR's API handler with Python and JavaScript backend routes and a React frontend.
+A polyglot fullstack app demonstrating MetaSSR's API handler: NumPy + pandas
+analytics on the Python route, a Node route that renders an Open Graph image
+server-side, and a React + TypeScript frontend styled with the MetaSSR design
+system.
 
 ### Prerequisites
 
-- Rust toolchain (for building MetaSSR CLI)
 - Node.js + npm
 - Python 3
 
@@ -44,19 +46,31 @@ The dev server starts at `http://localhost:3000` and includes live reload.
 Build the app image (it installs the `metassr` CLI from npm):
 
 ```sh
-docker build -f docker/app.Dockerfile -t sales-dashboard examples/sales-dashboard
+docker build -f examples/sales-dashboard/Dockerfile -t sales-dashboard examples/sales-dashboard
 docker run --rm -p 8080:8080 sales-dashboard
 ```
 
-Open `http://localhost:8080`. Both routes work in the container: `/api/stats` runs on MetaCall's Node runtime and `/api/sales` on the bundled Python 3.14 (numpy + pandas from `requirements.txt`).
+Open `http://localhost:8080`. All routes work in the container: `/api/stats`
+and `/api/og` run on MetaCall's Node runtime and `/api/sales` on the bundled
+Python 3.14 (numpy + pandas from `requirements.txt`).
+
+### Regenerate the Open Graph image
+
+The committed `static/og/dashboard.png` is produced by the same pure-JS encoder
+as `/api/og`. Regenerate it after changing the route:
+
+```sh
+npm run og:image
+```
 
 ### What it demonstrates
 
 | Route | Language | Description |
 |---|---|---|
-| `GET/POST /api/sales` | **Python** | Sales analytics (numpy + pandas) loaded via MetaCall's Python runtime |
+| `GET/POST /api/sales` | **Python** | Sales analytics (NumPy + pandas): summary, monthly/category/region series, product ranking |
 | `GET/POST /api/stats` | **JavaScript** | Stats endpoint loaded via MetaCall's Node.js runtime |
-| `/` | React + TS | Frontend that fetches from both API routes and renders the data |
+| `GET /api/og` | **JavaScript** | Renders a 1200×630 Open Graph PNG in pure Node — zlib PNG encoder + 5×7 bitmap font, `?page=` selects the card |
+| `/` | React + TS | Dashboard fetching from the routes above, with a live OG-image preview card |
 
 ## devtools
 
