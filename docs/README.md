@@ -29,7 +29,7 @@ If you're new to the SSR Framework, start here! The [Getting Started](./getting-
 
 ## Contributing
 
-We welcome contributions from the community! Visit the [Contributing](../CONTRIBUTING) file to learn how you can get involved.
+We welcome contributions from the community! Visit the [Contributing](../CONTRIBUTING.md) file to learn how you can get involved.
 
 - [Contributing Guide](../CONTRIBUTING.md)
 - [Code of Conduct](../CODE_OF_CONDUCT.md)
