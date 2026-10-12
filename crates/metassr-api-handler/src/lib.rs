@@ -32,7 +32,7 @@ pub mod types;
 use anyhow::{anyhow, Result};
 use axum::{
     extract::Query,
-    http::{HeaderMap, Method, StatusCode},
+    http::{header, HeaderMap, Method, StatusCode},
     response::IntoResponse,
     routing::{get, MethodRouter},
     Router,
@@ -311,6 +311,34 @@ pub async fn register_api_routes(
     Ok((router, Some(api_routes)))
 }
 
+/// Build the outgoing response headers.
+///
+/// Starts from an `application/json` content type and then applies the headers
+/// returned by the handler. Handler headers win, so they can override the
+/// default content type or add cookies, CORS and cache directives. Entries with
+/// an invalid header name or value are skipped with a warning.
+fn merge_response_headers(extra: &HashMap<String, String>) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_TYPE,
+        header::HeaderValue::from_static("application/json"),
+    );
+
+    for (name, value) in extra {
+        match (
+            header::HeaderName::try_from(name.as_str()),
+            header::HeaderValue::try_from(value.as_str()),
+        ) {
+            (Ok(name), Ok(value)) => {
+                headers.insert(name, value);
+            }
+            _ => warn!("Ignoring invalid API response header: {name:?}: {value:?}"),
+        }
+    }
+
+    headers
+}
+
 /// Handle an incoming API request.
 async fn handle_api_request(
     api_routes: Arc<ApiRoutes>,
@@ -349,14 +377,14 @@ async fn handle_api_request(
     match result {
         Ok(response) => (
             StatusCode::from_u16(response.status).unwrap_or(StatusCode::OK),
-            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            merge_response_headers(&response.headers),
             serde_json::to_string(&response.body).unwrap_or_else(|_| "{}".to_string()),
         ),
         Err(e) => {
             error!("API handler error: {:?}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                [(axum::http::header::CONTENT_TYPE, "application/json")],
+                merge_response_headers(&HashMap::new()),
                 format!("{{\"error\": \"{}\"}}", e),
             )
         }
@@ -423,5 +451,51 @@ mod tests {
 
         routes.handles.remove(&path);
         assert!(routes.handles.get(&path).is_none());
+    }
+
+    #[test]
+    fn merge_response_headers_defaults_to_json() {
+        let headers = merge_response_headers(&HashMap::new());
+
+        assert_eq!(
+            headers.get(header::CONTENT_TYPE).unwrap(),
+            "application/json"
+        );
+    }
+
+    #[test]
+    fn merge_response_headers_forwards_handler_headers() {
+        let extra = HashMap::from([
+            ("Set-Cookie".to_string(), "session=abc".to_string()),
+            ("Cache-Control".to_string(), "no-store".to_string()),
+        ]);
+
+        let headers = merge_response_headers(&extra);
+
+        assert_eq!(headers.get("set-cookie").unwrap(), "session=abc");
+        assert_eq!(headers.get("cache-control").unwrap(), "no-store");
+        assert_eq!(
+            headers.get(header::CONTENT_TYPE).unwrap(),
+            "application/json"
+        );
+    }
+
+    #[test]
+    fn merge_response_headers_lets_handler_override_content_type() {
+        let extra = HashMap::from([("Content-Type".to_string(), "text/plain".to_string())]);
+
+        let headers = merge_response_headers(&extra);
+
+        assert_eq!(headers.get(header::CONTENT_TYPE).unwrap(), "text/plain");
+    }
+
+    #[test]
+    fn merge_response_headers_skips_invalid_entries() {
+        let extra = HashMap::from([("Invalid Header".to_string(), "value".to_string())]);
+
+        let headers = merge_response_headers(&extra);
+
+        assert_eq!(headers.len(), 1);
+        assert!(headers.contains_key(header::CONTENT_TYPE));
     }
 }
