@@ -10,7 +10,8 @@ The MetaSSR CLI is a powerful tool designed to streamline the development, build
   - [Commands Overview](#commands-overview)
   - [Detailed Command Descriptions](#detailed-command-descriptions)
     - [`build`](#build)
-    - [`run`](#run)
+    - [`start`](#start)
+    - [`dev`](#dev)
     - [`create`](#create)
   - [Examples](#examples)
   - [Conclusion](#conclusion)
@@ -43,10 +44,13 @@ The MetaSSR CLI supports several commands, each tailored to a specific stage of 
 1. **`build`**  
    Compiles your web application into a deployable format.
 
-2. **`run`**  
+2. **`start`**  
    Launches the server to run your Server-Side Rendered (SSR) application.
 
-3. **`create`**  
+3. **`dev`**  
+   Starts a development server with live reload that rebuilds your application as you edit it.
+
+4. **`create`**  
    Generates a new MetaSSR project from a template, setting up your project structure and initial files.
 
 ---
@@ -103,6 +107,40 @@ metassr start [OPTIONS]
 
 ```bash
 metassr start --port 3000 --serve
+```
+
+---
+
+### `dev`
+
+Starts the development server. It builds your application, serves it, and watches your source files to rebuild and live-reload the browser when they change.
+
+**Options:**
+
+- **`--port`** *(default: `8080`)*  
+  The port number on which the HTTP server will run.
+
+- **`--ws-port`** *(default: `8561`)*  
+  The port number for the WebSocket live-reload server.
+
+- **`--out-dir`** *(default: `dist`)*  
+  The directory where build output will be saved.
+
+- **`-t`, `--type`** *(default: `ssr`)*  
+  The type of build to perform:
+  - `ssr` - Server-Side Rendering.
+  - `ssg` - Static Site Generation.
+
+**Usage:**
+
+```bash
+metassr dev [OPTIONS]
+```
+
+**Example:**
+
+```bash
+metassr dev --port 3000 --ws-port 3001
 ```
 
 ---
