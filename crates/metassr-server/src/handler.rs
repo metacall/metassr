@@ -1,7 +1,8 @@
 use anyhow::Result;
 use axum::{
     extract::{Path, Query},
-    response::Html,
+    http::StatusCode,
+    response::{Html, IntoResponse},
     routing::get,
 };
 use metassr_build::server::renderer::page::PageRenderer;
@@ -9,11 +10,21 @@ use metassr_fs_analyzer::{
     dist_dir::{DistDir, PageEntry},
     DirectoryAnalyzer,
 };
-use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
+use std::{collections::HashMap, fs::read_to_string, path::PathBuf, sync::Arc};
+use tracing::error;
 
 use crate::RunningType;
 
 use super::router::RouterMut;
+
+/// How a registered page route produces its HTML body.
+#[derive(Clone)]
+enum PageSource {
+    /// Pre-rendered HTML read from disk (SSG).
+    Static(String),
+    /// Renderer re-invoked on every request (SSR).
+    Dynamic(Arc<PageRenderer>),
+}
 
 pub struct PagesHandler<'a, S: Clone + Send + Sync + 'static> {
     pub app: &'a mut RouterMut<S>,
@@ -37,19 +48,29 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
     }
     pub fn build(&mut self) -> Result<()> {
         for (route, entries) in self.pages.iter() {
-            let html = match self.running_type {
+            let source = match self.running_type {
                 RunningType::StaticSiteGeneration => {
-                    Box::new(read_to_string(entries.path.join("index.html"))?)
+                    PageSource::Static(read_to_string(entries.path.join("index.html"))?)
                 }
-                RunningType::ServerSideRendering => {
-                    Box::new(PageRenderer::from_manifest(&self.dist_dir, route)?.render()?)
-                }
+                RunningType::ServerSideRendering => PageSource::Dynamic(Arc::new(
+                    PageRenderer::from_manifest(&self.dist_dir, route)?,
+                )),
             };
 
             let handler =
                 move |Query(_params): Query<HashMap<String, String>>,
                       Path(_path): Path<HashMap<String, String>>| async move {
-                    Html(*html)
+                    match &source {
+                        PageSource::Static(html) => Html(html.clone()).into_response(),
+                        PageSource::Dynamic(renderer) => match renderer.render() {
+                            Ok(html) => Html(html).into_response(),
+                            Err(e) => {
+                                error!("SSR render failed: {e:?}");
+                                (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
+                                    .into_response()
+                            }
+                        },
+                    }
                 };
 
             let route = format!(

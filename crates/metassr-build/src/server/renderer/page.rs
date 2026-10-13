@@ -5,20 +5,19 @@ use anyhow::Result;
 use metassr_fs_analyzer::dist_dir::PageEntry;
 use metassr_utils::cache_dir::CacheDir;
 
-use crate::{
-    server::{manifest::Manifest, render_exec::RenderExec},
-    traits::Exec,
-};
+use crate::server::{manifest::Manifest, render_exec::RenderExec};
 
 use super::{head::HeadRenderer, html::HtmlRenderer};
 
 pub struct PageRenderer {
     head: String,
-    body: String,
+    exec: RenderExec,
     entries: PageEntry,
 }
 
 impl PageRenderer {
+    /// Loads the page render script once. Pair with [`render`](Self::render) to
+    /// re-render the page on every request.
     pub fn from_manifest<S: AsRef<OsStr> + ?Sized>(
         manifest_parent: &S,
         route: &str,
@@ -29,17 +28,17 @@ impl PageRenderer {
         let entry = manifest.get(route).unwrap().clone();
 
         let exec = RenderExec::new(entry.id, &entry.renderer)?;
-        let body = exec.exec()?;
         let head = HeadRenderer::new(&manifest.global.head, cache, false).render(false)?;
 
         Ok(Self {
             head,
-            body,
+            exec,
             entries: entry.page_entry,
         })
     }
     pub fn render(&self) -> Result<String> {
-        Ok(HtmlRenderer::new(&self.head, &self.body, &self.entries)
+        let body = self.exec.call()?;
+        Ok(HtmlRenderer::new(&self.head, &body, &self.entries)
             .render()?
             .to_string())
     }
