@@ -1,6 +1,12 @@
-import React from 'react';
-import './styles/global.css';
+import React from "react";
+import type { ComponentType } from "react";
+import { PageLayout } from "./layout/PageLayout";
+import "./styles/global.css";
 
-export default function App({ Component }: { Component: React.ComponentType }) {
-  return <Component />;
+export default function App({ Component }: { Component: ComponentType }) {
+	return (
+		<PageLayout>
+			<Component />
+		</PageLayout>
+	);
 }
