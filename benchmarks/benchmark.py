@@ -73,8 +73,31 @@ def get_server_pid(port):
         pass
     return None
 
-def get_memory_usage(pid):
-    """Get memory usage in MB for a process"""
+def get_container_memory_usage(container):
+    """Get memory usage in MB for a docker container"""
+    try:
+        result = subprocess.run(
+            ["docker", "stats", "--no-stream", "--format", "{{.MemUsage}}", container],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            used = result.stdout.strip().split("/")[0].strip()
+            match = re.match(r'([\d.]+)\s*(\w+)', used)
+            if match:
+                value, unit = float(match.group(1)), match.group(2)
+                if unit.startswith("GiB"):
+                    return value * 1024
+                if unit.startswith("KiB"):
+                    return value / 1024
+                return value
+    except:
+        pass
+    return 0
+
+def get_memory_usage(pid, container=None):
+    """Get memory usage in MB for a process or docker container"""
+    if container:
+        return get_container_memory_usage(container)
     if not pid:
         return 0
     try:
@@ -151,17 +174,17 @@ def parse_wrk_output(output):
     
     return result
 
-def run_test(name, threads, connections, duration, url, server_pid):
+def run_test(name, threads, connections, duration, url, server_pid, container=None):
     """Run a single benchmark test"""
     print(f"{Colors.YELLOW}[{name}]{Colors.NC} threads={threads} connections={connections} duration={duration}s")
     
-    mem_before = get_memory_usage(server_pid)
+    mem_before = get_memory_usage(server_pid, container)
     
     cmd = ["wrk", f"-t{threads}", f"-c{connections}", f"-d{duration}s", "--latency", url]
     result = subprocess.run(cmd, capture_output=True, text=True)
     output = result.stdout + result.stderr
     
-    mem_after = get_memory_usage(server_pid)
+    mem_after = get_memory_usage(server_pid, container)
     mem_peak = max(mem_before, mem_after)
     
     metrics = parse_wrk_output(output)
@@ -527,6 +550,8 @@ def main():
     parser.add_argument("-p", "--port", type=int, default=8080, help="Server port")
     parser.add_argument("-o", "--output", default=".bench", help="Output directory")
     parser.add_argument("-s", "--skip-build", action="store_true", help="Skip building")
+    parser.add_argument("-c", "--container", default=None,
+                        help="Docker container name to monitor for memory usage")
     parser.add_argument("--analyze-only", metavar="FILE", help="Only analyze existing results.json")
     parser.add_argument("--compare", nargs=2, metavar=("BASELINE", "CURRENT"),
                         help="Compare two results.json files and generate comparison summary")
@@ -599,8 +624,10 @@ def main():
         sys.exit(1)
     
     # Get server PID for memory monitoring
-    server_pid = get_server_pid(args.port)
-    if server_pid:
+    server_pid = None if args.container else get_server_pid(args.port)
+    if args.container:
+        log(f"Monitoring docker container (name: {args.container})")
+    elif server_pid:
         log(f"Monitoring server process (PID: {server_pid})")
     else:
         log("Could not find server PID, memory monitoring disabled")
@@ -614,7 +641,7 @@ def main():
     # Run benchmarks
     results = []
     for name, threads, connections, duration in SCENARIOS:
-        result = run_test(name, threads, connections, duration, server_url, server_pid)
+        result = run_test(name, threads, connections, duration, server_url, server_pid, args.container)
         results.append(result)
     
     # Save JSON results
