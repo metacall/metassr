@@ -1,6 +1,6 @@
 {
   "name": "metassr",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "MetaSSR CLI: polyglot server-side rendering framework powered by MetaCall",
   "license": "MIT",
   "bin": {
@@ -10,7 +10,7 @@
     "node": ">=20"
   },
   "optionalDependencies": {
-    "@metassr/linux-x64-gnu": "1.0.0-alpha.1"
+    "@metassr/linux-x64-gnu": "1.0.0-alpha.2"
   },
   "loaders": [
     "node",
