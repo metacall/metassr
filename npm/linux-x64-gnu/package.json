@@ -1,6 +1,6 @@
 {
   "name": "@metassr/linux-x64-gnu",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "MetaSSR runtime payload for linux x64 (glibc): metassr binary, MetaCall runtime, Node loader, and esbuild",
   "license": "MIT",
   "os": [
