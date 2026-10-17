@@ -1,3 +1,4 @@
+# Getting Started
 
 Welcome to the MetaSSR Getting Started guide! This folder provides essential information to help you quickly set up and begin working with the MetaSSR framework.
 
@@ -45,7 +46,7 @@ You can explore the folder structure guide [here](folder-structure.md).
 The MetaSSR CLI is an essential tool for managing your MetaSSR projects. It allows you to perform various tasks such as building, running, and creating projects. The `cli.md` file provides comprehensive documentation on how to use the CLI, including:
 
 - Global options available with any command
-- Detailed descriptions of each command (`build`, `run`, `create`)
+- Detailed descriptions of each command (`build`, `start`, `dev`, `create`)
 - Examples of common use cases
 
 You can access the CLI documentation [here](cli.md).

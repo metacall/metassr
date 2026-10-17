@@ -35,7 +35,7 @@ This document outlines potential features and improvements that can be implement
 
 
 
-## 2. **Middlewares**
+### 2. **Middlewares**
 
 - **Description:** Implement middleware support in MetaSSR to allow developers to intercept and modify requests and responses during the server-side rendering (SSR) process. This feature would enable custom logic to be applied at various points in the request lifecycle, such as authentication, logging, caching, or request transformation.
 
@@ -53,6 +53,7 @@ This document outlines potential features and improvements that can be implement
   **Example in Python:**
   ```python
   # ./src/middlewares/logger.py
+  from datetime import datetime
 
   def handler(req):
       print(f"[LOG_FROM_PY]: Request received at: {datetime.now()}")
@@ -60,12 +61,12 @@ This document outlines potential features and improvements that can be implement
 
 - **Benefits:**
   - Provides flexibility in handling requests, allowing for centralized control over functionalities like security, session management, and performance optimization.
-  - Simplifies the addition of cross-cutting concernis, such as authentication or logging, without duplicating code across different routes or components.
+  - Simplifies the addition of cross-cutting concerns, such as authentication or logging, without duplicating code across different routes or components.
   - Polyglot support allows developers to write middleware in multiple languages, making it adaptable for diverse use cases.
 
 
 
-## 3. **Server Actions**
+### 3. **Server Actions**
 
 - **Description:** Introduce the concept of *server actions* to enable direct function execution on the server from the client side without needing to create traditional API routes. Developers can define server-side logic in their React components and call these server actions from the client.
   
@@ -149,7 +150,7 @@ This document outlines potential features and improvements that can be implement
     ```
 
 
-## 4. **API Routes**
+### 4. **API Routes**
 
 - **Description:** Introduce API route support in MetaSSR to allow developers to define backend API endpoints directly within the framework. This feature would enable seamless integration of API logic alongside server-side rendering, allowing for dynamic content fetching, user authentication, or data manipulation without the need for external APIs.
 
@@ -165,16 +166,15 @@ This document outlines potential features and improvements that can be implement
         
 
         if (user) {
-            res.status(200).json(user);
             return {
                 status: 200,
-                body: Json.stringify(user)
+                body: JSON.stringify(user)
             }
         } else {
             return {
                 status: 404,
                 body: JSON.stringify({
-                    message: "User is not found."
+                    message: "User not found."
                 })
             }
         }

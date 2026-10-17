@@ -30,7 +30,7 @@ Before installing _**MetaSSR**_, ensure you have the following installed on your
 You can verify the installation of these tools using the following commands:
 
 ```bash
-rustc -v
+rustc --version
 git --version
 ```
 

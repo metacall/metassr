@@ -37,5 +37,5 @@ We welcome contributions from the community! Visit the [Contributing](../CONTRIB
 
 ---
 
-Thank you for using Metassr! If you have any questions, feel free to open an issue on our [GitHub repository](https://github.com/metacall/metassr).
+Thank you for using MetaSSR! If you have any questions, feel free to open an issue on our [GitHub repository](https://github.com/metacall/metassr).
 
