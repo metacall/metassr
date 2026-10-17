@@ -86,10 +86,10 @@ npm run build
 
 ```bash
 # Run from project root
-./tests/test-bundle.sh
+./tests/web-app/tests/bundle.sh
 
 # Or run from anywhere
-/path/to/metassr/tests/test-bundle.sh
+/path/to/metassr/tests/web-app/tests/bundle.sh
 ```
 
 ### Version-gated tests
@@ -98,7 +98,7 @@ Tests can assert behavior that only exists in an unreleased `metassr` version.
 The `Integration Test` workflow builds `metassr` from source, so it always
 tests the cutting edge; the `Docker` workflow instead installs the **published**
 CLI, pinned to the version in `npm/cli/package.json` (`.github/workflows/docker.yml`).
-A new behavior would fail against the published CLI it.
+A new behavior would fail against the published CLI.
 
 If that happens, a test declares the first version that carries the behavior
 and skips itself (reporting `[SKIP]`) when the running CLI is older. The gate is

@@ -6,7 +6,7 @@
 <p align='center'> SSR framework for React.js built on <a href="https://github.com/metacall/core">MetaCall</a> </p>
 </div>
 
-MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. MetaSSR uses Metacall Runtime, exploring web-based use cases for polyglot programming.
+MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted for high-performance, dynamic web applications. MetaSSR uses MetaCall Runtime, exploring web-based use cases for polyglot programming.
 
 ## Why MetaSSR?
 
@@ -31,7 +31,7 @@ Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connect
 
 - **Rust-Powered Performance**: Enjoy the speed and safety of Rust in your server-side rendering tasks.
 - **High Performance**: Achieve fast load times and excellent user experiences with optimized server-side rendering.
-- **API Route with Polyglot Programming**: Integrate multiple languages in the backend with Metacall's support.
+- **API Route with Polyglot Programming**: Integrate multiple languages in the backend with MetaCall's support.
 
 ## Getting Started
 
@@ -86,7 +86,7 @@ MetaSSR is essentially a community project, initially created as part of [Google
 
 - **Discussion Forum**: [Join the Conversation](https://github.com/metacall/metassr/discussions)
 - **Twitter**: [Follow US](https://twitter.com/metacallio)
-- **Metacall Community**:
+- **MetaCall Community**:
   - [Discord](https://discord.gg/upwP4mwJWa)
   - [Telegram](https://t.me/joinchat/BMSVbBatp0Vi4s5l4VgUgg)
   - [Matrix](https://matrix.to/#/#metacall:matrix.org)

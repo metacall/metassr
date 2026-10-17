@@ -10,7 +10,7 @@
 
 - [x] Build the files loader
 
-> it extract all files that locate in `/src` and categorize it (react pages, or special files (like [_head.jsx](./tests/web-app/src/_head.tsx), [_app.jsx](./tests/web-app/src/_app_.tsx))), and load it to metacall.
+> it extract all files that locate in `/src` and categorize it (react pages, or special files (like [_head.jsx](./tests/web-app/src/_head.tsx), [_app.jsx](./tests/web-app/src/_app.tsx))), and load it to metacall.
 
 - [x] Serving ``./src/pages/**``
 
@@ -90,7 +90,6 @@
   - [ ] override our opinionated esbuild config (?)
 
 - [x] examples for metassr polyglot usage
-  - really really late-stage
 
 - tests for:
   - [ ] live-reload

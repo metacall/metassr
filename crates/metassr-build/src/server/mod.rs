@@ -57,7 +57,9 @@ impl FromStr for BuildingType {
         match s.to_lowercase().as_str() {
             "ssr" | "server-side rendering" => Ok(BuildingType::ServerSideRendering),
             "ssg" | "static-site generation" => Ok(BuildingType::StaticSiteGeneration),
-            _ => Err("unsupported option.".to_string()),
+            _ => Err(format!(
+                "unsupported build type '{s}'; expected 'ssr' or 'ssg'"
+            )),
         }
     }
 }
