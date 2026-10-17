@@ -76,7 +76,6 @@ impl ApiRoutes {
         }
 
         info!("Found {} API route(s)", route_files.len());
-        info!("Found {:?} API route(s)", route_files);
 
         for route_file in &route_files {
             if let Err(e) = self

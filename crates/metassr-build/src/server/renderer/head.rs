@@ -61,7 +61,7 @@ impl HeadRenderer {
         let bundler = WebBundler::new(&bundling_targets, self.cache_dir.path(), self.dev_mode)?;
 
         if let Err(e) = bundler.exec() {
-            return Err(anyhow!("Cannot bundling head: {e}"));
+            return Err(anyhow!("Cannot bundle head: {e}"));
         }
         Ok(())
     }
