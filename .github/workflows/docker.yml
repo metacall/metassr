@@ -48,6 +48,9 @@ jobs:
               || { docker logs web-app-ssr; exit 1; }
             sleep 2
           done
+          # The image runs the published CLI pinned to npm/cli/package.json;
+          # ssr.sh skips the per-request assertion for versions before alpha.3.
+          export METASSR_VERSION=${{ env.METASSR_VERSION }}
           bash tests/web-app/tests/ssr.sh
 
       - name: Smoke test web-app (SSG)

@@ -99,7 +99,15 @@ assert_contains "$BASE_URL/clock" "Server-rendered time"   "Clock page content"
 
 echo ""
 echo "=== SSR Per-Request Rendering ==="
-assert_changes "$BASE_URL/clock" "SSR re-renders /clock on every request"
+# Published metassr CLIs older than this render pages once at boot (#216).
+# METASSR_VERSION unset (source builds) => always enforce.
+METASSR_SSR_PER_REQUEST_SINCE="${METASSR_SSR_PER_REQUEST_SINCE:-1.0.0-alpha.3}"
+if [ -z "${METASSR_VERSION:-}" ] || \
+   [ "$(printf '%s\n%s\n' "$METASSR_SSR_PER_REQUEST_SINCE" "$METASSR_VERSION" | sort -V | head -n1)" = "$METASSR_SSR_PER_REQUEST_SINCE" ]; then
+    assert_changes "$BASE_URL/clock" "SSR re-renders /clock on every request"
+else
+    echo "[SKIP] SSR re-renders /clock on every request (metassr@$METASSR_VERSION predates it)"
+fi
 
 echo ""
 echo "=== Head Rendering ==="
