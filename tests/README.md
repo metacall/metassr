@@ -92,6 +92,30 @@ npm run build
 /path/to/metassr/tests/test-bundle.sh
 ```
 
+### Version-gated tests
+
+Tests can assert behavior that only exists in an unreleased `metassr` version.
+The `Integration Test` workflow builds `metassr` from source, so it always
+tests the cutting edge; the `Docker` workflow instead installs the **published**
+CLI, pinned to the version in `npm/cli/package.json` (`.github/workflows/docker.yml`).
+A new behavior would fail against the published CLI it.
+
+If that happens, a test declares the first version that carries the behavior
+and skips itself (reporting `[SKIP]`) when the running CLI is older. The gate is
+driven by two environment variables:
+
+- `METASSR_VERSION` — the CLI version under test. The `Docker` workflow exports
+  it from the pinned `npm/cli/package.json` version; source builds leave it
+  unset, which always enforces the assertion.
+- `METASSR_SSR_PER_REQUEST_SINCE` — the first version to render pages on every
+  request (default `1.0.0-alpha.3`); override it to test a different cutoff.
+
+`tests/web-app/tests/ssr.sh` uses this mechanism for the per-request rendering
+assertion on `/clock`:
+
+    METASSR_VERSION=1.0.0-alpha.2 bash tests/web-app/tests/ssr.sh   # [SKIP]
+    METASSR_VERSION=1.0.0-alpha.3 bash tests/web-app/tests/ssr.sh   # enforced
+
 ### Running Tests in Docker
 
 ```bash
