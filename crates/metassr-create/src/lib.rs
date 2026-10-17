@@ -2,7 +2,7 @@ include!(concat!(env!("OUT_DIR"), "/templates.rs"));
 
 use std::{
     fs::{create_dir_all, File},
-    io::Write,
+    io::{self, Write},
     path::PathBuf,
 };
 
@@ -22,6 +22,11 @@ pub struct Creator {
     version: String,
     description: String,
     template: Template,
+}
+
+/// Write `buf` to `writer` completely, retrying short writes.
+fn write_generated_file(mut writer: impl Write, buf: &[u8]) -> io::Result<()> {
+    writer.write_all(buf)
 }
 
 impl Creator {
@@ -44,7 +49,7 @@ impl Creator {
             let path = root.join(&file);
             create_dir_all(path.parent().unwrap())?;
 
-            File::create(path)?.write_all(&buf)?;
+            write_generated_file(File::create(path)?, &buf)?;
         }
 
         Ok(())
@@ -53,7 +58,7 @@ impl Creator {
 
 #[cfg(test)]
 mod test {
-    use crate::{tags, Creator};
+    use crate::{tags, templates::Template, write_generated_file, Creator};
     use anyhow::Result;
     use std::{
         env::set_current_dir,
@@ -122,6 +127,61 @@ mod test {
             "ts",
         )
         .generate()?;
+
+        Ok(())
+    }
+
+    /// Accepts only one byte per `write` call, like a short write would.
+    struct ShortWriter {
+        written: Vec<u8>,
+    }
+
+    impl std::io::Write for ShortWriter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            match buf.first() {
+                Some(byte) => {
+                    self.written.push(*byte);
+                    Ok(1)
+                }
+                None => Ok(0),
+            }
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn write_generated_file_writes_whole_buffer_on_short_writes() {
+        let mut writer = ShortWriter {
+            written: Vec::new(),
+        };
+
+        write_generated_file(&mut writer, b"hello").unwrap();
+
+        assert_eq!(writer.written, b"hello");
+    }
+
+    #[test]
+    fn generate_writes_complete_files() -> Result<()> {
+        let dir = tempfile::TempDir::new()?;
+        let project = dir.path().join("my-app");
+        let project_name = project.to_str().unwrap();
+
+        let creator = Creator::new(project_name, "1.0.0", "Hello World!", "ts");
+        creator.generate()?;
+
+        let expected = Template::from("ts").load(&creator)?;
+        assert!(!expected.is_empty());
+
+        for (relative, content) in expected {
+            let generated = std::fs::read(project.join(&relative))?;
+            assert_eq!(
+                generated, content,
+                "generated {relative} differs from the template"
+            );
+        }
 
         Ok(())
     }
