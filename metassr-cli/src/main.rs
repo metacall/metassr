@@ -6,7 +6,7 @@ use cli::{
 };
 use logger::LoggingLayer;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use metassr_config::{BuildConfig, MetaSSRConfig};
 
 use std::{
@@ -22,13 +22,22 @@ const DEFAULT_PORT: u16 = 8080;
 const DEFAULT_DEV_WS_PORT: u16 = 8561;
 const DEFAULT_OUT_DIR: &str = "dist";
 
-fn debug_mode_from_config(config: &Option<MetaSSRConfig>) -> Option<DebugMode> {
-    let debug = config.as_ref()?.debug.as_ref()?;
-    match debug.mode.as_deref()? {
-        "all" => Some(DebugMode::All),
-        "metacall" => Some(DebugMode::Metacall),
-        "http" => Some(DebugMode::Http),
-        _ => None,
+fn debug_mode_from_config(config: &Option<MetaSSRConfig>) -> Result<Option<DebugMode>> {
+    let Some(mode) = config
+        .as_ref()
+        .and_then(|config| config.debug.as_ref())
+        .and_then(|debug| debug.mode.as_deref())
+    else {
+        return Ok(None);
+    };
+
+    match mode {
+        "all" => Ok(Some(DebugMode::All)),
+        "metacall" => Ok(Some(DebugMode::Metacall)),
+        "http" => Ok(Some(DebugMode::Http)),
+        invalid => Err(anyhow!(
+            "metassr.toml: invalid value \"{invalid}\" for debug.mode; expected \"all\", \"metacall\", or \"http\""
+        )),
     }
 }
 
@@ -41,7 +50,7 @@ pub fn build_filter_string(debug_mode: Option<DebugMode>) -> String {
     .to_string()
 }
 
-fn resolve_build(config: &Option<MetaSSRConfig>) -> (String, BuildingType) {
+fn resolve_build(config: &Option<MetaSSRConfig>) -> Result<(String, BuildingType)> {
     let build: Option<&BuildConfig> = config.as_ref().and_then(|c| c.build.as_ref());
 
     let out_dir = build
@@ -49,15 +58,16 @@ fn resolve_build(config: &Option<MetaSSRConfig>) -> (String, BuildingType) {
         .unwrap_or(DEFAULT_OUT_DIR)
         .to_string();
 
-    let build_type = build
-        .and_then(|b| b.r#type.as_deref())
-        .map(|t| {
-            t.parse::<cli::BuildingType>()
-                .unwrap_or(cli::BuildingType::ServerSideRendering)
-        })
-        .unwrap_or(cli::BuildingType::ServerSideRendering);
+    let build_type = match build.and_then(|build| build.r#type.as_deref()) {
+        Some(value) => value.parse::<cli::BuildingType>().map_err(|_| {
+            anyhow!(
+                "metassr.toml: invalid value \"{value}\" for build.type; expected \"ssr\" or \"ssg\""
+            )
+        })?,
+        None => cli::BuildingType::ServerSideRendering,
+    };
 
-    (out_dir, build_type)
+    Ok((out_dir, build_type))
 }
 
 #[tokio::main]
@@ -82,7 +92,8 @@ async fn main() -> Result<()> {
         None
     };
 
-    let debug_mode = args.debug_mode.or_else(|| debug_mode_from_config(&config));
+    let config_debug_mode = debug_mode_from_config(&config)?;
+    let debug_mode = args.debug_mode.or(config_debug_mode);
 
     let allow_metacall_debug = matches!(debug_mode, Some(DebugMode::All | DebugMode::Metacall));
     let allow_http_debug = matches!(debug_mode, Some(DebugMode::All | DebugMode::Http));
@@ -140,7 +151,7 @@ async fn main() -> Result<()> {
             out_dir,
             build_type,
         } => {
-            let (config_out_dir, config_build_type) = resolve_build(&config);
+            let (config_out_dir, config_build_type) = resolve_build(&config)?;
             let out_dir = out_dir.unwrap_or(config_out_dir);
             let build_type = build_type.unwrap_or(config_build_type);
 
@@ -163,7 +174,7 @@ async fn main() -> Result<()> {
             out_dir,
             build_type,
         } => {
-            let (config_out_dir, config_build_type) = resolve_build(&config);
+            let (config_out_dir, config_build_type) = resolve_build(&config)?;
             let port = port
                 .or_else(|| config.as_ref().and_then(|c| c.dev.as_ref()?.server_port))
                 .unwrap_or(DEFAULT_PORT);
@@ -193,6 +204,101 @@ async fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn config_with_build_type(value: Option<&str>) -> Option<MetaSSRConfig> {
+        Some(MetaSSRConfig {
+            build: Some(BuildConfig {
+                r#type: value.map(str::to_owned),
+                out_dir: None,
+            }),
+            server: None,
+            debug: None,
+            dev: None,
+            middleware: None,
+            images: None,
+            lint: None,
+            plugins: None,
+        })
+    }
+
+    fn config_with_debug_mode(value: &str) -> Option<MetaSSRConfig> {
+        Some(MetaSSRConfig {
+            build: None,
+            server: None,
+            debug: Some(metassr_config::DebugConfig {
+                mode: Some(value.to_owned()),
+                log_file: None,
+            }),
+            dev: None,
+            middleware: None,
+            images: None,
+            lint: None,
+            plugins: None,
+        })
+    }
+
+    #[test]
+    fn invalid_build_type_returns_an_error_instead_of_defaulting_to_ssr() {
+        let error = resolve_build(&config_with_build_type(Some("typo"))).unwrap_err();
+        let message = error.to_string();
+
+        assert!(message.contains("build.type"));
+        assert!(message.contains("typo"));
+        assert!(message.contains("ssr"));
+        assert!(message.contains("ssg"));
+    }
+
+    #[test]
+    fn valid_build_types_are_resolved_from_config() {
+        assert_eq!(
+            resolve_build(&config_with_build_type(Some("ssr")))
+                .unwrap()
+                .1,
+            BuildingType::ServerSideRendering
+        );
+        assert_eq!(
+            resolve_build(&config_with_build_type(Some("ssg")))
+                .unwrap()
+                .1,
+            BuildingType::StaticSiteGeneration
+        );
+    }
+
+    #[test]
+    fn missing_build_type_still_defaults_to_ssr() {
+        assert_eq!(
+            resolve_build(&config_with_build_type(None)).unwrap().1,
+            BuildingType::ServerSideRendering
+        );
+    }
+
+    #[test]
+    fn invalid_debug_mode_returns_an_error_instead_of_silently_disabling_debug() {
+        let error = debug_mode_from_config(&config_with_debug_mode("typo")).unwrap_err();
+        let message = error.to_string();
+
+        assert!(message.contains("debug.mode"));
+        assert!(message.contains("typo"));
+        assert!(message.contains("all"));
+        assert!(message.contains("metacall"));
+        assert!(message.contains("http"));
+    }
+
+    #[test]
+    fn valid_debug_modes_are_resolved_from_config() {
+        assert_eq!(
+            debug_mode_from_config(&config_with_debug_mode("all")).unwrap(),
+            Some(DebugMode::All)
+        );
+        assert_eq!(
+            debug_mode_from_config(&config_with_debug_mode("metacall")).unwrap(),
+            Some(DebugMode::Metacall)
+        );
+        assert_eq!(
+            debug_mode_from_config(&config_with_debug_mode("http")).unwrap(),
+            Some(DebugMode::Http)
+        );
+    }
 
     #[test]
     fn no_flags_defaults_to_info() {
