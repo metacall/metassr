@@ -12,6 +12,48 @@ const KNOWN_KEYS: &[&str] = &[
     "plugins",
 ];
 
+const BUILD_KEYS: &[&str] = &["type", "out_dir"];
+const SERVER_KEYS: &[&str] = &["port"];
+const DEBUG_KEYS: &[&str] = &["mode", "log_file"];
+const DEV_KEYS: &[&str] = &["hmr", "server_port", "ws_port"];
+
+fn known_section_keys(section: &str) -> Option<&'static [&'static str]> {
+    match section {
+        "build" => Some(BUILD_KEYS),
+        "server" => Some(SERVER_KEYS),
+        "debug" => Some(DEBUG_KEYS),
+        "dev" => Some(DEV_KEYS),
+        _ => None,
+    }
+}
+
+fn unknown_keys(table: &toml::Table) -> Vec<String> {
+    let mut unknown = Vec::new();
+
+    for (section, value) in table {
+        if !KNOWN_KEYS.contains(&section.as_str()) {
+            unknown.push(section.clone());
+            continue;
+        }
+
+        let Some(known_keys) = known_section_keys(section) else {
+            continue;
+        };
+        let Some(section_table) = value.as_table() else {
+            continue;
+        };
+
+        for key in section_table.keys() {
+            if !known_keys.contains(&key.as_str()) {
+                unknown.push(format!("{section}.{key}"));
+            }
+        }
+    }
+
+    unknown.sort();
+    unknown
+}
+
 #[derive(Debug, Deserialize)]
 pub struct MetaSSRConfig {
     pub build: Option<BuildConfig>,
@@ -62,13 +104,8 @@ impl MetaSSRConfig {
         let content = std::fs::read_to_string(&config_path)?;
 
         let table: toml::Table = content.parse()?;
-        for key in table.keys() {
-            if !KNOWN_KEYS.contains(&key.as_str()) {
-                println!(
-                    "warning: metassr.toml: unknown key \"{}\" at the top level",
-                    key
-                );
-            }
+        for key in unknown_keys(&table) {
+            println!("warning: metassr.toml: unknown key \"{key}\"");
         }
 
         let config: MetaSSRConfig = toml::from_str(&content)?;
@@ -141,6 +178,19 @@ foo = "bar"
         fs::write(dir.path().join("metassr.toml"), toml_content).unwrap();
         let config = MetaSSRConfig::load(dir.path()).unwrap();
         assert!(config.is_some());
+    }
+
+    #[test]
+    fn reports_unknown_nested_keys_with_their_full_path() {
+        let table: toml::Table = r#"
+[build]
+type = "ssr"
+outdir = "output"
+"#
+        .parse()
+        .unwrap();
+
+        assert_eq!(unknown_keys(&table), vec!["build.outdir"]);
     }
 
     #[test]
