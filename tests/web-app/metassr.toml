@@ -5,9 +5,6 @@ out_dir = "dist"
 [server]
 port = 8080
 
-[debug]
-mode = "off"
-
 [dev]
 hmr = true
 server_port = 3000
