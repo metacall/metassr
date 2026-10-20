@@ -1,7 +1,7 @@
 //! MetaSSR API Handler - Polyglot API routes support.
 //!
 //! This crate provides API route handling for MetaSSR, allowing developers to
-//! define backend API endpoints in `./src/api/` using JavaScript files.
+//! define backend API endpoints in `./src/api/` using JavaScript or TypeScript files.
 //!
 //! # Example
 //!

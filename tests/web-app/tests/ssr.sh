@@ -134,6 +134,12 @@ assert_json_field "$BASE_URL/api/hello" "GET"  "message" "Hello from MetaSSR API
 assert_json_field "$BASE_URL/api/hello" "POST" "message" "Hello, world!"           "API POST response"
 
 echo ""
+echo "=== TypeScript API Endpoints ==="
+assert_status "$BASE_URL/api/tsgreet" 200 "GET /api/tsgreet"
+assert_json_field "$BASE_URL/api/tsgreet" "GET"  "message" "Hello from MetaSSR TypeScript API" "TS API GET response"
+assert_json_field "$BASE_URL/api/tsgreet" "POST" "message" "Hello, world!"                      "TS API POST response"
+
+echo ""
 if [ "$FAILED" -eq 0 ]; then
     echo "All SSR tests passed!"
     exit 0

@@ -80,11 +80,13 @@ my-metassr-project/
 └── src/
     └── api/
         ├── hello.js
-        └── pygreet.py
+        ├── pygreet.py
+        └── tsgreet.ts
 ```
 
 - **hello.js**: A JavaScript handler served at `/api/hello`.
 - **pygreet.py**: A Python handler served at `/api/pygreet`.
+- **tsgreet.ts**: A TypeScript handler served at `/api/tsgreet`.
 
 ### Special Files
 
