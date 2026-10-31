@@ -100,6 +100,13 @@ export default function Index() {
 					Both apps render the same 20-item list on every request.
 				</p>
 				<BenchmarkTable rows={ssrBenchmarks} />
+				<p className="benchmarkSource">
+					MetaSSR: <Link href="https://github.com/metacall/metassr">source</Link> /{' '}
+					<Link href="https://github.com/metacall/metassr/blob/master/README.md">README</Link>
+					{' · '}
+					Next.js: <Link href="https://github.com/vercel/next.js">source</Link> /{' '}
+					<Link href="https://github.com/vercel/next.js/blob/canary/README.md">README</Link>
+				</p>
 			</section>
 
 			<Footer />
