@@ -101,11 +101,30 @@ export default function Index() {
 				</p>
 				<BenchmarkTable rows={ssrBenchmarks} />
 				<p className="benchmarkSource">
-					MetaSSR: <Link href="https://github.com/metacall/metassr">source</Link> /{' '}
-					<Link href="https://github.com/metacall/metassr/blob/master/README.md">README</Link>
-					{' · '}
-					Next.js: <Link href="https://github.com/vercel/next.js">source</Link> /{' '}
-					<Link href="https://github.com/vercel/next.js/blob/canary/README.md">README</Link>
+					Benchmarked apps: MetaSSR (
+					<Link href="https://github.com/metacall/metassr/tree/master/benchmarks/apps/metassr-app">
+						source
+					</Link>{' '}
+					/{' '}
+					<Link href="https://github.com/metacall/metassr/blob/master/benchmarks/apps/metassr-app/package.json">
+						package.json
+					</Link>
+					) · Next.js (
+					<Link href="https://github.com/metacall/metassr/tree/master/benchmarks/apps/nextjs-app">
+						source
+					</Link>{' '}
+					/{' '}
+					<Link href="https://github.com/metacall/metassr/blob/master/benchmarks/apps/nextjs-app/package.json">
+						package.json
+					</Link>{' '}
+					/{' '}
+					<Link href="https://github.com/metacall/metassr/blob/master/benchmarks/apps/nextjs-app/Dockerfile">
+						Dockerfile
+					</Link>
+					) ·{' '}
+					<Link href="https://github.com/metacall/metassr/tree/master/benchmarks/reports/metassr-vs-nextjs-2026-10-31">
+						benchmark report
+					</Link>
 				</p>
 			</section>
 
