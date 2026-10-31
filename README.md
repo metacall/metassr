@@ -44,6 +44,8 @@ Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connect
 
 </center>
 
+**Socket errors** are client-side `wrk` connection failures (connect/read/write/timeout), not HTTP errors. Zero means every request completed; timeouts mean the server was saturated and `wrk` gave up.
+
 > **Note on older numbers:** the previous README figures came from the `2026-09-28` run, which went through Docker's userland proxy and is invalid. The corrected `2026-10-03` run used npm `1.0.0-alpha.2`, which predates the per-request SSR fix, so its SSR row measured boot-time cached HTML. The `2026-10-31` report above is the first run that measures real per-request SSR on current source.
 
 ## Key Features

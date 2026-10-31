@@ -149,8 +149,51 @@ pre {
     font-size: 0.9rem;
 }
 
+.tableBlock {
+    display: grid;
+    gap: var(--space-2);
+}
+
 .tableWrap {
     overflow-x: auto;
+}
+
+.metricLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.infoButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid var(--color-ink-muted);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-ink-muted);
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: help;
+}
+
+.infoButton:hover,
+.infoButton:focus-visible {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    outline: none;
+}
+
+.tableNote {
+    margin: 0;
+    max-width: 640px;
+    color: var(--color-ink-muted);
+    font-size: 0.85rem;
 }
 
 .dataTable {
