@@ -6,16 +6,21 @@ use std::{
 
 use crate::traits::Exec;
 use anyhow::{anyhow, Result};
-use metacall::{load, metacall_no_arg};
+use metacall::{
+    load::{self, Handle},
+    metacall_handle_no_arg,
+};
 
 const RENDER_FUNC_PREFIX: &str = "render_";
 
 pub struct RenderExec {
     id: i64,
-    path: PathBuf,
+    handle: Handle,
 }
 
 impl RenderExec {
+    /// Loads the render script once and scopes it to this handle, so that
+    /// [`call`](Self::call) can be repeated per request cheaply.
     pub fn new<S>(id: i64, path: &S) -> Result<Self>
     where
         S: AsRef<OsStr> + ?Sized,
@@ -24,32 +29,42 @@ impl RenderExec {
         if !path.exists() {
             return Err(anyhow!("Path not found: {path:#?}"));
         }
-        Ok(Self {
-            id,
-            path: path.to_path_buf(),
-        })
+
+        let mut handle = Handle::new();
+        if let Err(e) = load::from_single_file(load::Tag::NodeJS, path, Some(&mut handle)) {
+            return Err(anyhow!(
+                "Cannot load render script: {e:?} \n  path: {:#?}",
+                path
+            ));
+        }
+
+        Ok(Self { id, handle })
+    }
+
+    /// Runs the page render function within this script's handle.
+    ///
+    /// `Handle` is `Send + Sync`, so this is safe to call per request from the
+    /// axum handlers. NOTE: the call is synchronous and runs directly on the
+    /// tokio worker thread; wrapping it in `tokio::task::spawn_blocking` is a
+    /// possible follow-up if render load becomes a bottleneck.
+    pub fn call(&self) -> Result<String> {
+        match metacall_handle_no_arg::<String>(
+            &self.handle,
+            format!("{}{}", RENDER_FUNC_PREFIX, self.id),
+        ) {
+            Err(e) => Err(anyhow!(
+                "Cannot run {RENDER_FUNC_PREFIX}{}(): {e:?}",
+                self.id
+            )),
+            Ok(out) => Ok(out),
+        }
     }
 }
 
 impl Exec for RenderExec {
     type Output = String;
     fn exec(&self) -> Result<Self::Output> {
-        // let path = self.0.strip_prefix(current_dir()?)?;
-        // TODO: should the scope of this loading be a handle or None ?
-        if let Err(e) = load::from_single_file(load::Tag::NodeJS, &self.path, None) {
-            return Err(anyhow!(
-                "Cannot load render script: {e:?} \n  path: {:#?}",
-                self.path
-            ));
-        }
-
-        match metacall_no_arg::<String>(format!("{}{}", RENDER_FUNC_PREFIX, self.id)) {
-            Err(e) => Err(anyhow!(
-                "Cannot running {RENDER_FUNC_PREFIX}{}(): {e:?}",
-                self.id
-            )),
-            Ok(out) => Ok(out),
-        }
+        self.call()
     }
 }
 

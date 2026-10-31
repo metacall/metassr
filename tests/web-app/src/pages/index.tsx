@@ -5,6 +5,9 @@ export default function Index() {
 		<div>
 			<script src="https://cdn.tailwindcss.com"></script>
 			<h1 className="text-4xl font-bold">Hello from index page </h1>
+			<p>
+				<a href="/clock">clock</a>
+			</p>
 		</div>
 	)
 }

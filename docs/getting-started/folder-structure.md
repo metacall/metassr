@@ -9,6 +9,7 @@ Understanding the folder structure of a MetaSSR project is crucial for effective
 - [Root Directory](#root-directory)
     - [src](#src)
     - [pages](#pages)
+    - [api](#api)
     - [Special Files](#special-files)
     - [static](#static)
     - [dist](#dist)
@@ -30,9 +31,12 @@ my-metassr-project/
 ├── static/
 ├── dist/
 ├── node_modules/
+├── metassr.toml
 ├── package.json
 └── README.md
 ```
+
+- **metassr.toml**: Optional project configuration (build type and output directory, server port, debug mode). CLI flags override the values set here. See the [CLI documentation](./cli.md).
 
 ### src
 
@@ -42,6 +46,7 @@ The `src` directory contains the main source code for your application. Here, yo
 my-metassr-project/
 └── src/
     ├── pages/
+    ├── api/
     ├── _head.jsx
     └── _app.jsx
 ```
@@ -66,6 +71,21 @@ my-metassr-project/
 
 These files will be automatically mapped to the respective routes, such as `/` for `index.jsx` and `/about` for `about.jsx`.
 
+### api
+
+The `api` directory contains server-side API route handlers. Each file maps to an HTTP endpoint under `/api/` and can be written in any language supported by the installed MetaSSR loaders (for example `.js`, `.ts` or `.py`).
+
+```plaintext
+my-metassr-project/
+└── src/
+    └── api/
+        ├── hello.js
+        └── pygreet.py
+```
+
+- **hello.js**: A JavaScript handler served at `/api/hello`.
+- **pygreet.py**: A Python handler served at `/api/pygreet`.
+
 ### Special Files
 
 MetaSSR uses several special files that help customize the behavior and appearance of your application across different pages:
@@ -80,7 +100,7 @@ MetaSSR uses several special files that help customize the behavior and appearan
 my-metassr-project/
 └── src/
     ├── _head.jsx
-    ├── _app_.jsx
+    ├── _app.jsx
     └── pages/
         ├── _notfound.jsx
         ├── index.jsx

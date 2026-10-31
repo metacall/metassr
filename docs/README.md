@@ -29,7 +29,7 @@ If you're new to the SSR Framework, start here! The [Getting Started](./getting-
 
 ## Contributing
 
-We welcome contributions from the community! Visit the [Contributing](../CONTRIBUTING) file to learn how you can get involved.
+We welcome contributions from the community! Visit the [Contributing](../CONTRIBUTING.md) file to learn how you can get involved.
 
 - [Contributing Guide](../CONTRIBUTING.md)
 - [Code of Conduct](../CODE_OF_CONDUCT.md)
@@ -37,5 +37,5 @@ We welcome contributions from the community! Visit the [Contributing](../CONTRIB
 
 ---
 
-Thank you for using Metassr! If you have any questions, feel free to open an issue on our [GitHub repository](https://github.com/metacall/metassr).
+Thank you for using MetaSSR! If you have any questions, feel free to open an issue on our [GitHub repository](https://github.com/metacall/metassr).
 
