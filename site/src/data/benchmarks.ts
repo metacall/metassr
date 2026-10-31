@@ -6,10 +6,10 @@ export type Benchmark = {
 };
 
 export const benchmarks: Benchmark[] = [
-	{ metric: 'Requests/sec', metassr: '98,420.11', nextjs: '3,170.95', gain: '31x faster' },
-	{ metric: 'Average Latency', metassr: '8.63ms', nextjs: '119.90ms', gain: '14x lower' },
-	{ metric: 'Transfer/sec', metassr: '4.98GB', nextjs: '37.95MB', gain: '134x higher' },
-	{ metric: 'Total Requests', metassr: '2,962,418', nextjs: '95,326', gain: '31x more' },
-	{ metric: 'Max Latency', metassr: '65.22ms', nextjs: '1.99s', gain: '30x lower' },
-	{ metric: 'Socket Errors', metassr: '0', nextjs: '239 timeouts', gain: 'Zero errors' },
+	{ metric: 'Requests/sec', metassr: '107,116.71', nextjs: '1,469.79', gain: '73x faster' },
+	{ metric: 'Average Latency', metassr: '10.15ms', nextjs: '126.75ms', gain: '12x lower' },
+	{ metric: 'Transfer/sec', metassr: '16.96MB', nextjs: '457.89KB', gain: '38x higher' },
+	{ metric: 'Total Requests', metassr: '3,216,110', nextjs: '44,239', gain: '73x more' },
+	{ metric: 'Max Latency', metassr: '71.29ms', nextjs: '1.97s', gain: '28x lower' },
+	{ metric: 'Socket Errors', metassr: '0', nextjs: '237 timeouts', gain: 'Zero errors' },
 ];

@@ -12,20 +12,20 @@ MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted
 
 MetaSSR has a great performance potential, performing significantly better than other more mature production frameworks.
 
-Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s). The numbers below come from running both frameworks' published npm packages in Docker containers on the same machine — MetaSSR `1.0.0-alpha.2` (SSR build) vs Next.js `16.3.6` (production build). Raw output is in [`benchmarks/reports/metassr-vs-nextjs-2026-09-28/`](benchmarks/reports/metassr-vs-nextjs-2026-09-28/).
+Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s). Both frameworks run in Docker with host networking on the same machine. MetaSSR is built from source at commit `6879584` (includes the per-request SSR fix #220); Next.js is pinned to `16.3.7`. All CPUs are capped at 2.5 GHz for both sides to avoid thermal throttling. Raw output is in [`benchmarks/reports/metassr-vs-nextjs-2026-10-31/`](benchmarks/reports/metassr-vs-nextjs-2026-10-31/).
 
-### API route (`/api/bench` — identical API handler and payload in both apps)
+### API route (`/api/bench` — equivalent JSON handler and payload in both apps)
 
 <center>
 
-| Metric              |  MetaSSR  |   Next.js   | Performance Gain |
-| ------------------- | :-------: | :---------: | ---------------- |
-| **Requests/sec**    | 100,103.87 |   1,376.68  | **73x faster**   |
-| **Average Latency** |  11.59ms  |  225.13ms   | **19x lower**    |
-| **Transfer/sec**    |  15.85MB  |  428.87KB   | **37x higher**   |
-| **Total Requests**  | 3,006,409 |   41,410    | **73x more**     |
-| **Max Latency**     |   1.05s   |    1.90s    | 1.8x lower       |
-| **Socket Errors**   |     0     | 137 (12 read + 125 timeouts) | **Zero errors** |
+| Metric              |   MetaSSR   |   Next.js   | Performance Gain |
+| ------------------- | :---------: | :---------: | ---------------- |
+| **Requests/sec**    | 107,116.71  |   1,469.79  | **73x faster**   |
+| **Average Latency** |   10.15ms   |  126.75ms   | **12x lower**    |
+| **Transfer/sec**    |   16.96MB   |  457.89KB   | **38x higher**   |
+| **Total Requests**  |  3,216,110  |   44,239    | **73x more**     |
+| **Max Latency**     |   71.29ms   |    1.97s    | 28x lower        |
+| **Socket Errors**   |      0      | 237 timeouts | **Zero errors** |
 
 </center>
 
@@ -33,16 +33,18 @@ Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connect
 
 <center>
 
-| Metric              |  MetaSSR  |   Next.js   | Performance Gain |
-| ------------------- | :-------: | :---------: | ---------------- |
-| **Requests/sec**    | 206,247.56 |    422.81   | **488x faster**  |
-| **Average Latency** |   7.20ms  |  745.08ms   | **103x lower**   |
-| **Transfer/sec**    | 597.16MB  |   4.83MB    | **124x higher**  |
-| **Total Requests**  | 6,207,426 |   12,720    | **488x more**    |
-| **Max Latency**     |   1.03s   |    1.99s    | 1.9x lower       |
-| **Socket Errors**   |     0     | 152 timeouts | **Zero errors**  |
+| Metric              |  MetaSSR   |  Next.js  | Performance Gain |
+| ------------------- | :--------: | :-------: | ---------------- |
+| **Requests/sec**    | 41,499.66  |  500.86   | **83x faster**   |
+| **Average Latency** |   25.36ms  | 495.70ms  | **20x lower**    |
+| **Transfer/sec**    |  120.16MB  |   5.72MB  | **21x higher**   |
+| **Total Requests**  | 1,249,104  |  15,057   | **83x more**     |
+| **Max Latency**     |  158.38ms  |   1.86s   | 12x lower        |
+| **Socket Errors**   |     0      | 234 timeouts | **Zero errors** |
 
 </center>
+
+> **Note on older numbers:** the previous README figures came from the `2026-09-28` run, which went through Docker's userland proxy and is invalid. The corrected `2026-10-03` run used npm `1.0.0-alpha.2`, which predates the per-request SSR fix, so its SSR row measured boot-time cached HTML. The `2026-10-31` report above is the first run that measures real per-request SSR on current source.
 
 ## Key Features
 

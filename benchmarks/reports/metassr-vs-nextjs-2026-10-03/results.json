@@ -1,0 +1,322 @@
+{
+  "date": "2026-10-03",
+  "method": "wrk; Docker --network host; one server at a time; headline = median of 3 interleaved rounds (median run shown)",
+  "versions": {
+    "metassr": "1.0.0-alpha.2 (npm)",
+    "nextjs": "16.3.7 (npm)"
+  },
+  "system": {
+    "cpu": "13th Gen Intel Core i7-13650HX",
+    "cores": 20,
+    "memory_gb": 15.3,
+    "os": "Linux 6.18"
+  },
+  "headline": {
+    "metassr": {
+      "root": {
+        "median_run": {
+          "rps": 505105.72,
+          "latency": "2.05ms",
+          "latency_ms": 2.05,
+          "max_latency": "240.72ms",
+          "max_latency_ms": 240.72,
+          "p99": "7.68ms",
+          "p99_ms": 7.68,
+          "requests": 15196308,
+          "read": "42.97GB",
+          "transfer_per_sec": "1.43GB",
+          "timeouts": 0
+        },
+        "rps_runs": [
+          561233.29,
+          500393.51,
+          505105.72
+        ]
+      },
+      "api": {
+        "median_run": {
+          "rps": 162601.16,
+          "latency": "6.43ms",
+          "latency_ms": 6.43,
+          "max_latency": "216.85ms",
+          "max_latency_ms": 216.85,
+          "p99": "20.81ms",
+          "p99_ms": 20.81,
+          "requests": 4894277,
+          "read": "774.81MB",
+          "transfer_per_sec": "25.74MB",
+          "timeouts": 0
+        },
+        "rps_runs": [
+          162601.16,
+          162890.2,
+          159410.73
+        ]
+      }
+    },
+    "nextjs": {
+      "root": {
+        "median_run": {
+          "rps": 824.88,
+          "latency": "383.29ms",
+          "latency_ms": 383.29,
+          "max_latency": "1.99s",
+          "max_latency_ms": 1990.0,
+          "p99": "535.66ms",
+          "p99_ms": 535.66,
+          "requests": 24824,
+          "read": "283.57MB",
+          "transfer_per_sec": "9.42MB",
+          "timeouts": 304
+        },
+        "rps_runs": [
+          824.88,
+          828.55,
+          820.8
+        ]
+      },
+      "api": {
+        "median_run": {
+          "rps": 2615.09,
+          "latency": "98.71ms",
+          "latency_ms": 98.71,
+          "max_latency": "1.98s",
+          "max_latency_ms": 1980.0,
+          "p99": "146.80ms",
+          "p99_ms": 146.8,
+          "requests": 78681,
+          "read": "23.94MB",
+          "transfer_per_sec": "814.67KB",
+          "timeouts": 294
+        },
+        "rps_runs": [
+          2629.43,
+          2615.09,
+          2603.64
+        ]
+      }
+    }
+  },
+  "canonical": {
+    "metassr": {
+      "root": {
+        "light": {
+          "rps": 146794.38,
+          "latency": "52.65us",
+          "latency_ms": 0.052649999999999995,
+          "max_latency": "486.00us",
+          "max_latency_ms": 0.486,
+          "p99": "125.00us",
+          "p99_ms": 0.125,
+          "requests": 734083,
+          "read": "2.08GB",
+          "transfer_per_sec": "425.02MB",
+          "timeouts": 0
+        },
+        "medium": {
+          "rps": 459809.33,
+          "latency": "84.54us",
+          "latency_ms": 0.08454,
+          "max_latency": "2.85ms",
+          "max_latency_ms": 2.85,
+          "p99": "420.00us",
+          "p99_ms": 0.42,
+          "requests": 2345074,
+          "read": "6.63GB",
+          "transfer_per_sec": "1.30GB",
+          "timeouts": 0
+        },
+        "heavy": {
+          "rps": 598269.96,
+          "latency": "346.83us",
+          "latency_ms": 0.34682999999999997,
+          "max_latency": "23.98ms",
+          "max_latency_ms": 23.98,
+          "p99": "1.32ms",
+          "p99_ms": 1.32,
+          "requests": 3050907,
+          "read": "8.63GB",
+          "transfer_per_sec": "1.69GB",
+          "timeouts": 0
+        },
+        "stress": {
+          "rps": 652926.07,
+          "latency": "768.84us",
+          "latency_ms": 0.7688400000000001,
+          "max_latency": "39.50ms",
+          "max_latency_ms": 39.5,
+          "p99": "3.66ms",
+          "p99_ms": 3.66,
+          "requests": 3307350,
+          "read": "9.35GB",
+          "transfer_per_sec": "1.85GB",
+          "timeouts": 0
+        }
+      },
+      "api": {
+        "light": {
+          "rps": 141386.77,
+          "latency": "63.26us",
+          "latency_ms": 0.06326,
+          "max_latency": "4.16ms",
+          "max_latency_ms": 4.16,
+          "p99": "120.00us",
+          "p99_ms": 0.12,
+          "requests": 706974,
+          "read": "111.92MB",
+          "transfer_per_sec": "22.38MB",
+          "timeouts": 0
+        },
+        "medium": {
+          "rps": 224102.54,
+          "latency": "216.38us",
+          "latency_ms": 0.21638,
+          "max_latency": "3.75ms",
+          "max_latency_ms": 3.75,
+          "p99": "575.00us",
+          "p99_ms": 0.575,
+          "requests": 1142847,
+          "read": "180.92MB",
+          "transfer_per_sec": "35.48MB",
+          "timeouts": 0
+        },
+        "heavy": {
+          "rps": 230189.9,
+          "latency": "0.89ms",
+          "latency_ms": 0.89,
+          "max_latency": "5.16ms",
+          "max_latency_ms": 5.16,
+          "p99": "2.52ms",
+          "p99_ms": 2.52,
+          "requests": 1173942,
+          "read": "185.85MB",
+          "transfer_per_sec": "36.44MB",
+          "timeouts": 0
+        },
+        "stress": {
+          "rps": 195654.36,
+          "latency": "2.56ms",
+          "latency_ms": 2.56,
+          "max_latency": "21.11ms",
+          "max_latency_ms": 21.11,
+          "p99": "7.77ms",
+          "p99_ms": 7.77,
+          "requests": 997767,
+          "read": "157.96MB",
+          "transfer_per_sec": "30.97MB",
+          "timeouts": 0
+        }
+      }
+    },
+    "nextjs": {
+      "root": {
+        "light": {
+          "rps": 757.09,
+          "latency": "13.19ms",
+          "latency_ms": 13.19,
+          "max_latency": "24.89ms",
+          "max_latency_ms": 24.89,
+          "p99": "17.86ms",
+          "p99_ms": 17.86,
+          "requests": 3790,
+          "read": "43.29MB",
+          "transfer_per_sec": "8.65MB",
+          "timeouts": 0
+        },
+        "medium": {
+          "rps": 783.53,
+          "latency": "63.25ms",
+          "latency_ms": 63.25,
+          "max_latency": "462.53ms",
+          "max_latency_ms": 462.53,
+          "p99": "225.51ms",
+          "p99_ms": 225.51,
+          "requests": 3924,
+          "read": "44.82MB",
+          "transfer_per_sec": "8.95MB",
+          "timeouts": 0
+        },
+        "heavy": {
+          "rps": 764.11,
+          "latency": "187.48ms",
+          "latency_ms": 187.48,
+          "max_latency": "1.94s",
+          "max_latency_ms": 1940.0,
+          "p99": "1.28s",
+          "p99_ms": 1280.0,
+          "requests": 3828,
+          "read": "43.73MB",
+          "transfer_per_sec": "8.73MB",
+          "timeouts": 68
+        },
+        "stress": {
+          "rps": 779.87,
+          "latency": "165.97ms",
+          "latency_ms": 165.97,
+          "max_latency": "1.95s",
+          "max_latency_ms": 1950.0,
+          "p99": "1.07s",
+          "p99_ms": 1070.0,
+          "requests": 3937,
+          "read": "44.97MB",
+          "transfer_per_sec": "8.91MB",
+          "timeouts": 72
+        }
+      },
+      "api": {
+        "light": {
+          "rps": 2717.72,
+          "latency": "3.69ms",
+          "latency_ms": 3.69,
+          "max_latency": "26.00ms",
+          "max_latency_ms": 26.0,
+          "p99": "6.81ms",
+          "p99_ms": 6.81,
+          "requests": 13860,
+          "read": "4.22MB",
+          "transfer_per_sec": "846.63KB",
+          "timeouts": 0
+        },
+        "medium": {
+          "rps": 2719.17,
+          "latency": "21.51ms",
+          "latency_ms": 21.51,
+          "max_latency": "473.23ms",
+          "max_latency_ms": 473.23,
+          "p99": "200.32ms",
+          "p99_ms": 200.32,
+          "requests": 13610,
+          "read": "4.14MB",
+          "transfer_per_sec": "847.18KB",
+          "timeouts": 0
+        },
+        "heavy": {
+          "rps": 2617.36,
+          "latency": "81.71ms",
+          "latency_ms": 81.71,
+          "max_latency": "1.99s",
+          "max_latency_ms": 1990.0,
+          "p99": "1.20s",
+          "p99_ms": 1200.0,
+          "requests": 13107,
+          "read": "3.99MB",
+          "transfer_per_sec": "815.47KB",
+          "timeouts": 61
+        },
+        "stress": {
+          "rps": 2456.91,
+          "latency": "59.83ms",
+          "latency_ms": 59.83,
+          "max_latency": "1.95s",
+          "max_latency_ms": 1950.0,
+          "p99": "877.24ms",
+          "p99_ms": 877.24,
+          "requests": 12403,
+          "read": "3.77MB",
+          "transfer_per_sec": "765.53KB",
+          "timeouts": 67
+        }
+      }
+    }
+  }
+}

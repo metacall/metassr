@@ -1,0 +1,13 @@
+Running 5s test @ http://localhost:8080/api/bench
+  12 threads and 500 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.56ms    1.58ms  21.11ms   74.05%
+    Req/Sec    16.66k     4.95k   81.24k    93.02%
+  Latency Distribution
+     50%    2.30ms
+     75%    3.33ms
+     90%    4.55ms
+     99%    7.77ms
+  997767 requests in 5.10s, 157.96MB read
+Requests/sec: 195654.36
+Transfer/sec:     30.97MB

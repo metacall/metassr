@@ -1,0 +1,6 @@
+[2m2026-10-31T17:16:50.820241520+00:00[0m  [32mINFO[0m  [1mRunning your web application[0m [2mmode: SSR [0m
+[2m2026-10-31T17:16:50.821436571+00:00[0m  [32mINFO[0m  [1mFound 1 API route(s)[0m [2m[0m
+[2m2026-10-31T17:16:50.891197250+00:00[0m  [32mINFO[0m  [1m  Loaded: /api/bench -> "/app/src/api/bench.js"[0m [2m[0m
+[2m2026-10-31T17:16:50.891247287+00:00[0m  [32mINFO[0m  [1mRegistered API route: /api/bench[0m [2m[0m
+[2m2026-10-31T17:16:50.891258214+00:00[0m  [32mINFO[0m  [1mAPI routes registered successfully[0m [2m[0m
+[2m2026-10-31T17:16:50.914815825+00:00[0m  [32mINFO[0m  [1mListening on http://[::]:8080[0m [2mmode: production [0m

@@ -29,7 +29,9 @@ export default function Index() {
 				<h2 id="benchmarks-title" className="sectionTitle">
 					Benchmarks vs Next.js
 				</h2>
-				<p className="sectionLead">12 threads, 1000 connections, 30s.</p>
+				<p className="sectionLead">
+					API route /api/bench · 12 threads, 1000 connections, 30s · 2.5 GHz cap.
+				</p>
 				<div className="tableWrap">
 					<table className="dataTable">
 						<thead>
