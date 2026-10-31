@@ -4,7 +4,37 @@ import metacallLogo from '../../static/assets/metacall-logo.png';
 import metassrLogo from '../../static/assets/metassr-logo.svg';
 import { Footer } from '../components/footer';
 import { Link } from '../components/link';
-import { benchmarks } from '../data/benchmarks';
+import { apiBenchmarks, ssrBenchmarks } from '../data/benchmarks';
+import type { Benchmark } from '../data/benchmarks';
+
+function BenchmarkTable({ rows }: { rows: Benchmark[] }) {
+	return (
+		<div className="tableWrap">
+			<table className="dataTable">
+				<thead>
+					<tr>
+						<th scope="col">Metric</th>
+						<th scope="col">MetaSSR</th>
+						<th scope="col">Next.js</th>
+						<th scope="col">Gain</th>
+					</tr>
+				</thead>
+				<tbody>
+					{rows.map(row => (
+						<tr key={row.metric}>
+							<th scope="row">{row.metric}</th>
+							<td className="isAccent">{row.metassr}</td>
+							<td>{row.nextjs}</td>
+							<td>
+								<span className="pill">{row.gain}</span>
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	);
+}
 
 export default function Index() {
 	return (
@@ -30,32 +60,18 @@ export default function Index() {
 					Benchmarks vs Next.js
 				</h2>
 				<p className="sectionLead">
-					API route /api/bench · 12 threads, 1000 connections, 30s · 2.5 GHz cap.
+					12 threads, 1000 connections, 30s · 2.5 GHz cap.
 				</p>
-				<div className="tableWrap">
-					<table className="dataTable">
-						<thead>
-							<tr>
-								<th scope="col">Metric</th>
-								<th scope="col">MetaSSR</th>
-								<th scope="col">Next.js</th>
-								<th scope="col">Gain</th>
-							</tr>
-						</thead>
-						<tbody>
-							{benchmarks.map(row => (
-								<tr key={row.metric}>
-									<th scope="row">{row.metric}</th>
-									<td className="isAccent">{row.metassr}</td>
-									<td>{row.nextjs}</td>
-									<td>
-										<span className="pill">{row.gain}</span>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<h3 className="tableTitle">API route /api/bench</h3>
+				<p className="tableLead">
+					Equivalent JSON handler and payload in both apps.
+				</p>
+				<BenchmarkTable rows={apiBenchmarks} />
+				<h3 className="tableTitle">SSR page /</h3>
+				<p className="tableLead">
+					Both apps render the same 20-item list on every request.
+				</p>
+				<BenchmarkTable rows={ssrBenchmarks} />
 			</section>
 
 			<Footer />
