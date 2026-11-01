@@ -1042,6 +1042,7 @@ version = "1.0.0-alpha"
 dependencies = [
  "anyhow",
  "dunce",
+ "tempfile",
  "walkdir",
 ]
 
@@ -1080,6 +1081,7 @@ dependencies = [
  "notify",
  "serde",
  "serde_json",
+ "socket2",
  "tempfile",
  "tokio",
  "tokio-tungstenite",

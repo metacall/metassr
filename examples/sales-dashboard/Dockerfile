@@ -7,12 +7,15 @@
 # It mirrors docker/app.Dockerfile. The example's Python API route (/api/sales)
 # needs numpy + pandas, declared in requirements.txt; the runtime stage installs
 # them into the bundled Python 3.14 runtime shipped in the metassr npm payload.
+# The Node API routes (/api/stats and /api/og) use only Node built-ins, so they
+# need no extra dependencies; /api/og renders the Open Graph PNG with a pure-JS
+# encoder.
 #
 # BUILD_TYPE selects the build target and how the runtime serves it:
 #   ssr (default) -> `metassr build -t ssr` + `metassr start`
 #   ssg           -> `metassr build -t ssg` + `metassr start --serve`
 
-ARG METASSR_VERSION=1.0.0-alpha.1
+ARG METASSR_VERSION=1.0.0-alpha.2
 ARG BUILD_TYPE=ssr
 
 FROM node:22-trixie-slim AS build

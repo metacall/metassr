@@ -47,6 +47,22 @@ assert_not_contains() {
     fi
 }
 
+assert_changes() {
+    local url="$1"
+    local label="$2"
+    local first
+    local second
+    first=$(curl --silent "$url" | grep -o 'id="server-time"[^<]*')
+    sleep 1
+    second=$(curl --silent "$url" | grep -o 'id="server-time"[^<]*')
+    if [ -n "$first" ] && [ "$first" != "$second" ]; then
+        echo "[PASS] $label"
+    else
+        echo "[FAIL] $label -> server-time did not change between requests (got: \"$first\")"
+        FAILED=$((FAILED + 1))
+    fi
+}
+
 assert_json_field() {
     local url="$1"
     local method="$2"
@@ -72,12 +88,26 @@ echo "=== SSR Page Routes ==="
 assert_status "$BASE_URL/"     200 "GET / (root)"
 assert_status "$BASE_URL/home" 200 "GET /home"
 assert_status "$BASE_URL/blog" 200 "GET /blog"
+assert_status "$BASE_URL/clock" 200 "GET /clock"
 
 echo ""
 echo "=== SSR HTML Content ==="
 assert_contains "$BASE_URL/"     "Hello from index page"   "Root page content"
 assert_contains "$BASE_URL/home" "counter"                 "Home page content"
 assert_contains "$BASE_URL/blog" "cool blog"               "Blog page content"
+assert_contains "$BASE_URL/clock" "Server-rendered time"   "Clock page content"
+
+echo ""
+echo "=== SSR Per-Request Rendering ==="
+# Published metassr CLIs older than this render pages once at boot (#216).
+# METASSR_VERSION unset (source builds) => always enforce.
+METASSR_SSR_PER_REQUEST_SINCE="${METASSR_SSR_PER_REQUEST_SINCE:-1.0.0-alpha.3}"
+if [ -z "${METASSR_VERSION:-}" ] || \
+   [ "$(printf '%s\n%s\n' "$METASSR_SSR_PER_REQUEST_SINCE" "$METASSR_VERSION" | sort -V | head -n1)" = "$METASSR_SSR_PER_REQUEST_SINCE" ]; then
+    assert_changes "$BASE_URL/clock" "SSR re-renders /clock on every request"
+else
+    echo "[SKIP] SSR re-renders /clock on every request (metassr@$METASSR_VERSION predates it)"
+fi
 
 echo ""
 echo "=== Head Rendering ==="
@@ -102,6 +132,20 @@ echo "=== API Endpoints ==="
 assert_status "$BASE_URL/api/hello" 200 "GET /api/hello"
 assert_json_field "$BASE_URL/api/hello" "GET"  "message" "Hello from MetaSSR API" "API GET response"
 assert_json_field "$BASE_URL/api/hello" "POST" "message" "Hello, world!"           "API POST response"
+
+echo ""
+echo "=== TypeScript API Endpoints ==="
+# Published metassr CLIs older than this skip .ts files in src/api (#222).
+# METASSR_VERSION unset (source builds) => always enforce.
+METASSR_TS_API_SINCE="${METASSR_TS_API_SINCE:-1.0.0-alpha.3}"
+if [ -z "${METASSR_VERSION:-}" ] || \
+   [ "$(printf '%s\n%s\n' "$METASSR_TS_API_SINCE" "$METASSR_VERSION" | sort -V | head -n1)" = "$METASSR_TS_API_SINCE" ]; then
+    assert_status "$BASE_URL/api/tsgreet" 200 "GET /api/tsgreet"
+    assert_json_field "$BASE_URL/api/tsgreet" "GET"  "message" "Hello from MetaSSR TypeScript API" "TS API GET response"
+    assert_json_field "$BASE_URL/api/tsgreet" "POST" "message" "Hello, world!"                      "TS API POST response"
+else
+    echo "[SKIP] TypeScript API routes (metassr@$METASSR_VERSION predates them)"
+fi
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then

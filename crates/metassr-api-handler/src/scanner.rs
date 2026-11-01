@@ -16,7 +16,7 @@ pub struct ApiRouteFile {
 }
 
 /// Scan the api directory and return list of discovered route files.
-/// Only scans for .js files (NodeJS support only for now).
+/// Scans for `.js` (NodeJS), `.ts` (TypeScript), `.py` (Python) and `.rb` (Ruby) files.
 pub fn scan_api_dir(api_dir: &Path) -> Vec<ApiRouteFile> {
     let mut routes = Vec::new();
 
@@ -46,7 +46,7 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
             // Recursively scan subdirectories
             scan_api_dir_recursive(base_path, &path, routes);
         } else if path.is_file() {
-            // Only support .js files for now (NodeJS)
+            // The file extension selects the MetaCall loader
             let ext = path.extension().and_then(|s| s.to_str());
 
             match ext {
@@ -57,6 +57,17 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
                             route_path,
                             file_path: path,
                             tag: Tag::NodeJS,
+                        });
+                    }
+                }
+                // Declaration files (`*.d.ts`) only hold types, they are not routes
+                Some("ts") if !is_declaration_file(&path) => {
+                    if let Ok(relative_path) = path.strip_prefix(base_path) {
+                        let route_path = build_route_path(relative_path, &path);
+                        routes.push(ApiRouteFile {
+                            route_path,
+                            file_path: path,
+                            tag: Tag::TypeScript,
                         });
                     }
                 }
@@ -84,6 +95,13 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
             }
         }
     }
+}
+
+/// Whether the path is a TypeScript declaration file (`*.d.ts`).
+fn is_declaration_file(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|s| s.to_str())
+        .is_some_and(|name| name.ends_with(".d.ts"))
 }
 
 /// Build the HTTP route path from the file path.
@@ -169,6 +187,70 @@ mod tests {
             route_paths.contains(&"/api/users/list"),
             "Should have /api/users/list route"
         );
+    }
+
+    #[test]
+    fn test_scan_api_dir_finds_ts_files() {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create api/hello.ts and api/users/list.ts (nested)
+        fs::write(temp_dir.path().join("hello.ts"), "function GET() {}").unwrap();
+        let users_dir = temp_dir.path().join("users");
+        fs::create_dir(&users_dir).unwrap();
+        fs::write(users_dir.join("list.ts"), "function GET() {}").unwrap();
+
+        // Create a non-route file (should be ignored)
+        fs::write(temp_dir.path().join("readme.txt"), "ignore me").unwrap();
+
+        let routes = scan_api_dir(temp_dir.path());
+
+        assert_eq!(routes.len(), 2, "Should find exactly 2 TS files");
+        for route in &routes {
+            assert!(
+                matches!(route.tag, Tag::TypeScript),
+                "TS files should use the TypeScript loader"
+            );
+        }
+
+        let route_paths: Vec<_> = routes.iter().map(|r| r.route_path.as_str()).collect();
+        assert!(route_paths.contains(&"/api/hello"));
+        assert!(route_paths.contains(&"/api/users/list"));
+    }
+
+    #[test]
+    fn test_scan_api_dir_ignores_ts_declaration_files() {
+        let temp_dir = TempDir::new().unwrap();
+        fs::write(temp_dir.path().join("hello.ts"), "function GET() {}").unwrap();
+        fs::write(
+            temp_dir.path().join("types.d.ts"),
+            "export type Id = string;",
+        )
+        .unwrap();
+
+        let routes = scan_api_dir(temp_dir.path());
+
+        assert_eq!(routes.len(), 1, "Should skip .d.ts declaration files");
+        assert_eq!(routes[0].route_path, "/api/hello");
+    }
+
+    #[test]
+    fn test_scan_api_dir_assigns_loader_by_extension() {
+        let temp_dir = TempDir::new().unwrap();
+        fs::write(temp_dir.path().join("a.js"), "").unwrap();
+        fs::write(temp_dir.path().join("b.ts"), "").unwrap();
+        fs::write(temp_dir.path().join("c.py"), "").unwrap();
+
+        let routes = scan_api_dir(temp_dir.path());
+
+        let tag_of = |route_path: &str| {
+            routes
+                .iter()
+                .find(|r| r.route_path == route_path)
+                .map(|r| r.tag)
+        };
+        assert!(matches!(tag_of("/api/a"), Some(Tag::NodeJS)));
+        assert!(matches!(tag_of("/api/b"), Some(Tag::TypeScript)));
+        assert!(matches!(tag_of("/api/c"), Some(Tag::Python)));
     }
 
     #[test]

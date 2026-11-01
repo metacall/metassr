@@ -4,7 +4,8 @@
   "description": "A web application built with MetaSSR framework",
   "scripts": {
     "build": "metassr build",
-    "start": "metassr start"
+    "start": "metassr start",
+    "dev": "metassr dev"
   },
   "devDependencies": {},
   "dependencies": {

@@ -106,7 +106,7 @@ To contribute code, follow these steps:
 
 4. **Make Changes**: Implement your changes in the new branch. Ensure that your code adheres to the project's coding standards and guidelines.
 
-5. **Write Tests**: Add or update tests to ensure your changes are covered. We use [testing framework] for our tests, and you can find existing tests in the `tests` directory.
+5. **Write Tests**: Add or update tests to ensure your changes are covered. We use Rust's built-in test framework (`cargo test`) for unit tests, and shell scripts under the `tests` directory for end-to-end smoke tests.
 
 6. **Commit Changes**: Commit your changes with a clear and concise commit message. Follow the [commit message conventions](#commit-message-conventions) for consistency:
 
@@ -172,7 +172,7 @@ Make sure your changes pass all existing and new tests. Run the tests locally be
 cargo test --workspace
 ```
 
-also, you can test one of web applications that located at [tests](../../tests/) directory.
+also, you can test one of web applications that located at [tests](./tests/) directory.
 
 **Example:**
 
@@ -200,7 +200,7 @@ feature/bugfix/refactor grouping.
 
 ### 8. Code of Conduct
 
-Please adhere to our [Code of Conduct](code-of-conduct.md) while participating in the MetaSSR community.
+Please adhere to our [Code of Conduct](CODE_OF_CONDUCT.md) while participating in the MetaSSR community.
 
 ## Getting Help
 
