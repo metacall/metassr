@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React from 'react';
 
 import metacallLogo from '../../static/assets/metacall-logo.png';
 import metassrLogo from '../../static/assets/metassr-logo.svg';
@@ -8,58 +8,30 @@ import { apiBenchmarks, ssrBenchmarks } from '../data/benchmarks';
 import type { Benchmark } from '../data/benchmarks';
 
 function BenchmarkTable({ rows }: { rows: Benchmark[] }) {
-	const noteId = useId();
-	const [showNote, setShowNote] = useState(false);
-	const infoRow = rows.find(row => row.info);
-
 	return (
-		<div className="tableBlock">
-			<div className="tableWrap">
-				<table className="dataTable">
-					<thead>
-						<tr>
-							<th scope="col">Metric</th>
-							<th scope="col">MetaSSR</th>
-							<th scope="col">Next.js</th>
-							<th scope="col">Gain</th>
+		<div className="tableWrap">
+			<table className="dataTable">
+				<thead>
+					<tr>
+						<th scope="col">Metric</th>
+						<th scope="col">MetaSSR</th>
+						<th scope="col">Next.js</th>
+						<th scope="col">Gain</th>
+					</tr>
+				</thead>
+				<tbody>
+					{rows.map(row => (
+						<tr key={row.metric}>
+							<th scope="row">{row.metric}</th>
+							<td className="isAccent">{row.metassr}</td>
+							<td>{row.nextjs}</td>
+							<td>
+								<span className="pill">{row.gain}</span>
+							</td>
 						</tr>
-					</thead>
-					<tbody>
-						{rows.map(row => (
-							<tr key={row.metric}>
-								<th scope="row">
-									<span className="metricLabel">
-										{row.metric}
-										{row.info && (
-											<button
-												type="button"
-												className="infoButton"
-												aria-label={`What are ${row.metric}?`}
-												aria-expanded={showNote}
-												aria-controls={noteId}
-												title={row.info}
-												onClick={() => setShowNote(value => !value)}
-											>
-												i
-											</button>
-										)}
-									</span>
-								</th>
-								<td className="isAccent">{row.metassr}</td>
-								<td>{row.nextjs}</td>
-								<td>
-									<span className="pill">{row.gain}</span>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-			{infoRow?.info && (
-				<p className="tableNote" id={noteId} hidden={!showNote}>
-					{infoRow.info}
-				</p>
-			)}
+					))}
+				</tbody>
+			</table>
 		</div>
 	);
 }

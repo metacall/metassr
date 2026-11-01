@@ -41,7 +41,7 @@ Host: 13th Gen Intel(R) Core(TM) i7-13650HX, 20 cores, 15Gi RAM, Linux 6.18.53-1
 | Transfer/sec | 16.96MB | 457.89KB | **37.93x higher** |
 | Total Requests | 3,216,110 | 44,239 | **72.70x more** |
 | Max Latency | 71.29ms | 1.97s | **27.63x lower** |
-| Socket Errors | 0 | 237 (237 timeouts) | **Zero errors** |
+| Timeouts (2s) | 0 | 237 | **Zero timeouts** |
 
 ## Headline — `/` (SSR page, median of 3)
 
@@ -52,7 +52,7 @@ Host: 13th Gen Intel(R) Core(TM) i7-13650HX, 20 cores, 15Gi RAM, Linux 6.18.53-1
 | Transfer/sec | 120.16MB | 5.72MB | **21.01x higher** |
 | Total Requests | 1,249,104 | 15,057 | **82.96x more** |
 | Max Latency | 158.38ms | 1.86s | **11.74x lower** |
-| Socket Errors | 0 | 234 (234 timeouts) | **Zero errors** |
+| Timeouts (2s) | 0 | 234 | **Zero timeouts** |
 
 Note: the two SSR responses differ in size — MetaSSR serves a lean 2.9KB HTML
 document, Next.js serves 11.6KB of HTML plus its runtime/chunk references.
@@ -83,7 +83,7 @@ The first MetaSSR `/api/bench` round is a warm-up outlier (83.8k vs 107–111k i
 | Stress (t12 c500) | `/` | 42,783 | 484 | 88.43x |
 | Stress (t12 c500) | `/api/bench` | 146,718 | 1,344 | 109.18x |
 
-MetaSSR served all runs with **0 socket errors**; Next.js logged timeouts at
+MetaSSR served all runs with **0 timeouts**; Next.js logged timeouts at
 Heavy and Stress (and at the 1000-connection headline).
 
 ## Raw output

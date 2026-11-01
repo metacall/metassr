@@ -25,7 +25,7 @@ Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connect
 | **Transfer/sec**    |   16.96MB   |  457.89KB   | **38x higher**   |
 | **Total Requests**  |  3,216,110  |   44,239    | **73x more**     |
 | **Max Latency**     |   71.29ms   |    1.97s    | 28x lower        |
-| **Socket Errors**   |      0      | 237 timeouts | **Zero errors** |
+| **Timeouts (2s)**   |      0      |     237      | **Zero timeouts** |
 
 </center>
 
@@ -40,11 +40,9 @@ Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connect
 | **Transfer/sec**    |  120.16MB  |   5.72MB  | **21x higher**   |
 | **Total Requests**  | 1,249,104  |  15,057   | **83x more**     |
 | **Max Latency**     |  158.38ms  |   1.86s   | 12x lower        |
-| **Socket Errors**   |     0      | 234 timeouts | **Zero errors** |
+| **Timeouts (2s)**   |     0      |     234      | **Zero timeouts** |
 
 </center>
-
-**Socket errors** are client-side `wrk` connection failures (connect/read/write/timeout), not HTTP errors. Zero means every request completed; timeouts mean the server was saturated and `wrk` gave up.
 
 > **Note on older numbers:** the previous README figures came from the `2026-09-28` run, which went through Docker's userland proxy and is invalid. The corrected `2026-10-03` run used npm `1.0.0-alpha.2`, which predates the per-request SSR fix, so its SSR row measured boot-time cached HTML. The `2026-10-31` report above is the first run that measures real per-request SSR on current source.
 
