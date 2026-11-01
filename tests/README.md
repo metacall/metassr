@@ -109,9 +109,11 @@ driven by two environment variables:
   unset, which always enforces the assertion.
 - `METASSR_SSR_PER_REQUEST_SINCE` — the first version to render pages on every
   request (default `1.0.0-alpha.3`); override it to test a different cutoff.
+- `METASSR_TS_API_SINCE` — the first version to load TypeScript (`.ts`) API
+  routes (default `1.0.0-alpha.3`); override it to test a different cutoff.
 
 `tests/web-app/tests/ssr.sh` uses this mechanism for the per-request rendering
-assertion on `/clock`:
+assertion on `/clock` and for the `/api/tsgreet` TypeScript API assertions:
 
     METASSR_VERSION=1.0.0-alpha.2 bash tests/web-app/tests/ssr.sh   # [SKIP]
     METASSR_VERSION=1.0.0-alpha.3 bash tests/web-app/tests/ssr.sh   # enforced

@@ -134,6 +134,20 @@ assert_json_field "$BASE_URL/api/hello" "GET"  "message" "Hello from MetaSSR API
 assert_json_field "$BASE_URL/api/hello" "POST" "message" "Hello, world!"           "API POST response"
 
 echo ""
+echo "=== TypeScript API Endpoints ==="
+# Published metassr CLIs older than this skip .ts files in src/api (#222).
+# METASSR_VERSION unset (source builds) => always enforce.
+METASSR_TS_API_SINCE="${METASSR_TS_API_SINCE:-1.0.0-alpha.3}"
+if [ -z "${METASSR_VERSION:-}" ] || \
+   [ "$(printf '%s\n%s\n' "$METASSR_TS_API_SINCE" "$METASSR_VERSION" | sort -V | head -n1)" = "$METASSR_TS_API_SINCE" ]; then
+    assert_status "$BASE_URL/api/tsgreet" 200 "GET /api/tsgreet"
+    assert_json_field "$BASE_URL/api/tsgreet" "GET"  "message" "Hello from MetaSSR TypeScript API" "TS API GET response"
+    assert_json_field "$BASE_URL/api/tsgreet" "POST" "message" "Hello, world!"                      "TS API POST response"
+else
+    echo "[SKIP] TypeScript API routes (metassr@$METASSR_VERSION predates them)"
+fi
+
+echo ""
 if [ "$FAILED" -eq 0 ]; then
     echo "All SSR tests passed!"
     exit 0
