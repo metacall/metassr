@@ -18,7 +18,7 @@ function safelyParseJSON(json) {
  * Bundles web resources using esbuild (synchronous).
  * @param {Object|string} entry - The entry point(s) as JSON: {"name": "path", ...}
  * @param {string} dist - The distribution path where bundled files will be output.
- * @param {string} devMode - "true" for development mode (no minification, no sourcemaps).
+ * @param {string} devMode - "true" for development mode (no minification, sourcemaps enabled).
  * @returns {number} 0 on success.
  */
 function webBundling(entry, dist, devMode) {
@@ -38,7 +38,7 @@ function webBundling(entry, dist, devMode) {
         platform: 'browser',
         target: 'es2020',
         minify: !isDev,
-        sourcemap: isDev ? false : true,
+        sourcemap: isDev,
         jsx: 'automatic',
         resolveExtensions: ['.js', '.jsx', '.tsx', '.ts'],
         loader: {
