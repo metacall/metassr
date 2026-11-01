@@ -82,6 +82,4 @@ logged timeouts at Heavy and Stress (61–72 per run).
 
 ## Raw output
 
-Full wrk output for every run is under [`raw/`](./raw/):
-`raw/<framework>/<round>/root.txt`, `raw/<framework>/<round>/api.txt`, and
-`raw/<framework>/1/canon-<scenario>-<endpoint>.txt`.
+Raw wrk output is generated locally and is not committed. Re-run the benchmark to reproduce it.

@@ -1,9 +1,0 @@
-
-> nextjs-benchmark-app@1.0.0 start
-> next start -p 8080
-
-▲ Next.js 16.3.7
-- Local:         http://localhost:8080
-- Network:       http://192.168.0.214:8080
-✓ Ready in 211ms
-✓ Running next.config took 12ms

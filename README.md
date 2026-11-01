@@ -12,7 +12,7 @@ MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted
 
 MetaSSR has a great performance potential, performing significantly better than other more mature production frameworks.
 
-Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s). Both frameworks run in Docker with host networking on the same machine. MetaSSR is built from source at commit `6879584` (includes the per-request SSR fix #220); Next.js is pinned to `16.3.7`. All CPUs are capped at 2.5 GHz for both sides to avoid thermal throttling. Raw output is in [`benchmarks/reports/metassr-vs-nextjs-2026-10-31/`](benchmarks/reports/metassr-vs-nextjs-2026-10-31/).
+Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s). Both frameworks run in Docker with host networking on the same machine. MetaSSR is built from source at commit `6879584` (includes the per-request SSR fix #220); Next.js is pinned to `16.3.7`. All CPUs are capped at 2.5 GHz for both sides to avoid thermal throttling. The report is in [`benchmarks/reports/metassr-vs-nextjs-2026-10-31/`](benchmarks/reports/metassr-vs-nextjs-2026-10-31/). Raw output is generated locally and is not committed.
 
 ### API route (`/api/bench` — equivalent JSON handler and payload in both apps)
 

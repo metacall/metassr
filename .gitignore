@@ -8,4 +8,10 @@ _site
 # benchmarking results
 .bench
 
+# local Next.js comparison artifacts
+benchmarks/reports/metassr-vs-nextjs-*/raw/
+benchmarks/reports/metassr-vs-nextjs-*/*.log
+benchmarks/reports/metassr-vs-nextjs-*/*.txt
+benchmarks/reports/metassr-vs-nextjs-*/results.json
+
 __pycache__

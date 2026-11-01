@@ -88,8 +88,5 @@ Heavy and Stress (and at the 1000-connection headline).
 
 ## Raw output
 
-Full wrk output for every run is under [`raw/`](./raw/):
-`raw/<framework>/<round>/root.txt`, `raw/<framework>/<round>/api.txt`, and
-`raw/<framework>/1/canon-<scenario>-<endpoint>.txt`. `run.log` records the
-environment, image IDs and per-run commands; `cpu-freq.log` samples the CPU
-frequency during the run.
+Raw wrk output, `run.log`, `cpu-freq.log` and `results.json` are generated
+locally and are not committed. Re-run the benchmark to reproduce them.

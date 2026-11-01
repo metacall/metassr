@@ -49,7 +49,4 @@ The two apps expose the same two routes:
 
 ## Raw wrk output
 
-- [metassr-root.txt](./metassr-root.txt)
-- [metassr-api.txt](./metassr-api.txt)
-- [nextjs-root.txt](./nextjs-root.txt)
-- [nextjs-api.txt](./nextjs-api.txt)
+Raw output from this invalid run is not committed. Re-run the benchmark locally to reproduce it.
