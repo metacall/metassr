@@ -10,7 +10,11 @@ use layers::tracing::{LayerSetup, TracingLayer, TracingLayerOptions};
 
 use anyhow::Result;
 use axum::routing::get;
-use axum::{http::StatusCode, response::Redirect, Router};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Redirect},
+    Router,
+};
 use live_reload::LiveReloadServer;
 use metassr_build::rebuilder::Rebuilder;
 use router::RouterMut;
@@ -92,6 +96,10 @@ impl Server {
         let mut base_router = Router::new()
             .nest_service("/static", ServeDir::new(&static_dir))
             .nest_service("/dist", ServeDir::new(&dist_dir));
+
+        if let ServerMode::Production = self.configs.mode {
+            base_router = base_router.layer(axum::middleware::from_fn(deny_sourcemaps));
+        }
 
         if let ServerMode::Development = self.configs.mode {
             debug!("Configuring server for development mode");
@@ -217,6 +225,16 @@ impl Server {
         axum::serve(listener, app.app()).await?;
         Ok(())
     }
+}
+
+async fn deny_sourcemaps(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    if req.uri().path().ends_with(".map") {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    next.run(req).await
 }
 
 async fn bind_listener(port: u16) -> std::result::Result<TcpListener, Error> {
