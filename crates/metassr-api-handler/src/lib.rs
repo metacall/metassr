@@ -29,6 +29,8 @@
 pub mod scanner;
 pub mod types;
 
+pub use scanner::DuplicateRoutesPolicy;
+
 use anyhow::{anyhow, Result};
 use axum::{
     extract::Query,
@@ -42,7 +44,7 @@ use metacall::{
     load::{self, Handle, Tag},
     metacall_handle,
 };
-use scanner::{scan_api_dir, ApiRouteFile};
+use scanner::{resolve_route_duplicates, scan_api_dir, ApiRouteFile};
 use std::{collections::HashMap, path::Path, sync::Arc};
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
@@ -67,8 +69,18 @@ impl ApiRoutes {
     ///
     /// # Arguments
     /// * `api_dir` - Path to the API directory (typically `./src/api/`)
-    pub async fn load_from_dir(&mut self, api_dir: &Path) -> Result<()> {
-        let route_files = scan_api_dir(api_dir);
+    /// * `duplicate_policy` - How to handle two files mapping to the same route path
+    pub async fn load_from_dir(
+        &mut self,
+        api_dir: &Path,
+        duplicate_policy: DuplicateRoutesPolicy,
+        root_path: &Path,
+    ) -> Result<()> {
+        let route_files = resolve_route_duplicates(
+            scan_api_dir(api_dir),
+            duplicate_policy,
+            root_path,
+        )?;
 
         if route_files.is_empty() {
             debug!("No API routes found in {:?}", api_dir);
@@ -174,9 +186,15 @@ impl Default for ApiRoutes {
 /// # Arguments
 /// * `router` - The Axum router to add routes to
 /// * `root_path` - Root path of the project (to find `./src/api/`)
+/// * `duplicate_policy` - Controls what happens when two files in `src/api/`
+///   map to the same route path (e.g. `hello.js` and `hello.py` both map to
+///   `/api/hello`): [`DuplicateRoutesPolicy::Error`] fails with an actionable
+///   error (servers must refuse to start), [`DuplicateRoutesPolicy::Skip`]
+///   warns, keeps the first route and lets the server boot (development).
 pub async fn register_api_routes(
     mut router: Router,
     root_path: &Path,
+    duplicate_policy: DuplicateRoutesPolicy,
 ) -> Result<(Router, Option<Arc<ApiRoutes>>)> {
     let api_dir = root_path.join("src").join("api");
 
@@ -189,7 +207,9 @@ pub async fn register_api_routes(
     }
 
     let mut api_routes = ApiRoutes::new();
-    api_routes.load_from_dir(&api_dir).await?;
+    api_routes
+        .load_from_dir(&api_dir, duplicate_policy, root_path)
+        .await?;
 
     if api_routes.routes().is_empty() {
         return Ok((router, None));
@@ -403,7 +423,10 @@ mod tests {
         fs::create_dir_all(root.join("src")).unwrap();
 
         let base_router = Router::new();
-        let (_router, routes) = register_api_routes(base_router, root).await.unwrap();
+        let (_router, routes) =
+            register_api_routes(base_router, root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
 
         assert!(routes.is_none());
     }
@@ -415,9 +438,34 @@ mod tests {
         fs::create_dir_all(root.join("src/api")).unwrap();
 
         let base_router = Router::new();
-        let (router, routes) = register_api_routes(base_router, root).await.unwrap();
+        let (router, routes) =
+            register_api_routes(base_router, root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
         let _ = router;
         assert!(routes.is_none());
+    }
+
+    #[tokio::test]
+    async fn register_api_routes_fails_on_duplicate_route_paths() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api = root.join("src/api");
+        fs::create_dir_all(&api).unwrap();
+        fs::write(api.join("hello.js"), "// empty").unwrap();
+        fs::write(api.join("hello.py"), "# empty").unwrap();
+
+        let base_router = Router::new();
+        let result =
+            register_api_routes(base_router, root, DuplicateRoutesPolicy::Error).await;
+
+        // No script loading happens when duplicates are detected, so this
+        // test never touches the MetaCall runtime.
+        let err = result.err().expect("duplicate routes must fail registration");
+        let msg = err.to_string();
+        assert!(msg.contains("/api/hello"), "{msg}");
+        assert!(msg.contains("hello.js"), "{msg}");
+        assert!(msg.contains("hello.py"), "{msg}");
     }
 
     #[tokio::test]

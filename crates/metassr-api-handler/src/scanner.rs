@@ -1,5 +1,6 @@
 //! Directory scanner for API route files.
 
+use anyhow::Result;
 use std::path::{Path, PathBuf};
 
 use metacall::load::Tag;
@@ -26,7 +27,100 @@ pub fn scan_api_dir(api_dir: &Path) -> Vec<ApiRouteFile> {
     }
 
     scan_api_dir_recursive(api_dir, api_dir, &mut routes);
+
+    // Sort by route path, then file path, so that duplicate detection is
+    // deterministic regardless of directory iteration order. This also
+    // decides which file "wins" when duplicates are skipped.
+    routes.sort_by(|a, b| {
+        a.route_path
+            .cmp(&b.route_path)
+            .then_with(|| a.file_path.cmp(&b.file_path))
+    });
+
     routes
+}
+
+/// What to do when two or more files map to the same route path.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DuplicateRoutesPolicy {
+    /// Fail with an actionable error. Used by production builds, where an
+    /// invalid route layout must be rejected instead of surprising the user.
+    Error,
+    /// Warn and keep the first route (sorted order), dropping the duplicates.
+    /// Used by the development server so it can still boot and iterate.
+    Skip,
+}
+
+/// Detect route files that map to the same route path and resolve them
+/// according to the policy.
+///
+/// Returns the route files to use (duplicates removed under [`DuplicateRoutesPolicy::Skip`])
+/// or a descriptive error listing every conflicting file once per route path
+/// (under [`DuplicateRoutesPolicy::Error`]).
+///
+/// `root_path` is used only to shorten paths in messages.
+pub fn resolve_route_duplicates(
+    mut route_files: Vec<ApiRouteFile>,
+    policy: DuplicateRoutesPolicy,
+    root_path: &Path,
+) -> Result<Vec<ApiRouteFile>> {
+    use std::collections::BTreeMap;
+
+    // Group routes by route path, preserving (already sorted) order.
+    let mut groups: BTreeMap<String, Vec<ApiRouteFile>> = BTreeMap::new();
+    for route_file in route_files.drain(..) {
+        groups
+            .entry(route_file.route_path.clone())
+            .or_default()
+            .push(route_file);
+    }
+
+    for (route_path, group) in groups.iter_mut() {
+        if group.len() <= 1 {
+            continue;
+        }
+
+        let files = group
+            .iter()
+            .map(|r| display_path(root_path, &r.file_path))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        match policy {
+            DuplicateRoutesPolicy::Error => {
+                anyhow::bail!(
+                    "Duplicate API route '{}' is registered by {} files: {}. \
+                     Keep only one file per route path (the extension selects the loader).",
+                    route_path,
+                    group.len(),
+                    files
+                );
+            }
+            DuplicateRoutesPolicy::Skip => {
+                tracing::warn!(
+                    "Duplicate API route '{}' found in files: {}. \
+                     Keeping '{}' and skipping the rest.",
+                    route_path,
+                    files,
+                    display_path(root_path, &group[0].file_path)
+                );
+
+                // Keep only the first (sorted) one.
+                group.truncate(1);
+            }
+        }
+    }
+
+    Ok(groups.into_values().flatten().collect())
+}
+
+/// Prefer a path relative to the project root for friendlier error messages.
+fn display_path(root_path: &Path, file_path: &Path) -> String {
+    file_path
+        .strip_prefix(root_path)
+        .unwrap_or(file_path)
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// Recursively scan directories for API files.
@@ -191,5 +285,68 @@ mod tests {
         let full = Path::new("/some/path/users/profile.js");
         let route = build_route_path(relative, full);
         assert_eq!(route, "/api/users/profile");
+    }
+
+    /// Create hello.js + hello.py + world.js in a temp api dir and return the
+    /// scanned routes (sorted, so hello.js comes before hello.py).
+    fn create_duplicate_routes() -> (TempDir, Vec<ApiRouteFile>) {
+        let temp_dir = TempDir::new().unwrap();
+        let api = temp_dir.path();
+        fs::write(api.join("hello.js"), "function GET() {}").unwrap();
+        fs::write(api.join("hello.py"), "def GET(request): pass").unwrap();
+        fs::write(api.join("world.js"), "function GET() {}").unwrap();
+        let routes = scan_api_dir(api);
+        (temp_dir, routes)
+    }
+
+    #[test]
+    fn test_scan_api_dir_sorts_routes_deterministically() {
+        let (_tmp, routes) = create_duplicate_routes();
+
+        let paths: Vec<&str> = routes.iter().map(|r| r.route_path.as_str()).collect();
+        assert_eq!(paths, vec!["/api/hello", "/api/hello", "/api/world"]);
+    }
+
+    #[test]
+    fn test_resolve_duplicates_errors_and_lists_files() {
+        let (tmp, routes) = create_duplicate_routes();
+
+        let result =
+            resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, tmp.path());
+
+        let err = result.err().expect("should fail with an actionable error");
+        let msg = err.to_string();
+
+        assert!(msg.contains("Duplicate API route '/api/hello'"), "{msg}");
+        assert!(msg.contains("hello.js"), "{msg}");
+        assert!(msg.contains("hello.py"), "{msg}");
+        assert!(!msg.contains("world"), "{msg}");
+    }
+
+    #[test]
+    fn test_resolve_duplicates_skip_keeps_first_sorted_route() {
+        let (tmp, routes) = create_duplicate_routes();
+
+        let resolved = resolve_route_duplicates(routes, DuplicateRoutesPolicy::Skip, tmp.path())
+            .expect("skip policy should not fail");
+
+        let paths: Vec<&str> = resolved.iter().map(|r| r.route_path.as_str()).collect();
+        assert_eq!(paths, vec!["/api/hello", "/api/world"]);
+
+        // The lexicographically first file wins (hello.js before hello.py).
+        assert_eq!(resolved[0].file_path.extension().unwrap(), "js");
+    }
+
+    #[test]
+    fn test_resolve_duplicates_noop_when_unique() {
+        let temp_dir = TempDir::new().unwrap();
+        fs::write(temp_dir.path().join("hello.js"), "function GET() {}").unwrap();
+        let routes = scan_api_dir(temp_dir.path());
+
+        for policy in [DuplicateRoutesPolicy::Error, DuplicateRoutesPolicy::Skip] {
+            let resolved =
+                resolve_route_duplicates(routes.clone(), policy, temp_dir.path()).unwrap();
+            assert_eq!(resolved.len(), 1);
+        }
     }
 }
