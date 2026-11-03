@@ -7,7 +7,7 @@
 # NODE_VERSION pins the base image; NEXT_VERSION pins the Next.js package.
 
 ARG NODE_VERSION=22-trixie-slim
-ARG NEXT_VERSION=latest
+ARG NEXT_VERSION=16.3.7
 
 FROM node:${NODE_VERSION}
 
@@ -16,12 +16,12 @@ ARG NEXT_VERSION
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 
 # Allow overriding next's version at build time without touching the lockfile.
-RUN if [ "${NEXT_VERSION}" != "latest" ]; then \
+RUN if [ "${NEXT_VERSION}" != "16.3.7" ]; then \
 		npm install "next@${NEXT_VERSION}"; \
 	fi && npm run build
 

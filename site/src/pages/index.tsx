@@ -4,7 +4,37 @@ import metacallLogo from '../../static/assets/metacall-logo.png';
 import metassrLogo from '../../static/assets/metassr-logo.svg';
 import { Footer } from '../components/footer';
 import { Link } from '../components/link';
-import { benchmarks } from '../data/benchmarks';
+import { apiBenchmarks, ssrBenchmarks } from '../data/benchmarks';
+import type { Benchmark } from '../data/benchmarks';
+
+function BenchmarkTable({ rows }: { rows: Benchmark[] }) {
+	return (
+		<div className="tableWrap">
+			<table className="dataTable">
+				<thead>
+					<tr>
+						<th scope="col">Metric</th>
+						<th scope="col">MetaSSR</th>
+						<th scope="col">Next.js</th>
+						<th scope="col">Gain</th>
+					</tr>
+				</thead>
+				<tbody>
+					{rows.map(row => (
+						<tr key={row.metric}>
+							<th scope="row">{row.metric}</th>
+							<td className="isAccent">{row.metassr}</td>
+							<td>{row.nextjs}</td>
+							<td>
+								<span className="pill">{row.gain}</span>
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	);
+}
 
 export default function Index() {
 	return (
@@ -29,31 +59,45 @@ export default function Index() {
 				<h2 id="benchmarks-title" className="sectionTitle">
 					Benchmarks vs Next.js
 				</h2>
-				<p className="sectionLead">12 threads, 1000 connections, 30s.</p>
-				<div className="tableWrap">
-					<table className="dataTable">
-						<thead>
-							<tr>
-								<th scope="col">Metric</th>
-								<th scope="col">MetaSSR</th>
-								<th scope="col">Next.js</th>
-								<th scope="col">Gain</th>
-							</tr>
-						</thead>
-						<tbody>
-							{benchmarks.map(row => (
-								<tr key={row.metric}>
-									<th scope="row">{row.metric}</th>
-									<td className="isAccent">{row.metassr}</td>
-									<td>{row.nextjs}</td>
-									<td>
-										<span className="pill">{row.gain}</span>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<p className="sectionLead">
+					12 threads, 1000 connections, 30s · 2.5 GHz cap.
+				</p>
+				<h3 className="tableTitle">API route /api/bench</h3>
+				<p className="tableLead">
+					Equivalent JSON handler and payload in both apps.
+				</p>
+				<BenchmarkTable rows={apiBenchmarks} />
+				<h3 className="tableTitle">SSR page /</h3>
+				<p className="tableLead">
+					Both apps render the same 20-item list on every request.
+				</p>
+				<BenchmarkTable rows={ssrBenchmarks} />
+				<p className="benchmarkSource">
+					Benchmarked apps: MetaSSR (
+					<Link href="https://github.com/metacall/metassr/tree/master/benchmarks/apps/metassr-app">
+						source
+					</Link>{' '}
+					/{' '}
+					<Link href="https://github.com/metacall/metassr/blob/master/benchmarks/apps/metassr-app/package.json">
+						package.json
+					</Link>
+					) · Next.js (
+					<Link href="https://github.com/metacall/metassr/tree/master/benchmarks/apps/nextjs-app">
+						source
+					</Link>{' '}
+					/{' '}
+					<Link href="https://github.com/metacall/metassr/blob/master/benchmarks/apps/nextjs-app/package.json">
+						package.json
+					</Link>{' '}
+					/{' '}
+					<Link href="https://github.com/metacall/metassr/blob/master/benchmarks/apps/nextjs-app/Dockerfile">
+						Dockerfile
+					</Link>
+					) ·{' '}
+					<Link href="https://github.com/metacall/metassr/tree/master/benchmarks/reports/metassr-vs-nextjs-2026-10-31">
+						benchmark report
+					</Link>
+				</p>
 			</section>
 
 			<Footer />
