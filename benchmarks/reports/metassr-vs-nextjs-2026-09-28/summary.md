@@ -1,5 +1,13 @@
 # MetaSSR vs Next.js Benchmark — 2026-09-28
 
+> **INVALID — do not use.** These numbers were measured through Docker's
+> userland proxy (published ports via `localhost:PORT`), which throttled both
+> servers and especially Next.js (422 RPS SSR / 1,377 RPS API). MetaSSR
+> `1.0.0-alpha.2` also predates the per-request SSR fix (#220), so its SSR row
+> is boot-time cached HTML. The corrected host-network runs are
+> `../metassr-vs-nextjs-2026-10-03/` (pre-fix) and
+> `../metassr-vs-nextjs-2026-10-31/` (current source, per-request SSR).
+
 **Date:** 2026-09-28
 **Load:** `wrk -t12 -c1000 -d30s --latency` against each endpoint
 **Setup:** Both apps run in Docker containers on the same host (linux/amd64).
@@ -41,7 +49,4 @@ The two apps expose the same two routes:
 
 ## Raw wrk output
 
-- [metassr-root.txt](./metassr-root.txt)
-- [metassr-api.txt](./metassr-api.txt)
-- [nextjs-root.txt](./nextjs-root.txt)
-- [nextjs-api.txt](./nextjs-api.txt)
+Raw output from this invalid run is not committed. Re-run the benchmark locally to reproduce it.
