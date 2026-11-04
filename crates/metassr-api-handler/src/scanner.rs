@@ -46,54 +46,32 @@ fn scan_api_dir_recursive(base_path: &Path, current_path: &Path, routes: &mut Ve
             // Recursively scan subdirectories
             scan_api_dir_recursive(base_path, &path, routes);
         } else if path.is_file() {
-            // The file extension selects the MetaCall loader
-            let ext = path.extension().and_then(|s| s.to_str());
-
-            match ext {
-                Some("js") => {
-                    if let Ok(relative_path) = path.strip_prefix(base_path) {
-                        let route_path = build_route_path(relative_path, &path);
-                        routes.push(ApiRouteFile {
-                            route_path,
-                            file_path: path,
-                            tag: Tag::NodeJS,
-                        });
-                    }
-                }
-                // Declaration files (`*.d.ts`) only hold types, they are not routes
-                Some("ts") if !is_declaration_file(&path) => {
-                    if let Ok(relative_path) = path.strip_prefix(base_path) {
-                        let route_path = build_route_path(relative_path, &path);
-                        routes.push(ApiRouteFile {
-                            route_path,
-                            file_path: path,
-                            tag: Tag::TypeScript,
-                        });
-                    }
-                }
-                Some("rb") => {
-                    if let Ok(relative_path) = path.strip_prefix(base_path) {
-                        let route_path = build_route_path(relative_path, &path);
-                        routes.push(ApiRouteFile {
-                            route_path,
-                            file_path: path,
-                            tag: Tag::Ruby,
-                        });
-                    }
-                }
-                Some("py") => {
-                    if let Ok(relative_path) = path.strip_prefix(base_path) {
-                        let route_path = build_route_path(relative_path, &path);
-                        routes.push(ApiRouteFile {
-                            route_path,
-                            file_path: path,
-                            tag: Tag::Python,
-                        });
-                    }
-                }
-                _ => {}
+            let Some(tag) = tag_for_path(&path) else {
+                continue;
+            };
+            if let Ok(relative_path) = path.strip_prefix(base_path) {
+                let route_path = build_route_path(relative_path, &path);
+                routes.push(ApiRouteFile {
+                    route_path,
+                    file_path: path,
+                    tag,
+                });
             }
         }
+    }
+}
+
+/// The MetaCall loader for an API script, selected by its file extension.
+///
+/// Returns `None` for files that are not API routes, including TypeScript
+/// declaration files (`*.d.ts`), which only hold types.
+pub fn tag_for_path(path: &Path) -> Option<Tag> {
+    match path.extension().and_then(|s| s.to_str()) {
+        Some("js") => Some(Tag::NodeJS),
+        Some("ts") if !is_declaration_file(path) => Some(Tag::TypeScript),
+        Some("rb") => Some(Tag::Ruby),
+        Some("py") => Some(Tag::Python),
+        _ => None,
     }
 }
 
@@ -273,5 +251,25 @@ mod tests {
         let full = Path::new("/some/path/users/profile.js");
         let route = build_route_path(relative, full);
         assert_eq!(route, "/api/users/profile");
+    }
+
+    #[test]
+    fn tag_for_path_selects_loader_by_extension() {
+        assert!(matches!(
+            tag_for_path(Path::new("a/b.js")),
+            Some(Tag::NodeJS)
+        ));
+        assert!(matches!(
+            tag_for_path(Path::new("a/b.ts")),
+            Some(Tag::TypeScript)
+        ));
+        assert!(matches!(
+            tag_for_path(Path::new("a/b.py")),
+            Some(Tag::Python)
+        ));
+        assert!(matches!(tag_for_path(Path::new("a/b.rb")), Some(Tag::Ruby)));
+        assert!(tag_for_path(Path::new("a/types.d.ts")).is_none());
+        assert!(tag_for_path(Path::new("a/README.md")).is_none());
+        assert!(tag_for_path(Path::new("a/noext")).is_none());
     }
 }

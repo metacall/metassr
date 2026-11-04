@@ -11,6 +11,7 @@ use crate::{
     server::{BuildingType, ServerSideBuilder},
 };
 use anyhow::{anyhow, Result};
+use metassr_api_handler::{scanner::tag_for_path, ApiRoutes};
 use metassr_bundler::WebBundler;
 use metassr_utils::ansi::ansi_regex;
 use metassr_watcher::utils::*;
@@ -21,7 +22,7 @@ use std::time::Instant;
 
 use notify_debouncer_full::DebouncedEvent;
 
-use tracing::{debug, error};
+use tracing::{debug, error, info, warn};
 struct RebuildGuard<'a> {
     flag: &'a AtomicBool,
 }
@@ -45,6 +46,8 @@ pub enum RebuildType {
     /// Rebuild a single page. page's path is provided
     Page(PathBuf),
     Layout,
+    /// Reload a single API handler script in `src/api`. The script's path is provided.
+    Api(PathBuf),
     // Rebuild a single Component.
     Component,
     // Reload Styles only.
@@ -63,6 +66,7 @@ impl fmt::Display for RebuildType {
                 write!(f, "page:{}", path.to_string_lossy())
             }
             RebuildType::Layout => write!(f, "layout"),
+            RebuildType::Api(path) => write!(f, "api:{}", path.to_string_lossy()),
             RebuildType::Component => write!(f, "component"),
             RebuildType::Style => write!(f, "style"),
             RebuildType::Static => write!(f, "static"),
@@ -78,6 +82,8 @@ pub struct Rebuilder {
     building_type: BuildingType,
     is_rebuilding: Arc<AtomicBool>,
     last_errors: Arc<Mutex<Option<Vec<String>>>>,
+    /// The API routes loaded by the server, set once they are registered.
+    api_routes: Mutex<Option<Arc<ApiRoutes>>>,
 }
 
 impl Rebuilder {
@@ -91,6 +97,7 @@ impl Rebuilder {
             building_type,
             is_rebuilding: Arc::new(AtomicBool::new(false)),
             last_errors: Arc::new(Mutex::new(None)),
+            api_routes: Mutex::new(None),
         })
     }
 
@@ -112,6 +119,12 @@ impl Rebuilder {
 
     pub fn clear_last_errors(&self) {
         *self.last_errors.lock().unwrap() = None;
+    }
+
+    /// Called by the server after it registers the API routes, so that changes
+    /// to scripts in `src/api` can be hot-reloaded.
+    pub fn set_api_routes(&self, api_routes: Arc<ApiRoutes>) {
+        *self.api_routes.lock().unwrap() = Some(api_routes);
     }
 
     pub fn handle_event(&self, event: DebouncedEvent) -> Result<Option<RebuildType>> {
@@ -137,6 +150,7 @@ impl Rebuilder {
 
         let rebuild_type: RebuildType = match path_str {
             path if path.starts_with("src/pages") => RebuildType::Page(path_buf.clone()),
+            path if path.starts_with("src/api") => RebuildType::Api(path_buf.clone()),
             path if path.starts_with("src/layout") => RebuildType::Layout,
             path if path.starts_with("src/components") => RebuildType::Component,
             path if path.starts_with("src/styles") => RebuildType::Style,
@@ -180,6 +194,10 @@ impl Rebuilder {
                     }
                 };
             }
+            RebuildType::Api(ref path) => {
+                debug!("entered rebuilding {:?}", rebuild_type);
+                self.reload_api(path)?;
+            }
             RebuildType::Layout => {
                 // todo: implement granular layout rebuild
                 debug!("entered rebuilding {:?}", rebuild_type);
@@ -206,6 +224,40 @@ impl Rebuilder {
         }
 
         Ok(())
+    }
+
+    /// Reload an API script after it changed on disk.
+    ///
+    /// Files that are not API scripts, deleted files and files added after
+    /// startup are skipped (the router is built once, so new routes need a
+    /// restart).
+    fn reload_api(&self, rel_path: &Path) -> Result<()> {
+        let abs_path = self.root_path.join(rel_path);
+        let Some(tag) = tag_for_path(&abs_path) else {
+            debug!("Not an API script, skipping: {:?}", rel_path);
+            return Ok(());
+        };
+        if !abs_path.is_file() {
+            debug!("API script no longer exists, skipping: {:?}", rel_path);
+            return Ok(());
+        }
+
+        let Some(api_routes) = self.api_routes.lock().unwrap().clone() else {
+            warn!(
+                "API routes are not registered; cannot reload {:?}",
+                rel_path
+            );
+            return Ok(());
+        };
+        if !api_routes.is_registered(&abs_path) {
+            info!(
+                "New API script {:?} detected; restart the dev server to register its route.",
+                rel_path
+            );
+            return Ok(());
+        }
+
+        api_routes.reload_script(&abs_path, tag)
     }
 
     fn rebuild_page(&self, path: PathBuf) -> Result<()> {
@@ -298,6 +350,97 @@ mod tests {
             .unwrap();
 
         assert!(matches!(result, RebuildType::Component));
+    }
+
+    #[test]
+    fn map_path_to_type_detects_api_paths() {
+        let rebuilder = test_rebuilder();
+        for path in ["src/api/hello.js", "src/api/users/list.py"] {
+            match rebuilder.map_path_to_type(Path::new(path)).unwrap() {
+                RebuildType::Api(api_path) => assert_eq!(api_path, PathBuf::from(path)),
+                other => panic!("expected Api for {path}, got {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn api_rebuild_without_registered_routes_is_a_no_op() {
+        let rebuilder = test_rebuilder();
+        // Nothing registered yet, a non-script and a missing file: all skipped.
+        for path in [
+            "src/api/hello.js",
+            "src/api/README.md",
+            "src/api/missing.py",
+        ] {
+            assert!(rebuilder
+                .rebuild(RebuildType::Api(PathBuf::from(path)))
+                .is_ok());
+        }
+    }
+
+    #[tokio::test]
+    async fn api_rebuild_hot_reloads_registered_handler() {
+        use metassr_api_handler::types::ApiRequest;
+        use std::collections::HashMap;
+
+        fn handler(version: &str) -> String {
+            format!(
+                "function GET(req) {{ return JSON.stringify({{ status: 200, body: {{ version: '{version}' }} }}); }}\n\
+                 module.exports = {{ GET }};\n"
+            )
+        }
+
+        async fn version(routes: &ApiRoutes, script: &Path) -> String {
+            let request = ApiRequest {
+                url: "/api/version".to_string(),
+                headers: HashMap::new(),
+                method: "GET".to_string(),
+                body: None,
+                params: HashMap::new(),
+                query: HashMap::new(),
+            };
+            let response = routes
+                .call_handler(&script.to_string_lossy(), "GET", request)
+                .await
+                .unwrap();
+            response.body["version"].as_str().unwrap().to_string()
+        }
+
+        let _metacall = metacall::initialize().unwrap();
+        let root = tempfile::tempdir().unwrap();
+        let api_dir = root.path().join("src").join("api");
+        std::fs::create_dir_all(&api_dir).unwrap();
+        let script = api_dir.join("version.js");
+        std::fs::write(&script, handler("v1")).unwrap();
+
+        let mut routes = ApiRoutes::new();
+        routes.load_from_dir(&api_dir).await.unwrap();
+        let routes = Arc::new(routes);
+
+        let rebuilder = Rebuilder::new(
+            root.path().to_path_buf(),
+            BuildingType::ServerSideRendering,
+            root.path().join("dist"),
+        )
+        .unwrap();
+        rebuilder.set_api_routes(Arc::clone(&routes));
+        let change = || RebuildType::Api(PathBuf::from("src/api/version.js"));
+
+        assert_eq!(version(&routes, &script).await, "v1");
+
+        std::fs::write(&script, handler("v2")).unwrap();
+        rebuilder.rebuild(change()).unwrap();
+        assert_eq!(version(&routes, &script).await, "v2");
+
+        // Saving the same content again (editors often emit several events per
+        // save) is a no-op.
+        rebuilder.rebuild(change()).unwrap();
+        assert_eq!(version(&routes, &script).await, "v2");
+
+        // A broken edit is reported, and the last working handler keeps serving.
+        std::fs::write(&script, "function GET(req) {").unwrap();
+        assert!(rebuilder.rebuild(change()).is_err());
+        assert_eq!(version(&routes, &script).await, "v2");
     }
 
     #[test]

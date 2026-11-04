@@ -170,8 +170,13 @@ impl Server {
         if src_path.join("api").exists() {
             match metassr_api_handler::register_api_routes(app.app(), &self.configs.root_path).await
             {
-                Ok((router_with_api, Some(_api_routes))) => {
+                Ok((router_with_api, Some(api_routes))) => {
                     app = RouterMut::from(router_with_api);
+                    // In dev mode, hand the routes to the rebuilder so edits to
+                    // src/api scripts are hot-reloaded.
+                    if let Some(rebuilder) = &self.configs.rebuilder {
+                        rebuilder.set_api_routes(api_routes);
+                    }
                     info!("API routes registered successfully");
                 }
                 Ok((router_with_api, None)) => {
