@@ -384,7 +384,7 @@ async fn handle_api_request(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 merge_response_headers(&HashMap::new()),
-                format!("{{\"error\": \"{}\"}}", e),
+                serde_json::json!({"error": "Internal server error"}).to_string(),
             )
         }
     }
@@ -436,6 +436,34 @@ mod tests {
             .call_handler("src/api/hello.js", "GET", request)
             .await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn handle_api_request_returns_valid_json_on_error() {
+        let routes = Arc::new(ApiRoutes::new());
+
+        let response = handle_api_request(
+            routes,
+            HeaderMap::new(),
+            Method::GET,
+            HashMap::new(),
+            String::new(),
+            "src/api/missing.js".to_string(),
+            "/api/missing".to_string(),
+        )
+        .await
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert!(json["error"].is_string());
+        assert_eq!(json["error"], "Internal server error");
     }
 
     #[test]
