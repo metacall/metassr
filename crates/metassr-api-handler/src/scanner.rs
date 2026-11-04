@@ -111,16 +111,23 @@ fn build_route_path(relative_path: &Path, full_path: &Path) -> String {
 
     let mut route_path = String::from("/api");
     for (i, part) in route_parts.iter().enumerate() {
-        if i == route_parts.len() - 1 {
+        route_path.push('/');
+        let segment = if i == route_parts.len() - 1 {
             // Last part is the filename, remove extension
-            if let Some(stem) = full_path.file_stem().and_then(|s| s.to_str()) {
-                route_path.push('/');
-                route_path.push_str(stem);
-            }
+            full_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or(part)
         } else {
             // Directory name
-            route_path.push('/');
-            route_path.push_str(part);
+            part
+        };
+
+        if let Some(param) = segment.strip_prefix('$') {
+            route_path.push(':');
+            route_path.push_str(param);
+        } else {
+            route_path.push_str(segment);
         }
     }
 
@@ -273,5 +280,21 @@ mod tests {
         let full = Path::new("/some/path/users/profile.js");
         let route = build_route_path(relative, full);
         assert_eq!(route, "/api/users/profile");
+    }
+
+    #[test]
+    fn test_build_route_path_dynamic_file() {
+        let relative = Path::new("users/$id.js");
+        let full = Path::new("/some/path/users/$id.js");
+        let route = build_route_path(relative, full);
+        assert_eq!(route, "/api/users/:id");
+    }
+
+    #[test]
+    fn test_build_route_path_dynamic_dir_and_file() {
+        let relative = Path::new("$org/members/$id.js");
+        let full = Path::new("/some/path/$org/members/$id.js");
+        let route = build_route_path(relative, full);
+        assert_eq!(route, "/api/:org/members/:id");
     }
 }
