@@ -31,7 +31,7 @@ pub mod types;
 
 use anyhow::{anyhow, Result};
 use axum::{
-    extract::Query,
+    extract::{Path as AxumPath, Query},
     http::{header, HeaderMap, Method, StatusCode},
     response::IntoResponse,
     routing::{get, MethodRouter},
@@ -210,99 +210,31 @@ pub async fn register_api_routes(
     let api_routes = Arc::new(api_routes);
 
     for (route_path, file_path) in routes_info {
-        let api_routes_clone = Arc::clone(&api_routes);
-        let file_path_clone = file_path.clone();
-        let route_path_clone = route_path.clone();
+        let make_handler = |method: Method| {
+            let api_routes = Arc::clone(&api_routes);
+            let file_path = file_path.clone();
+            let route_path = route_path.clone();
+            move |headers: HeaderMap,
+                  AxumPath(params): AxumPath<HashMap<String, String>>,
+                  Query(query): Query<HashMap<String, String>>,
+                  body: String| {
+                let api_routes = Arc::clone(&api_routes);
+                let file_path = file_path.clone();
+                let route_path = route_path.clone();
+                async move {
+                    handle_api_request(
+                        api_routes, headers, method, params, query, body, file_path, route_path,
+                    )
+                    .await
+                }
+            }
+        };
 
         // Create method router for supported API handler exports.
-        let method_router: MethodRouter = get({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::GET,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        })
-        .post({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::POST,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        })
-        .put({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::PUT,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        })
-        .delete({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::DELETE,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        });
+        let method_router: MethodRouter = get(make_handler(Method::GET))
+            .post(make_handler(Method::POST))
+            .put(make_handler(Method::PUT))
+            .delete(make_handler(Method::DELETE));
         router = router.route(&route_path, method_router);
         info!("Registered API route: {}", route_path);
     }
@@ -339,10 +271,12 @@ fn merge_response_headers(extra: &HashMap<String, String>) -> HeaderMap {
 }
 
 /// Handle an incoming API request.
+#[allow(clippy::too_many_arguments)]
 async fn handle_api_request(
     api_routes: Arc<ApiRoutes>,
     headers: HeaderMap,
     method: Method,
+    params: HashMap<String, String>,
     query: HashMap<String, String>,
     body: String,
     file_path: String,
@@ -364,7 +298,7 @@ async fn handle_api_request(
         method: method.to_string(),
         query,
         body: if body.is_empty() { None } else { Some(body) },
-        params: HashMap::new(),
+        params,
     };
 
     let method_str = method.as_str();
