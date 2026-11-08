@@ -138,8 +138,30 @@ pre {
     font-size: 0.95rem;
 }
 
+.tableTitle {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.tableLead {
+    margin: 0;
+    color: var(--color-ink-muted);
+    font-size: 0.9rem;
+}
+
 .tableWrap {
     overflow-x: auto;
+}
+
+.benchmarkSource {
+    margin: 0;
+    color: var(--color-ink-muted);
+    font-size: 10px;
+}
+
+.benchmarkSource a {
+    color: var(--color-accent);
+    text-decoration: underline;
 }
 
 .dataTable {

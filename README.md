@@ -12,20 +12,39 @@ MetaSSR is a powerful experimental Server-Side Rendering (SSR) framework crafted
 
 MetaSSR has a great performance potential, performing significantly better than other more mature production frameworks.
 
-Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s):
+Here's how MetaSSR compares to Next.js under high load (12 threads, 1000 connections, 30s). Both frameworks run in Docker with host networking on the same machine. MetaSSR is built from source at commit `6879584` (includes the per-request SSR fix #220); Next.js is pinned to `16.3.7`. All CPUs are capped at 2.5 GHz for both sides to avoid thermal throttling. The report is in [`benchmarks/reports/metassr-vs-nextjs-2026-10-31/`](benchmarks/reports/metassr-vs-nextjs-2026-10-31/). Raw output is generated locally and is not committed.
+
+### API route (`/api/bench` — equivalent JSON handler and payload in both apps)
 
 <center>
 
-| Metric              |  MetaSSR  |   Next.js    | Performance Gain |
-| ------------------- | :-------: | :----------: | ---------------- |
-| **Requests/sec**    | 98,420.11 |   3,170.95   | **31x faster**   |
-| **Average Latency** |  8.63ms   |   119.90ms   | **14x lower**    |
-| **Transfer/sec**    |  4.98GB   |   37.95MB    | **134x higher**  |
-| **Total Requests**  | 2,962,418 |    95,326    | **31x more**     |
-| **Max Latency**     |  65.22ms  |    1.99s     | **30x lower**    |
-| **Socket Errors**   |     0     | 239 timeouts | **Zero errors**  |
+| Metric              |   MetaSSR   |   Next.js   | Performance Gain |
+| ------------------- | :---------: | :---------: | ---------------- |
+| **Requests/sec**    | 107,116.71  |   1,469.79  | **73x faster**   |
+| **Average Latency** |   10.15ms   |  126.75ms   | **12x lower**    |
+| **Transfer/sec**    |   16.96MB   |  457.89KB   | **38x higher**   |
+| **Total Requests**  |  3,216,110  |   44,239    | **73x more**     |
+| **Max Latency**     |   71.29ms   |    1.97s    | 28x lower        |
+| **Timeouts (2s)**   |      0      |     237      | **Zero timeouts** |
 
 </center>
+
+### SSR page (`/` — both apps render the same 20-item list on every request)
+
+<center>
+
+| Metric              |  MetaSSR   |  Next.js  | Performance Gain |
+| ------------------- | :--------: | :-------: | ---------------- |
+| **Requests/sec**    | 41,499.66  |  500.86   | **83x faster**   |
+| **Average Latency** |   25.36ms  | 495.70ms  | **20x lower**    |
+| **Transfer/sec**    |  120.16MB  |   5.72MB  | **21x higher**   |
+| **Total Requests**  | 1,249,104  |  15,057   | **83x more**     |
+| **Max Latency**     |  158.38ms  |   1.86s   | 12x lower        |
+| **Timeouts (2s)**   |     0      |     234      | **Zero timeouts** |
+
+</center>
+
+> **Note on older numbers:** the previous README figures came from the `2026-09-28` run, which went through Docker's userland proxy and is invalid. The corrected `2026-10-03` run used npm `1.0.0-alpha.2`, which predates the per-request SSR fix, so its SSR row measured boot-time cached HTML. The `2026-10-31` report above is the first run that measures real per-request SSR on current source.
 
 ## Key Features
 
