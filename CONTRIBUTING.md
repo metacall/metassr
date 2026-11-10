@@ -7,6 +7,12 @@ Thank you for your interest in contributing to MetaSSR! We welcome contributions
 - [Development Setup](#development-setup)
 - [How to Contribute](#how-to-contribute)
 
+## LLM Usage
+
+We would prefer to not use LLM generated text **at all** in communicating. MetaSSR is a community project. We would rather talk with You than a machine—even if your language isn't good, if you don't understand what exactly you should be working on, and even if you submitted work you don't fully understand—please help us close the gap together. Also see: [noslopgrenade](https://noslopgrenade.com/)
+
+Using LLMs / AI / Agents for coding is totally fine.
+
 ## Development Setup
 
 To set up your development environment for MetaSSR, choose one of the following methods based on your preferences and system configuration:
