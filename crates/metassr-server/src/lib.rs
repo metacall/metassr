@@ -191,9 +191,9 @@ impl Server {
                     info!("API routes registered (no route files found)");
                 }
                 Err(e) => {
-                    return Err(e.context(
-                        "Failed to register API routes: refusing to start the server",
-                    ));
+                    return Err(
+                        e.context("Failed to register API routes: refusing to start the server")
+                    );
                 }
             }
         }

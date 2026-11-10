@@ -76,11 +76,8 @@ impl ApiRoutes {
         duplicate_policy: DuplicateRoutesPolicy,
         root_path: &Path,
     ) -> Result<()> {
-        let route_files = resolve_route_duplicates(
-            scan_api_dir(api_dir),
-            duplicate_policy,
-            root_path,
-        )?;
+        let route_files =
+            resolve_route_duplicates(scan_api_dir(api_dir), duplicate_policy, root_path)?;
 
         if route_files.is_empty() {
             debug!("No API routes found in {:?}", api_dir);
@@ -438,10 +435,9 @@ mod tests {
         fs::create_dir_all(root.join("src/api")).unwrap();
 
         let base_router = Router::new();
-        let (router, routes) =
-            register_api_routes(base_router, root, DuplicateRoutesPolicy::Error)
-                .await
-                .unwrap();
+        let (router, routes) = register_api_routes(base_router, root, DuplicateRoutesPolicy::Error)
+            .await
+            .unwrap();
         let _ = router;
         assert!(routes.is_none());
     }
@@ -456,12 +452,13 @@ mod tests {
         fs::write(api.join("hello.py"), "# empty").unwrap();
 
         let base_router = Router::new();
-        let result =
-            register_api_routes(base_router, root, DuplicateRoutesPolicy::Error).await;
+        let result = register_api_routes(base_router, root, DuplicateRoutesPolicy::Error).await;
 
         // No script loading happens when duplicates are detected, so this
         // test never touches the MetaCall runtime.
-        let err = result.err().expect("duplicate routes must fail registration");
+        let err = result
+            .err()
+            .expect("duplicate routes must fail registration");
         let msg = err.to_string();
         assert!(msg.contains("/api/hello"), "{msg}");
         assert!(msg.contains("hello.js"), "{msg}");

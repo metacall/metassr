@@ -393,8 +393,7 @@ mod tests {
     fn test_resolve_duplicates_errors_and_lists_files() {
         let (tmp, routes) = create_duplicate_routes();
 
-        let result =
-            resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, tmp.path());
+        let result = resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, tmp.path());
 
         let err = result.err().expect("should fail with an actionable error");
         let msg = err.to_string();
