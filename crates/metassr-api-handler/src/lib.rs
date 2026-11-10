@@ -77,7 +77,9 @@ impl ApiRoutes {
 
         info!("Found {} API route(s)", route_files.len());
 
-        for route_file in &route_files {
+        let mut loaded_routes = Vec::new();
+
+        for route_file in route_files {
             if let Err(e) = self
                 .load_script(&route_file.file_path, route_file.tag)
                 .await
@@ -88,10 +90,11 @@ impl ApiRoutes {
                     "  Loaded: {} -> {:?}",
                     route_file.route_path, route_file.file_path
                 );
+                loaded_routes.push(route_file);
             }
         }
 
-        self.routes = route_files;
+        self.routes = loaded_routes;
         Ok(())
     }
 
@@ -418,6 +421,32 @@ mod tests {
         let (router, routes) = register_api_routes(base_router, root).await.unwrap();
         let _ = router;
         assert!(routes.is_none());
+    }
+
+    #[tokio::test]
+    async fn register_api_routes_skips_failed_script() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api");
+        fs::create_dir_all(&api_dir).unwrap();
+        fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();
+
+        let base_router = Router::new();
+        let (_router, routes) = register_api_routes(base_router, root).await.unwrap();
+
+        assert!(routes.is_none());
+    }
+
+    #[tokio::test]
+    async fn load_from_dir_excludes_scripts_that_fail_to_load() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let api_dir = tmp.path();
+        fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();
+
+        let mut routes = ApiRoutes::new();
+        routes.load_from_dir(api_dir).await.unwrap();
+
+        assert!(routes.routes().is_empty());
     }
 
     #[tokio::test]
