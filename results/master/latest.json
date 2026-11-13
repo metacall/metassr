@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-10T05:31:33.967883",
+  "timestamp": "2026-11-13T09:02:02.866463",
   "server": "http://localhost:8080",
   "system": {
     "os": "Linux",
@@ -16,56 +16,56 @@
       "threads": 1,
       "connections": 10,
       "duration": 20,
-      "rps": 24236.61,
-      "latency": "411.90us",
-      "latency_ms": 0.4119,
-      "p99": "704.00us",
-      "p99_ms": 0.704,
-      "requests": 487159,
+      "rps": 23747.99,
+      "latency": "420.40us",
+      "latency_ms": 0.4204,
+      "p99": "776.00us",
+      "p99_ms": 0.776,
+      "requests": 474967,
       "errors": 0,
-      "memory_mb": 102.8
+      "memory_mb": 102.5
     },
     {
       "name": "Medium",
       "threads": 4,
       "connections": 50,
       "duration": 40,
-      "rps": 24300.62,
-      "latency": "1.97ms",
-      "latency_ms": 1.97,
-      "p99": "3.56ms",
-      "p99_ms": 3.56,
-      "requests": 974447,
+      "rps": 24103.55,
+      "latency": "1.99ms",
+      "latency_ms": 1.99,
+      "p99": "3.64ms",
+      "p99_ms": 3.64,
+      "requests": 966539,
       "errors": 0,
-      "memory_mb": 104.3
+      "memory_mb": 104.1
     },
     {
       "name": "Heavy",
       "threads": 8,
       "connections": 200,
       "duration": 80,
-      "rps": 24001.48,
-      "latency": "8.33ms",
-      "latency_ms": 8.33,
-      "p99": "15.43ms",
-      "p99_ms": 15.43,
-      "requests": 1920441,
+      "rps": 23634.86,
+      "latency": "8.46ms",
+      "latency_ms": 8.46,
+      "p99": "15.66ms",
+      "p99_ms": 15.66,
+      "requests": 1891094,
       "errors": 0,
-      "memory_mb": 110.1
+      "memory_mb": 109.8
     },
     {
       "name": "Stress",
       "threads": 12,
       "connections": 500,
       "duration": 120,
-      "rps": 23551.35,
-      "latency": "21.38ms",
-      "latency_ms": 21.38,
-      "p99": "53.77ms",
-      "p99_ms": 53.77,
-      "requests": 2827212,
+      "rps": 23124.61,
+      "latency": "21.78ms",
+      "latency_ms": 21.78,
+      "p99": "54.74ms",
+      "p99_ms": 54.74,
+      "requests": 2776058,
       "errors": 0,
-      "memory_mb": 120.9
+      "memory_mb": 120.6
     }
   ]
 }
