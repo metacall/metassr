@@ -80,11 +80,11 @@ impl ApiRoutes {
             resolve_route_duplicates(scan_api_dir(api_dir), duplicate_policy, root_path)?;
 
         if route_files.is_empty() {
-            debug!("No API routes found in {:?}", api_dir);
+            info!("No API routes found in {:?}", api_dir);
             return Ok(());
         }
 
-        info!("Found {} API route(s)", route_files.len());
+        debug!("Found {} API route(s)", route_files.len());
 
         let mut loaded_routes = Vec::new();
 
@@ -95,7 +95,7 @@ impl ApiRoutes {
             {
                 warn!("Failed to load API route {:?}: {}", route_file.file_path, e);
             } else {
-                info!(
+                debug!(
                     "  Loaded: {} -> {:?}",
                     route_file.route_path, route_file.file_path
                 );
@@ -324,7 +324,7 @@ pub async fn register_api_routes(
             }
         });
         router = router.route(&route_path, method_router);
-        info!("Registered API route: {}", route_path);
+        debug!("Registered API route: {}", route_path);
     }
 
     Ok((router, Some(api_routes)))
