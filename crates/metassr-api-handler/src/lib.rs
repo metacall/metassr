@@ -36,7 +36,7 @@ use axum::{
     extract::Query,
     http::{header, HeaderMap, Method, StatusCode},
     response::IntoResponse,
-    routing::{get, MethodRouter},
+    routing::MethodRouter,
     Router,
 };
 use lock_freedom::map::Map;
@@ -44,6 +44,8 @@ use metacall::{
     load::{self, Handle, Tag},
     metacall_handle,
 };
+use scanner::{scan_api_dir, ApiRouteFile};
+use std::{collections::HashMap, ffi::CString, path::Path, sync::Arc};
 use scanner::{resolve_route_duplicates, scan_api_dir, ApiRouteFile};
 use std::{collections::HashMap, path::Path, sync::Arc};
 use tracing::{debug, error, info, warn};
@@ -121,6 +123,41 @@ impl ApiRoutes {
 
         Ok(())
     }
+    /// Check whether a loaded script handle exports a function with the given name.
+    ///
+    /// # Safety
+    /// This function calls the MetaCall C FFI `metacall_handle_function`. It performs
+    /// null-pointer checks on both the handle pointer and function pointer, and only
+    /// accesses the handle within the `self.handles` guard lifetime.
+    pub fn has_method(&self, file_path: &str, method: &str) -> bool {
+        let guard = match self.handles.get(file_path) {
+            Some(g) => g,
+            None => return false,
+        };
+        let raw_handle = guard.val().as_mut_raw_ptr();
+        if raw_handle.is_null() {
+            return false;
+        }
+        let c_method = match CString::new(method) {
+            Ok(c) => c,
+            Err(_) => return false,
+        };
+        // SAFETY: `raw_handle` is verified non-null and guarded by `self.handles`.
+        // `c_method` is a valid null-terminated C string. `metacall_handle_function`
+        // inspects the handle's symbol table without mutating it.
+        let func_ptr =
+            unsafe { metacall::bindings::metacall_handle_function(raw_handle, c_method.as_ptr()) };
+        !func_ptr.is_null()
+    }
+
+    /// Returns a list of supported HTTP methods (GET, POST, PUT, DELETE) exported by the script.
+    pub fn exported_methods(&self, file_path: &str) -> Vec<Method> {
+        const CANDIDATES: [Method; 4] = [Method::GET, Method::POST, Method::PUT, Method::DELETE];
+        CANDIDATES
+            .into_iter()
+            .filter(|m| self.has_method(file_path, m.as_str()))
+            .collect()
+    }
 
     /// Reload a changed script: drops the old handle (clearing its symbols) then reloads.
     pub fn reload_script(&self, file_path: &Path, tag: Tag) -> Result<()> {
@@ -150,6 +187,10 @@ impl ApiRoutes {
         method: &str,
         request: ApiRequest,
     ) -> Result<ApiResponse> {
+        if !self.has_method(file_path, method) {
+            return Err(anyhow!("Method {} not exported", method));
+        }
+
         let request_json = serde_json::to_string(&request)?;
 
         debug!("Calling {}() with request: {}", method, request_json);
@@ -230,99 +271,38 @@ pub async fn register_api_routes(
     let api_routes = Arc::new(api_routes);
 
     for (route_path, file_path) in routes_info {
-        let api_routes_clone = Arc::clone(&api_routes);
-        let file_path_clone = file_path.clone();
-        let route_path_clone = route_path.clone();
+        let make_handler = |method: Method| {
+            let api_routes = Arc::clone(&api_routes);
+            let file_path = file_path.clone();
+            let route_path = route_path.clone();
+            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
+                let api_routes = Arc::clone(&api_routes);
+                let file_path = file_path.clone();
+                let route_path = route_path.clone();
+                async move {
+                    handle_api_request(
+                        api_routes, headers, method, query, body, file_path, route_path,
+                    )
+                    .await
+                }
+            }
+        };
 
         // Create method router for supported API handler exports.
-        let method_router: MethodRouter = get({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::GET,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        })
-        .post({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::POST,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        })
-        .put({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::PUT,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        })
-        .delete({
-            let api_routes = Arc::clone(&api_routes_clone);
-            let file_path = file_path_clone.clone();
-            let route_path = route_path_clone.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
-                let api_routes = Arc::clone(&api_routes);
-                let file_path = file_path.clone();
-                let route_path = route_path.clone();
-                async move {
-                    handle_api_request(
-                        api_routes,
-                        headers,
-                        Method::DELETE,
-                        query,
-                        body,
-                        file_path,
-                        route_path,
-                    )
-                    .await
-                }
-            }
-        });
+        let exported = api_routes.exported_methods(&file_path);
+        let mut method_router = MethodRouter::new();
+        if exported.contains(&Method::GET) {
+            method_router = method_router.get(make_handler(Method::GET));
+        }
+        if exported.contains(&Method::POST) {
+            method_router = method_router.post(make_handler(Method::POST));
+        }
+        if exported.contains(&Method::PUT) {
+            method_router = method_router.put(make_handler(Method::PUT));
+        }
+        if exported.contains(&Method::DELETE) {
+            method_router = method_router.delete(make_handler(Method::DELETE));
+        }
         router = router.route(&route_path, method_router);
         info!("Registered API route: {}", route_path);
     }
@@ -415,6 +395,23 @@ mod tests {
     use super::*;
     use axum::Router;
     use std::fs;
+    use std::sync::{Mutex, Once};
+    use tower_service::Service;
+
+    static INIT_METACALL: Once = Once::new();
+    static METACALL_TEST_MUTEX: Mutex<()> = Mutex::new(());
+
+    fn init_metacall_for_tests() -> std::sync::MutexGuard<'static, ()> {
+        let guard = METACALL_TEST_MUTEX.lock().unwrap();
+        INIT_METACALL.call_once(|| {
+            if !metacall::is_initialized() {
+                if let Ok(destroy_guard) = metacall::initialize() {
+                    std::mem::forget(destroy_guard);
+                }
+            }
+        });
+        guard
+    }
 
     #[tokio::test]
     async fn register_api_routes_skips_when_api_dir_missing() {
@@ -604,5 +601,213 @@ mod tests {
 
         assert_eq!(headers.len(), 1);
         assert!(headers.contains_key(header::CONTENT_TYPE));
+    }
+    #[tokio::test]
+    async fn unexported_method_returns_405_with_allow_header() {
+        let _lock = init_metacall_for_tests();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api");
+        fs::create_dir_all(&api_dir).unwrap();
+
+        fs::write(
+            api_dir.join("fast.js"),
+            r#"
+function GET(_req) {
+    return JSON.stringify({ status: 200, body: { ok: true } });
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+
+        // GET should return 200
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // POST should return 405 with Allow header
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
+        assert!(allow.contains("GET"));
+        assert!(!allow.contains("POST"));
+
+        // DELETE should return 405 with Allow header
+        let req = axum::http::Request::builder()
+            .method("DELETE")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+    }
+
+    #[tokio::test]
+    async fn module_exporting_none_of_http_methods_returns_405() {
+        let _lock = init_metacall_for_tests();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api");
+        fs::create_dir_all(&api_dir).unwrap();
+
+        fs::write(
+            api_dir.join("none.js"),
+            r#"
+function helper() {}
+module.exports = { helper };
+"#,
+        )
+        .unwrap();
+
+        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/none")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+    }
+
+    #[tokio::test]
+    async fn module_exporting_multiple_methods_lists_all_in_allow() {
+        let _lock = init_metacall_for_tests();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api");
+        fs::create_dir_all(&api_dir).unwrap();
+
+        fs::write(
+            api_dir.join("multi.js"),
+            r#"
+function GET(_req) {
+    return JSON.stringify({ status: 200, body: { ok: true } });
+}
+function POST(_req) {
+    return JSON.stringify({ status: 201, body: { created: true } });
+}
+module.exports = { GET, POST };
+"#,
+        )
+        .unwrap();
+
+        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+
+        // GET -> 200
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/multi")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // POST -> 201
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/multi")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::CREATED);
+
+        // DELETE -> 405 with Allow containing GET and POST
+        let req = axum::http::Request::builder()
+            .method("DELETE")
+            .uri("/api/multi")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
+        assert!(allow.contains("GET"));
+        assert!(allow.contains("POST"));
+        assert!(!allow.contains("DELETE"));
+    }
+
+    #[tokio::test]
+    async fn failing_handler_returns_500_not_405() {
+        let _lock = init_metacall_for_tests();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api");
+        fs::create_dir_all(&api_dir).unwrap();
+
+        fs::write(
+            api_dir.join("crash.js"),
+            r#"
+function GET(_req) {
+    throw new Error("genuine runtime crash");
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/crash")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn nested_route_unexported_method_returns_405() {
+        let _lock = init_metacall_for_tests();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api/users");
+        fs::create_dir_all(&api_dir).unwrap();
+
+        fs::write(
+            api_dir.join("profile.js"),
+            r#"
+function GET(_req) {
+    return JSON.stringify({ status: 200, body: { ok: true } });
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+
+        // GET /api/users/profile -> 200
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/users/profile")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // POST /api/users/profile -> 405
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/users/profile")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
+        assert!(allow.contains("GET"));
+        assert!(!allow.contains("POST"));
     }
 }
