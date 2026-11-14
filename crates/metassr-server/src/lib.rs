@@ -168,11 +168,8 @@ impl Server {
         // This scans for .js files and registers GET/POST handlers
         let src_path = self.configs.root_path.join("src");
         if src_path.join("api").exists() {
-            // In production an invalid route layout must fail the (already
-            // built) application eagerly; in development the server warns,
-            // keeps the first route and stays up so the user can iterate.
             let duplicate_policy = match self.configs.mode {
-                ServerMode::Development => metassr_api_handler::DuplicateRoutesPolicy::Skip,
+                ServerMode::Development => metassr_api_handler::DuplicateRoutesPolicy::Warn,
                 ServerMode::Production => metassr_api_handler::DuplicateRoutesPolicy::Error,
             };
             match metassr_api_handler::register_api_routes(

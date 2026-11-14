@@ -189,7 +189,7 @@ impl Default for ApiRoutes {
 /// * `duplicate_policy` - Controls what happens when two files in `src/api/`
 ///   map to the same route path (e.g. `hello.js` and `hello.py` both map to
 ///   `/api/hello`): [`DuplicateRoutesPolicy::Error`] fails with an actionable
-///   error (servers must refuse to start), [`DuplicateRoutesPolicy::Skip`]
+///   error (servers must refuse to start), [`DuplicateRoutesPolicy::Warn`]
 ///   warns, keeps the first route and lets the server boot (development).
 pub async fn register_api_routes(
     mut router: Router,
