@@ -29,6 +29,8 @@
 pub mod scanner;
 pub mod types;
 
+pub use scanner::DuplicateRoutesPolicy;
+
 use anyhow::{anyhow, Result};
 use axum::{
     extract::{Path as AxumPath, Query},
@@ -42,7 +44,7 @@ use metacall::{
     load::{self, Handle, Tag},
     metacall_handle,
 };
-use scanner::{scan_api_dir, ApiRouteFile};
+use scanner::{resolve_route_duplicates, scan_api_dir, ApiRouteFile};
 use std::{collections::HashMap, path::Path, sync::Arc};
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
@@ -67,8 +69,15 @@ impl ApiRoutes {
     ///
     /// # Arguments
     /// * `api_dir` - Path to the API directory (typically `./src/api/`)
-    pub async fn load_from_dir(&mut self, api_dir: &Path) -> Result<()> {
-        let route_files = scan_api_dir(api_dir);
+    /// * `duplicate_policy` - How to handle two files mapping to the same route path
+    pub async fn load_from_dir(
+        &mut self,
+        api_dir: &Path,
+        duplicate_policy: DuplicateRoutesPolicy,
+        root_path: &Path,
+    ) -> Result<()> {
+        let route_files =
+            resolve_route_duplicates(scan_api_dir(api_dir), duplicate_policy, root_path)?;
 
         if route_files.is_empty() {
             debug!("No API routes found in {:?}", api_dir);
@@ -77,7 +86,9 @@ impl ApiRoutes {
 
         info!("Found {} API route(s)", route_files.len());
 
-        for route_file in &route_files {
+        let mut loaded_routes = Vec::new();
+
+        for route_file in route_files {
             if let Err(e) = self
                 .load_script(&route_file.file_path, route_file.tag)
                 .await
@@ -88,10 +99,11 @@ impl ApiRoutes {
                     "  Loaded: {} -> {:?}",
                     route_file.route_path, route_file.file_path
                 );
+                loaded_routes.push(route_file);
             }
         }
 
-        self.routes = route_files;
+        self.routes = loaded_routes;
         Ok(())
     }
 
@@ -174,9 +186,15 @@ impl Default for ApiRoutes {
 /// # Arguments
 /// * `router` - The Axum router to add routes to
 /// * `root_path` - Root path of the project (to find `./src/api/`)
+/// * `duplicate_policy` - Controls what happens when two files in `src/api/`
+///   map to the same route path (e.g. `hello.js` and `hello.py` both map to
+///   `/api/hello`): [`DuplicateRoutesPolicy::Error`] fails with an actionable
+///   error (servers must refuse to start), [`DuplicateRoutesPolicy::Warn`]
+///   warns, keeps the first route and lets the server boot (development).
 pub async fn register_api_routes(
     mut router: Router,
     root_path: &Path,
+    duplicate_policy: DuplicateRoutesPolicy,
 ) -> Result<(Router, Option<Arc<ApiRoutes>>)> {
     let api_dir = root_path.join("src").join("api");
 
@@ -189,7 +207,9 @@ pub async fn register_api_routes(
     }
 
     let mut api_routes = ApiRoutes::new();
-    api_routes.load_from_dir(&api_dir).await?;
+    api_routes
+        .load_from_dir(&api_dir, duplicate_policy, root_path)
+        .await?;
 
     if api_routes.routes().is_empty() {
         return Ok((router, None));
@@ -318,7 +338,7 @@ async fn handle_api_request(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 merge_response_headers(&HashMap::new()),
-                format!("{{\"error\": \"{}\"}}", e),
+                serde_json::json!({"error": "Internal server error"}).to_string(),
             )
         }
     }
@@ -337,7 +357,10 @@ mod tests {
         fs::create_dir_all(root.join("src")).unwrap();
 
         let base_router = Router::new();
-        let (_router, routes) = register_api_routes(base_router, root).await.unwrap();
+        let (_router, routes) =
+            register_api_routes(base_router, root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
 
         assert!(routes.is_none());
     }
@@ -349,9 +372,66 @@ mod tests {
         fs::create_dir_all(root.join("src/api")).unwrap();
 
         let base_router = Router::new();
-        let (router, routes) = register_api_routes(base_router, root).await.unwrap();
+        let (router, routes) = register_api_routes(base_router, root, DuplicateRoutesPolicy::Error)
+            .await
+            .unwrap();
         let _ = router;
         assert!(routes.is_none());
+    }
+
+    #[tokio::test]
+    async fn register_api_routes_fails_on_duplicate_route_paths() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api = root.join("src/api");
+        fs::create_dir_all(&api).unwrap();
+        fs::write(api.join("hello.js"), "// empty").unwrap();
+        fs::write(api.join("hello.py"), "# empty").unwrap();
+
+        let base_router = Router::new();
+        let result = register_api_routes(base_router, root, DuplicateRoutesPolicy::Error).await;
+
+        // No script loading happens when duplicates are detected, so this
+        // test never touches the MetaCall runtime.
+        let err = result
+            .err()
+            .expect("duplicate routes must fail registration");
+        let msg = err.to_string();
+        assert!(msg.contains("/api/hello"), "{msg}");
+        assert!(msg.contains("hello.js"), "{msg}");
+        assert!(msg.contains("hello.py"), "{msg}");
+    }
+
+    #[tokio::test]
+    async fn register_api_routes_skips_failed_script() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api");
+        fs::create_dir_all(&api_dir).unwrap();
+        fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();
+
+        let base_router = Router::new();
+        let (_router, routes) =
+            register_api_routes(base_router, root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
+
+        assert!(routes.is_none());
+    }
+
+    #[tokio::test]
+    async fn load_from_dir_excludes_scripts_that_fail_to_load() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let api_dir = tmp.path();
+        fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();
+
+        let mut routes = ApiRoutes::new();
+        routes
+            .load_from_dir(api_dir, DuplicateRoutesPolicy::Error, tmp.path())
+            .await
+            .unwrap();
+
+        assert!(routes.routes().is_empty());
     }
 
     #[tokio::test]
@@ -370,6 +450,34 @@ mod tests {
             .call_handler("src/api/hello.js", "GET", request)
             .await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn handle_api_request_returns_valid_json_on_error() {
+        let routes = Arc::new(ApiRoutes::new());
+
+        let response = handle_api_request(
+            routes,
+            HeaderMap::new(),
+            Method::GET,
+            HashMap::new(),
+            String::new(),
+            "src/api/missing.js".to_string(),
+            "/api/missing".to_string(),
+        )
+        .await
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert!(json["error"].is_string());
+        assert_eq!(json["error"], "Internal server error");
     }
 
     #[test]

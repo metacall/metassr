@@ -111,6 +111,7 @@ function GET(req) {
   });
 }
 ```
+> **Note:** Every route path must be claimed by a single file. `hello.js` and `hello.py` would both map to `/api/hello`, so `metassr build` fails and the production server refuses to start, listing every conflicting route. In development the server warns, keeps the first file and keeps running.
 
 ### Special Files
 
