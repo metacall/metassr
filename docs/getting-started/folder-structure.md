@@ -93,6 +93,7 @@ my-metassr-project/
 API route files export functions named after the HTTP methods they handle: `GET`, `POST`, `PUT`, or `DELETE`. Only the exported methods are registered for the route. Requests using an unexported HTTP method return `405 Method Not Allowed` with an `Allow` header listing the supported methods (for example, a route exporting only `GET` returns `405` with `Allow: GET,HEAD` on `POST` requests).
 
 If a handler function throws an error or fails during execution, MetaSSR returns `500 Internal Server Error`.
+> **Note:** Every route path must be claimed by a single file. `hello.js` and `hello.py` would both map to `/api/hello`, so `metassr build` fails and the production server refuses to start, listing every conflicting route. In development the server warns, keeps the first file and keeps running.
 
 ### Special Files
 

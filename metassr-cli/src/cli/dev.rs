@@ -9,7 +9,9 @@ use anyhow::{self, Result};
 use crate::cli::traits::Exec;
 use crate::cli::{Builder, BuildingType};
 use metassr_build::rebuilder::{RebuildType, Rebuilder};
-use metassr_build::{client::ClientBuilder, server::ServerSideBuilder, traits::Build};
+use metassr_build::{
+    client::ClientBuilder, server::ServerSideBuilder, traits::Build, DuplicateRoutesPolicy,
+};
 use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_utils::ansi::ansi_regex;
 use metassr_watcher::FileWatcher;
@@ -144,7 +146,9 @@ impl Dev {
 
 impl AsyncExec for Dev {
     async fn exec(&self) -> Result<()> {
-        Builder::new(self.build_type, self.out_dir.clone()).exec()?;
+        Builder::new(self.build_type, self.out_dir.clone())
+            .with_duplicate_routes_policy(DuplicateRoutesPolicy::Warn)
+            .exec()?;
 
         self.setup_watcher()?;
 
