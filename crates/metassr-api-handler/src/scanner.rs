@@ -437,7 +437,7 @@ mod tests {
 
         let result = resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, tmp.path());
 
-        let err = result.err().expect("should fail with an actionable error");
+        let err = result.expect_err("should fail with an actionable error");
         let msg = err.to_string();
 
         assert!(
@@ -466,7 +466,7 @@ mod tests {
         let result =
             resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, temp_dir.path());
 
-        let err = result.err().expect("should fail with an actionable error");
+        let err = result.expect_err("should fail with an actionable error");
         let msg = err.to_string();
 
         assert!(
