@@ -88,6 +88,8 @@ my-metassr-project/
 - **pygreet.py**: A Python handler served at `/api/pygreet`.
 - **tsgreet.ts**: A TypeScript handler served at `/api/tsgreet`.
 
+> **Note:** Every route path must be claimed by a single file. `hello.js` and `hello.py` would both map to `/api/hello`, so `metassr build` fails and the production server refuses to start, listing every conflicting route. In development the server warns, keeps the first file and keeps running.
+
 ### Special Files
 
 MetaSSR uses several special files that help customize the behavior and appearance of your application across different pages:

@@ -185,14 +185,9 @@ impl Rebuilder {
                 }
 
                 self.clear_last_errors();
-                match self.sender.send(rebuild_type.clone()) {
-                    Ok(rec) => {
-                        debug!("Sent to: {rec} receivers")
-                    }
-                    Err(e) => {
-                        debug!("FULL CHANNEL: {e}");
-                    }
-                };
+                if let Ok(rec) = self.sender.send(rebuild_type.clone()) {
+                    debug!("Sent to: {rec} receivers")
+                }
             }
             RebuildType::Api(ref path) => {
                 debug!("entered rebuilding {:?}", rebuild_type);
