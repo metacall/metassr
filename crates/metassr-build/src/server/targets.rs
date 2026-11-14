@@ -76,6 +76,33 @@ impl Default for Targets {
     }
 }
 
+pub struct TargetsGenerator<'a> {
+    app: PathBuf,
+    pages: PagesEntriesType,
+    cache: &'a mut CacheDir,
+}
+
+impl<'a> TargetsGenerator<'a> {
+    pub fn new(app: PathBuf, pages: PagesEntriesType, cache: &'a mut CacheDir) -> Self {
+        Self { app, pages, cache }
+    }
+    pub fn generate(&mut self) -> Result<Targets> {
+        let mut targets = Targets::new();
+        for (page, page_path) in self.pages.iter() {
+            let (func_id, render_script) = ServerRender::new(&self.app, page_path).generate()?;
+
+            let page = setup_page_path(page, "server.js");
+            let path = self.cache.insert(
+                PathBuf::from("pages").join(&page).to_str().unwrap(),
+                render_script.as_bytes(),
+            )?;
+
+            targets.insert(func_id, &path);
+        }
+        Ok(targets)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,32 +131,5 @@ mod tests {
         let exec = targets.ready_for_exec(dist_path);
         assert_eq!(exec.len(), 1);
         assert_eq!(exec.values().copied().next(), Some(2));
-    }
-}
-
-pub struct TargetsGenerator<'a> {
-    app: PathBuf,
-    pages: PagesEntriesType,
-    cache: &'a mut CacheDir,
-}
-
-impl<'a> TargetsGenerator<'a> {
-    pub fn new(app: PathBuf, pages: PagesEntriesType, cache: &'a mut CacheDir) -> Self {
-        Self { app, pages, cache }
-    }
-    pub fn generate(&mut self) -> Result<Targets> {
-        let mut targets = Targets::new();
-        for (page, page_path) in self.pages.iter() {
-            let (func_id, render_script) = ServerRender::new(&self.app, page_path).generate()?;
-
-            let page = setup_page_path(page, "server.js");
-            let path = self.cache.insert(
-                PathBuf::from("pages").join(&page).to_str().unwrap(),
-                render_script.as_bytes(),
-            )?;
-
-            targets.insert(func_id, &path);
-        }
-        Ok(targets)
     }
 }

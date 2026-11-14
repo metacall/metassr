@@ -252,7 +252,7 @@ mod tests {
     /// Helper function to create a temporary directory structure for testing
     fn setup_test_dist_dir() -> PathBuf {
         let tmp_dir = std::env::temp_dir()
-            .join(&Rand::new().val().to_string())
+            .join(Rand::new().val().to_string())
             .join("test-dist");
         let pages_dir = tmp_dir.join("pages");
 
