@@ -4,9 +4,21 @@ import { renderToString } from "react-dom/server"
 import Page from "%PAGE_PATH%"
 import App from "%APP_PATH%"
 
+let props = {};
+const propsElement = document.getElementById("__METASSR_PROPS__");
+if (propsElement && propsElement.textContent) {
+    try {
+        props = JSON.parse(propsElement.textContent);
+    } catch (_) {
+        props = {};
+    }
+}
+
+const PageWithProps = () => <Page {...props} />;
+
 hydrateRoot(
     document.getElementById("%ROOT_ID%"),
     <React.StrictMode>
-        <App Component={Page}/>
+        <App Component={PageWithProps}/>
     </React.StrictMode>
 );

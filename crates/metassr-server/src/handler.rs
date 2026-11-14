@@ -58,18 +58,20 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
             };
 
             let handler =
-                move |Query(_params): Query<HashMap<String, String>>,
-                      Path(_path): Path<HashMap<String, String>>| async move {
+                move |Query(query): Query<HashMap<String, String>>,
+                      Path(params): Path<HashMap<String, String>>| async move {
                     match &source {
                         PageSource::Static(html) => Html(html.clone()).into_response(),
-                        PageSource::Dynamic(renderer) => match renderer.render() {
-                            Ok(html) => Html(html).into_response(),
-                            Err(e) => {
-                                error!("SSR render failed: {e:?}");
-                                (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
-                                    .into_response()
+                        PageSource::Dynamic(renderer) => {
+                            match renderer.render_with_context(&params, &query) {
+                                Ok(html) => Html(html).into_response(),
+                                Err(e) => {
+                                    error!("SSR render failed: {e:?}");
+                                    (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
+                                        .into_response()
+                                }
                             }
-                        },
+                        }
                     }
                 };
 
@@ -77,7 +79,7 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
                 "/{}",
                 match route {
                     e if e == &String::from("#root") => "".to_string(),
-                    _ => route.replace('$', ":"),
+                    _ => route.replace('\\', "/").replace('$', ":"),
                 }
             );
             self.app.route(&route, get(handler));

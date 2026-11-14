@@ -71,6 +71,16 @@ my-metassr-project/
 
 These files will be automatically mapped to the respective routes, such as `/` for `index.jsx` and `/about` for `about.jsx`.
 
+#### Dynamic Route Parameters
+
+Pages can define dynamic path parameters by prefixing file or folder names with `$`. For example, `src/pages/post/$slug.tsx` matches `/post/:slug`. The page component receives `params` and `query` in its props during both SSR and client hydration:
+
+```jsx
+export default function Post({ params, query }) {
+  return <div>Post: {params.slug} (query: {query.x})</div>;
+}
+```
+
 ### api
 
 The `api` directory contains server-side API route handlers. Each file maps to an HTTP endpoint under `/api/` and can be written in any language supported by the installed MetaSSR loaders (for example `.js`, `.ts` or `.py`).
@@ -88,6 +98,19 @@ my-metassr-project/
 - **pygreet.py**: A Python handler served at `/api/pygreet`.
 - **tsgreet.ts**: A TypeScript handler served at `/api/tsgreet`.
 
+#### Dynamic Route Parameters
+
+API routes support dynamic path parameters using the `$` prefix on file stems and directory names. For example, `src/api/users/$id.js` is served at `/api/users/:id`, and `src/api/$org/members/$id.js` is served at `/api/:org/members/:id`. The handler receives matched parameters on `req.params`:
+
+```javascript
+function GET(req) {
+  const userId = req.params.id;
+  return JSON.stringify({
+    status: 200,
+    body: { userId }
+  });
+}
+```
 > **Note:** Every route path must be claimed by a single file. `hello.js` and `hello.py` would both map to `/api/hello`, so `metassr build` fails and the production server refuses to start, listing every conflicting route. In development the server warns, keeps the first file and keeps running.
 
 ### Special Files
