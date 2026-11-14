@@ -73,7 +73,7 @@ impl ApiRoutes {
         let route_files = scan_api_dir(api_dir);
 
         if route_files.is_empty() {
-            debug!("No API routes found in {:?}", api_dir);
+            info!("No API routes found in {:?}", api_dir);
             return Ok(());
         }
 
@@ -86,10 +86,11 @@ impl ApiRoutes {
     /// (see [`register_api_routes`]).
     pub(crate) async fn load_from_files(&mut self, route_files: Vec<ApiRouteFile>) -> Result<()> {
         if route_files.is_empty() {
+            info!("No API routes found");
             return Ok(());
         }
 
-        info!("Found {} API route(s)", route_files.len());
+        debug!("Found {} API route(s)", route_files.len());
 
         let mut loaded_routes = Vec::new();
 
@@ -100,7 +101,7 @@ impl ApiRoutes {
             {
                 warn!("Failed to load API route {:?}: {}", route_file.file_path, e);
             } else {
-                info!(
+                debug!(
                     "  Loaded: {} -> {:?}",
                     route_file.route_path, route_file.file_path
                 );
@@ -330,7 +331,7 @@ pub async fn register_api_routes(
             }
         });
         router = router.route(&route_path, method_router);
-        info!("Registered API route: {}", route_path);
+        debug!("Registered API route: {}", route_path);
     }
 
     Ok((router, Some(api_routes)))
