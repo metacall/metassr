@@ -44,8 +44,13 @@ use metacall::{
     load::{self, Handle, Tag},
     metacall_handle,
 };
-use scanner::{resolve_route_duplicates, scan_api_dir, ApiRouteFile};
-use std::{collections::HashMap, path::Path, sync::Arc};
+use scanner::{scan_api_dir, ApiRouteFile};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
+    path::Path,
+    sync::{Arc, Mutex},
+};
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
@@ -54,6 +59,15 @@ pub struct ApiRoutes {
     handles: Map<String, Handle>,
     /// List of discovered route files.
     routes: Vec<ApiRouteFile>,
+    /// Hash of the source each script was last loaded from. The lock also
+    /// serializes hot reloads.
+    loaded_sources: Mutex<HashMap<String, u64>>,
+}
+
+fn source_hash(code: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    code.hash(&mut hasher);
+    hasher.finish()
 }
 
 impl ApiRoutes {
@@ -62,6 +76,7 @@ impl ApiRoutes {
         Self {
             handles: Map::new(),
             routes: Vec::new(),
+            loaded_sources: Mutex::new(HashMap::new()),
         }
     }
 
@@ -123,29 +138,53 @@ impl ApiRoutes {
         load::from_file(tag, [path_str.clone()], Some(&mut handle))
             .map_err(|e| anyhow!("Failed to load script {:?}: {:?}", file_path, e))?;
 
+        if let Ok(code) = std::fs::read_to_string(file_path) {
+            self.loaded_sources
+                .lock()
+                .unwrap()
+                .insert(path_str.clone(), source_hash(&code));
+        }
         self.handles.insert(path_str, handle);
 
         Ok(())
     }
 
-    /// Reload a changed script: drops the old handle (clearing its symbols) then reloads.
+    /// Reload a changed script into a new handle and swap it in.
+    ///
+    /// Reloads are serialized, and skipped when the source is unchanged since
+    /// the last successful load: a single editor save can emit several file
+    /// events, and loading the same code twice in quick succession can fail.
     pub fn reload_script(&self, file_path: &Path, tag: Tag) -> Result<()> {
         let path_str = file_path.to_string_lossy().to_string();
 
-        {
-            self.handles.remove(&path_str);
+        let code = std::fs::read_to_string(file_path)?;
+        let hash = source_hash(&code);
+        let mut loaded_sources = self.loaded_sources.lock().unwrap();
+        if loaded_sources.get(&path_str) == Some(&hash) && self.handles.get(&path_str).is_some() {
+            debug!("API script unchanged, skipping reload: {:?}", file_path);
+            return Ok(());
         }
 
-        let code = std::fs::read_to_string(file_path)?;
-
+        // Load into a fresh handle first: if the new code fails to load (e.g. a
+        // syntax error mid-edit), the previous handle keeps serving requests.
         let mut handle = Handle::new();
         load::from_memory(tag, code, Some(&mut handle))
             .map_err(|e| anyhow!("Failed to reload script {:?}: {:?}", file_path, e))?;
 
-        self.handles.insert(path_str, handle);
+        self.handles.remove(&path_str);
+        self.handles.insert(path_str.clone(), handle);
+        loaded_sources.insert(path_str, hash);
 
         info!("Reloaded API script: {:?}", file_path);
         Ok(())
+    }
+
+    /// Whether `file_path` is one of the route files registered at startup.
+    ///
+    /// Only these can be hot-reloaded: the router is built once, so a file
+    /// added after startup has no route until the server restarts.
+    pub fn is_registered(&self, file_path: &Path) -> bool {
+        self.routes.iter().any(|route| route.file_path == file_path)
     }
 
     /// Call a handler function (GET, POST, PUT, DELETE) on a loaded script.
@@ -548,6 +587,19 @@ mod tests {
 
         assert!(json["error"].is_string());
         assert_eq!(json["error"], "Internal server error");
+    }
+
+    #[test]
+    fn is_registered_only_matches_scanned_route_files() {
+        let mut routes = ApiRoutes::new();
+        routes.routes.push(ApiRouteFile {
+            route_path: "/api/hello".to_string(),
+            file_path: std::path::PathBuf::from("/app/src/api/hello.js"),
+            tag: Tag::NodeJS,
+        });
+
+        assert!(routes.is_registered(Path::new("/app/src/api/hello.js")));
+        assert!(!routes.is_registered(Path::new("/app/src/api/added.js")));
     }
 
     #[test]
