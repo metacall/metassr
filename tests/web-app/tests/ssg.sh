@@ -61,6 +61,14 @@ echo "=== SSG Static Files ==="
 assert_status "$BASE_URL/static/assets/metacall-logo.png" 200 "GET static asset"
 
 echo ""
+echo "=== SSG Dist Internals ==="
+assert_status "$BASE_URL/dist/pages/index.js.js"          200 "GET client bundle"
+assert_status "$BASE_URL/dist/pages/index.js.js.map"      404 "GET client bundle source map"
+assert_status "$BASE_URL/dist/server/pages/root.js"       404 "GET server bundle is not public"
+assert_status "$BASE_URL/dist/cache/pages/index.server.js" 404 "GET server cache is not public"
+assert_status "$BASE_URL/dist/manifest.json"              404 "GET build manifest is not public"
+
+echo ""
 echo "=== SSG Pre-rendered Files ==="
 DIST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/dist"
 for page in home blog _notfound; do
