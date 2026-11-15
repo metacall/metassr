@@ -178,7 +178,7 @@ mod tests {
 
         // Each generated file should contain the hydration template markers
         // replaced with real paths.
-        for (_name, path) in &entries {
+        for path in entries.values() {
             let content = fs::read_to_string(path).unwrap();
             assert!(
                 content.contains("hydrateRoot"),
@@ -210,7 +210,7 @@ mod tests {
                 let has_js = fs::read_dir(&dist)
                     .unwrap()
                     .flatten()
-                    .any(|e| e.path().extension().map_or(false, |ext| ext == "js"));
+                    .any(|e| e.path().extension().is_some_and(|ext| ext == "js"));
 
                 assert!(has_js, "dist/ should contain at least one JS bundle");
             }

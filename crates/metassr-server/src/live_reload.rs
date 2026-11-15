@@ -11,7 +11,7 @@ use serde::Serialize;
 use tokio_tungstenite::tungstenite::Message;
 
 use tokio::{net::TcpStream, sync::broadcast::Receiver};
-use tracing::info;
+use tracing::warn;
 
 #[derive(Debug, Serialize)]
 struct LiveReloadMessage {
@@ -127,7 +127,7 @@ pub async fn inject_live_reload_script(
         let (parts, body) = response.into_parts();
 
         let body_bytes = axum::body::to_bytes(body, usize::MAX).await.map_err(|e| {
-            info!("Failed to read response body: {}", e);
+            warn!("Failed to read response body: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
         let body_str = String::from_utf8_lossy(&body_bytes).to_string();
