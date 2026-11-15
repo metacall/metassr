@@ -93,9 +93,7 @@ impl Server {
             self.configs.root_path.to_str().unwrap()
         ));
 
-        let mut base_router = Router::new()
-            .nest_service("/static", ServeDir::new(&static_dir))
-            .nest_service("/dist", ServeDir::new(&dist_dir));
+        let mut base_router = static_router(Path::new(&static_dir), Path::new(&dist_dir));
 
         if let ServerMode::Production = self.configs.mode {
             base_router = base_router.layer(axum::middleware::from_fn(deny_sourcemaps));
@@ -224,6 +222,12 @@ impl Server {
     }
 }
 
+fn static_router(static_dir: &Path, dist_dir: &Path) -> Router {
+    Router::new()
+        .nest_service("/static", ServeDir::new(static_dir))
+        .nest_service("/dist/pages", ServeDir::new(dist_dir.join("pages")))
+}
+
 async fn deny_sourcemaps(
     req: axum::extract::Request,
     next: axum::middleware::Next,
@@ -276,9 +280,62 @@ async fn bind_http_listener_with_fallback(start_port: u16) -> Result<TcpListener
 
 #[cfg(test)]
 mod tests {
-    use super::{bind_http_listener_with_fallback, bind_listener};
-    use std::io::ErrorKind;
+    use super::{bind_http_listener_with_fallback, bind_listener, static_router};
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use std::{fs, io::ErrorKind};
     use tokio::net::{TcpListener, TcpStream};
+    use tower_service::Service;
+
+    #[tokio::test]
+    async fn serves_client_bundles_but_not_internal_dist_files() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let static_dir = root.join("static");
+        let dist_dir = root.join("dist");
+        let pages_dir = dist_dir.join("pages");
+
+        fs::create_dir_all(&pages_dir).unwrap();
+        fs::create_dir_all(dist_dir.join("server/pages")).unwrap();
+        fs::create_dir_all(dist_dir.join("cache/pages")).unwrap();
+        fs::write(pages_dir.join("index.js"), "client bundle").unwrap();
+        fs::write(dist_dir.join("server/pages/root.js"), "server bundle").unwrap();
+        fs::write(dist_dir.join("cache/pages/index.server.js"), "server cache").unwrap();
+        fs::write(dist_dir.join("manifest.json"), "{\"secret\":true}").unwrap();
+
+        let mut app = static_router(&static_dir, &dist_dir);
+
+        let response = Service::call(
+            &mut app,
+            Request::builder()
+                .uri("/dist/pages/index.js")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        for path in [
+            "/dist/server/pages/root.js",
+            "/dist/cache/pages/index.server.js",
+            "/dist/manifest.json",
+        ] {
+            let response = Service::call(
+                &mut app,
+                Request::builder().uri(path).body(Body::empty()).unwrap(),
+            )
+            .await
+            .unwrap();
+            assert_eq!(
+                response.status(),
+                StatusCode::NOT_FOUND,
+                "{path} should not be publicly served"
+            );
+        }
+    }
 
     #[tokio::test]
     async fn binds_to_requested_port_when_available() {
