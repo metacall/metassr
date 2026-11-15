@@ -407,7 +407,9 @@ mod tests {
     static METACALL_TEST_MUTEX: Mutex<()> = Mutex::new(());
 
     fn init_metacall_for_tests() -> std::sync::MutexGuard<'static, ()> {
-        let guard = METACALL_TEST_MUTEX.lock().unwrap();
+        let guard = METACALL_TEST_MUTEX
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         INIT_METACALL.call_once(|| {
             if !metacall::is_initialized() {
                 if let Ok(destroy_guard) = metacall::initialize() {
@@ -472,6 +474,7 @@ mod tests {
 
     #[tokio::test]
     async fn register_api_routes_skips_failed_script() {
+        let _lock = init_metacall_for_tests();
         let tmp = tempfile::TempDir::new().unwrap();
         let root = tmp.path();
         let api_dir = root.join("src/api");
@@ -489,6 +492,7 @@ mod tests {
 
     #[tokio::test]
     async fn load_from_dir_excludes_scripts_that_fail_to_load() {
+        let _lock = init_metacall_for_tests();
         let tmp = tempfile::TempDir::new().unwrap();
         let api_dir = tmp.path();
         fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();
@@ -605,13 +609,15 @@ mod tests {
         assert!(headers.contains_key(header::CONTENT_TYPE));
     }
     #[tokio::test]
-    async fn unexported_method_returns_405_with_allow_header() {
+    async fn unexported_methods_return_405_and_allow_headers() {
         let _lock = init_metacall_for_tests();
         let tmp = tempfile::TempDir::new().unwrap();
         let root = tmp.path();
         let api_dir = root.join("src/api");
-        fs::create_dir_all(&api_dir).unwrap();
+        let users_dir = api_dir.join("users");
+        fs::create_dir_all(&users_dir).unwrap();
 
+        // 1. Single method handler (GET only)
         fs::write(
             api_dir.join("fast.js"),
             r#"
@@ -623,50 +629,7 @@ module.exports = { GET };
         )
         .unwrap();
 
-        let (mut router, _) =
-            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
-                .await
-                .unwrap();
-
-        // GET should return 200
-        let req = axum::http::Request::builder()
-            .method("GET")
-            .uri("/api/fast")
-            .body(axum::body::Body::empty())
-            .unwrap();
-        let res = Service::call(&mut router, req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::OK);
-
-        // POST should return 405 with Allow header
-        let req = axum::http::Request::builder()
-            .method("POST")
-            .uri("/api/fast")
-            .body(axum::body::Body::empty())
-            .unwrap();
-        let res = Service::call(&mut router, req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
-        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
-        assert!(allow.contains("GET"));
-        assert!(!allow.contains("POST"));
-
-        // DELETE should return 405 with Allow header
-        let req = axum::http::Request::builder()
-            .method("DELETE")
-            .uri("/api/fast")
-            .body(axum::body::Body::empty())
-            .unwrap();
-        let res = Service::call(&mut router, req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
-    }
-
-    #[tokio::test]
-    async fn module_exporting_none_of_http_methods_returns_405() {
-        let _lock = init_metacall_for_tests();
-        let tmp = tempfile::TempDir::new().unwrap();
-        let root = tmp.path();
-        let api_dir = root.join("src/api");
-        fs::create_dir_all(&api_dir).unwrap();
-
+        // 2. Handler with no HTTP methods exported (only helper)
         fs::write(
             api_dir.join("none.js"),
             r#"
@@ -676,28 +639,7 @@ module.exports = { helper };
         )
         .unwrap();
 
-        let (mut router, _) =
-            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
-                .await
-                .unwrap();
-
-        let req = axum::http::Request::builder()
-            .method("GET")
-            .uri("/api/none")
-            .body(axum::body::Body::empty())
-            .unwrap();
-        let res = Service::call(&mut router, req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
-    }
-
-    #[tokio::test]
-    async fn module_exporting_multiple_methods_lists_all_in_allow() {
-        let _lock = init_metacall_for_tests();
-        let tmp = tempfile::TempDir::new().unwrap();
-        let root = tmp.path();
-        let api_dir = root.join("src/api");
-        fs::create_dir_all(&api_dir).unwrap();
-
+        // 3. Multi-method handler (GET + POST)
         fs::write(
             api_dir.join("multi.js"),
             r#"
@@ -712,11 +654,76 @@ module.exports = { GET, POST };
         )
         .unwrap();
 
-        let (mut router, _) =
+        // 4. Failing handler (GET throws runtime crash)
+        fs::write(
+            api_dir.join("crash.js"),
+            r#"
+function GET(_req) {
+    throw new Error("genuine runtime crash");
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        // 5. Nested route handler (users/profile.js, GET only)
+        fs::write(
+            users_dir.join("profile.js"),
+            r#"
+function GET(_req) {
+    return JSON.stringify({ status: 200, body: { ok: true } });
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        let (mut router, routes) =
             register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
                 .await
                 .unwrap();
 
+        // --- Test 1: Single method (fast.js: GET only) ---
+        // GET -> 200
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // POST -> 405 with Allow: GET
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
+        assert!(allow.contains("GET"));
+        assert!(!allow.contains("POST"));
+
+        // DELETE -> 405
+        let req = axum::http::Request::builder()
+            .method("DELETE")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        // --- Test 2: No HTTP methods exported (none.js) ---
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/none")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        // --- Test 3: Multiple methods (multi.js: GET, POST) ---
         // GET -> 200
         let req = axum::http::Request::builder()
             .method("GET")
@@ -735,7 +742,7 @@ module.exports = { GET, POST };
         let res = Service::call(&mut router, req).await.unwrap();
         assert_eq!(res.status(), StatusCode::CREATED);
 
-        // DELETE -> 405 with Allow containing GET and POST
+        // DELETE -> 405 with Allow: GET, POST
         let req = axum::http::Request::builder()
             .method("DELETE")
             .uri("/api/multi")
@@ -747,32 +754,8 @@ module.exports = { GET, POST };
         assert!(allow.contains("GET"));
         assert!(allow.contains("POST"));
         assert!(!allow.contains("DELETE"));
-    }
 
-    #[tokio::test]
-    async fn failing_handler_returns_500_not_405() {
-        let _lock = init_metacall_for_tests();
-        let tmp = tempfile::TempDir::new().unwrap();
-        let root = tmp.path();
-        let api_dir = root.join("src/api");
-        fs::create_dir_all(&api_dir).unwrap();
-
-        fs::write(
-            api_dir.join("crash.js"),
-            r#"
-function GET(_req) {
-    throw new Error("genuine runtime crash");
-}
-module.exports = { GET };
-"#,
-        )
-        .unwrap();
-
-        let (mut router, _) =
-            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
-                .await
-                .unwrap();
-
+        // --- Test 4: Handler error returns 500, not 405 (crash.js) ---
         let req = axum::http::Request::builder()
             .method("GET")
             .uri("/api/crash")
@@ -780,33 +763,9 @@ module.exports = { GET };
             .unwrap();
         let res = Service::call(&mut router, req).await.unwrap();
         assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
-    }
 
-    #[tokio::test]
-    async fn nested_route_unexported_method_returns_405() {
-        let _lock = init_metacall_for_tests();
-        let tmp = tempfile::TempDir::new().unwrap();
-        let root = tmp.path();
-        let api_dir = root.join("src/api/users");
-        fs::create_dir_all(&api_dir).unwrap();
-
-        fs::write(
-            api_dir.join("profile.js"),
-            r#"
-function GET(_req) {
-    return JSON.stringify({ status: 200, body: { ok: true } });
-}
-module.exports = { GET };
-"#,
-        )
-        .unwrap();
-
-        let (mut router, _) =
-            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
-                .await
-                .unwrap();
-
-        // GET /api/users/profile -> 200
+        // --- Test 5: Nested route (users/profile.js: GET only) ---
+        // GET -> 200
         let req = axum::http::Request::builder()
             .method("GET")
             .uri("/api/users/profile")
@@ -815,7 +774,7 @@ module.exports = { GET };
         let res = Service::call(&mut router, req).await.unwrap();
         assert_eq!(res.status(), StatusCode::OK);
 
-        // POST /api/users/profile -> 405
+        // POST -> 405 with Allow: GET
         let req = axum::http::Request::builder()
             .method("POST")
             .uri("/api/users/profile")
@@ -826,5 +785,10 @@ module.exports = { GET };
         let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
         assert!(allow.contains("GET"));
         assert!(!allow.contains("POST"));
+
+        // Keep router and handles alive to prevent metacall_clear from running
+        // during test teardown, which corrupts Node.js loader for other tests.
+        std::mem::forget(routes);
+        std::mem::forget(router);
     }
 }
