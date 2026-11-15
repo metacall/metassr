@@ -155,7 +155,7 @@ async fn main() -> Result<()> {
             let out_dir = out_dir.unwrap_or(config_out_dir);
             let build_type = build_type.unwrap_or(config_build_type);
 
-            tracing::info!("command build Out dir: {:?}", out_dir);
+            tracing::debug!("command build Out dir: {:?}", out_dir);
 
             cli::Builder::new(build_type, out_dir).exec()?;
         }

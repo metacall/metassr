@@ -69,22 +69,28 @@ impl ApiRoutes {
     ///
     /// # Arguments
     /// * `api_dir` - Path to the API directory (typically `./src/api/`)
-    /// * `duplicate_policy` - How to handle two files mapping to the same route path
-    pub async fn load_from_dir(
-        &mut self,
-        api_dir: &Path,
-        duplicate_policy: DuplicateRoutesPolicy,
-        root_path: &Path,
-    ) -> Result<()> {
-        let route_files =
-            resolve_route_duplicates(scan_api_dir(api_dir), duplicate_policy, root_path)?;
+    pub async fn load_from_dir(&mut self, api_dir: &Path) -> Result<()> {
+        let route_files = scan_api_dir(api_dir);
 
         if route_files.is_empty() {
-            debug!("No API routes found in {:?}", api_dir);
+            info!("No API routes found in {:?}", api_dir);
             return Ok(());
         }
 
-        info!("Found {} API route(s)", route_files.len());
+        self.load_from_files(route_files).await
+    }
+
+    /// Load already-discovered route files.
+    ///
+    /// Callers that need duplicate-route handling must resolve the files first
+    /// (see [`register_api_routes`]).
+    pub(crate) async fn load_from_files(&mut self, route_files: Vec<ApiRouteFile>) -> Result<()> {
+        if route_files.is_empty() {
+            info!("No API routes found");
+            return Ok(());
+        }
+
+        debug!("Found {} API route(s)", route_files.len());
 
         let mut loaded_routes = Vec::new();
 
@@ -95,7 +101,7 @@ impl ApiRoutes {
             {
                 warn!("Failed to load API route {:?}: {}", route_file.file_path, e);
             } else {
-                info!(
+                debug!(
                     "  Loaded: {} -> {:?}",
                     route_file.route_path, route_file.file_path
                 );
@@ -245,10 +251,11 @@ pub async fn register_api_routes(
         return Ok((router, None));
     }
 
+    let route_files =
+        resolve_route_duplicates(scan_api_dir(&api_dir), duplicate_policy, root_path)?;
+
     let mut api_routes = ApiRoutes::new();
-    api_routes
-        .load_from_dir(&api_dir, duplicate_policy, root_path)
-        .await?;
+    api_routes.load_from_files(route_files).await?;
 
     if api_routes.routes().is_empty() {
         return Ok((router, None));
@@ -302,7 +309,7 @@ pub async fn register_api_routes(
             method_router = method_router.delete(make_handler(Method::DELETE));
         }
         router = router.route(&route_path, method_router);
-        info!("Registered API route: {}", route_path);
+        debug!("Registered API route: {}", route_path);
     }
 
     Ok((router, Some(api_routes)))
@@ -487,10 +494,7 @@ mod tests {
         fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();
 
         let mut routes = ApiRoutes::new();
-        routes
-            .load_from_dir(api_dir, DuplicateRoutesPolicy::Error, tmp.path())
-            .await
-            .unwrap();
+        routes.load_from_dir(api_dir).await.unwrap();
 
         assert!(routes.routes().is_empty());
     }

@@ -185,7 +185,7 @@ impl Server {
                 }
                 Ok((router_with_api, None)) => {
                     app = RouterMut::from(router_with_api);
-                    info!("API routes registered (no route files found)");
+                    debug!("API routes registered (none loaded)");
                 }
                 Err(e) => {
                     return Err(
