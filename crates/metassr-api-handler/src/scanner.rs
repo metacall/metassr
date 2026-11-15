@@ -432,7 +432,7 @@ mod tests {
         let full = Path::new("/some/path/$org/members/$id.js");
         let route = build_route_path(relative, full);
         assert_eq!(route, "/api/:org/members/:id");
-  }
+    }
     /// Create hello.js + hello.py + world.js in a temp api dir and return the
     /// scanned routes (sorted, so hello.js comes before hello.py).
     fn create_duplicate_routes() -> (TempDir, Vec<ApiRouteFile>) {

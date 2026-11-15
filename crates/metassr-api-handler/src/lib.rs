@@ -461,6 +461,7 @@ mod tests {
             HeaderMap::new(),
             Method::GET,
             HashMap::new(),
+            HashMap::new(),
             String::new(),
             "src/api/missing.js".to_string(),
             "/api/missing".to_string(),
