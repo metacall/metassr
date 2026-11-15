@@ -44,10 +44,8 @@ use metacall::{
     load::{self, Handle, Tag},
     metacall_handle,
 };
-use scanner::{scan_api_dir, ApiRouteFile};
-use std::{collections::HashMap, ffi::CString, path::Path, sync::Arc};
 use scanner::{resolve_route_duplicates, scan_api_dir, ApiRouteFile};
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, ffi::CString, path::Path, sync::Arc};
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
@@ -621,7 +619,10 @@ module.exports = { GET };
         )
         .unwrap();
 
-        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+        let (mut router, _) =
+            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
 
         // GET should return 200
         let req = axum::http::Request::builder()
@@ -671,7 +672,10 @@ module.exports = { helper };
         )
         .unwrap();
 
-        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+        let (mut router, _) =
+            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
 
         let req = axum::http::Request::builder()
             .method("GET")
@@ -704,7 +708,10 @@ module.exports = { GET, POST };
         )
         .unwrap();
 
-        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+        let (mut router, _) =
+            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
 
         // GET -> 200
         let req = axum::http::Request::builder()
@@ -757,7 +764,10 @@ module.exports = { GET };
         )
         .unwrap();
 
-        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+        let (mut router, _) =
+            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
 
         let req = axum::http::Request::builder()
             .method("GET")
@@ -787,7 +797,10 @@ module.exports = { GET };
         )
         .unwrap();
 
-        let (mut router, _) = register_api_routes(Router::new(), root).await.unwrap();
+        let (mut router, _) =
+            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
 
         // GET /api/users/profile -> 200
         let req = axum::http::Request::builder()
