@@ -410,6 +410,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn register_api_routes_fails_on_param_name_collision() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api = root.join("src/api");
+        fs::create_dir_all(&api).unwrap();
+        fs::write(api.join("$foo.js"), "// empty").unwrap();
+        fs::write(api.join("$bar.js"), "// empty").unwrap();
+
+        let base_router = Router::new();
+        let result = register_api_routes(base_router, root, DuplicateRoutesPolicy::Error).await;
+
+        // No script loading happens when duplicates are detected, so this
+        // test never touches the MetaCall runtime.
+        let err = result
+            .err()
+            .expect("parameter name collision must fail registration");
+        let msg = err.to_string();
+        assert!(msg.contains("/api/"), "{msg}");
+        assert!(msg.contains("$foo.js"), "{msg}");
+        assert!(msg.contains("$bar.js"), "{msg}");
+    }
+
+    #[tokio::test]
     async fn register_api_routes_skips_failed_script() {
         let tmp = tempfile::TempDir::new().unwrap();
         let root = tmp.path();

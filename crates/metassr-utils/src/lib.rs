@@ -52,3 +52,12 @@ pub mod checker;
 /// ```
 pub mod js_path;
 pub mod rand;
+
+/// Shared route conflict detection for API and page routes.
+///
+/// Two files may claim the same URL space even when their route strings differ
+/// (for example `/api/:foo` and `/api/:bar` both match `/api/42`). This module
+/// normalizes routes to a shape, groups conflicts and applies a policy so the
+/// build and the server can fail with an actionable error, or warn and keep the
+/// first route in development.
+pub mod routes;

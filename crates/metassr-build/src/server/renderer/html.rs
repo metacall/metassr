@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn test_escape_script_json_all_special_chars() {
-        let raw = format!("<>& \u{2028} \u{2029}");
+        let raw = "<>& \u{2028} \u{2029}".to_string();
         let escaped = escape_script_json(&raw);
         assert_eq!(escaped, r#"\u003c\u003e\u0026 \u2028 \u2029"#);
     }
