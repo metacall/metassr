@@ -111,7 +111,7 @@ function GET(req) {
   });
 }
 ```
-> **Note:** Every route path must be claimed by a single file. `hello.js` and `hello.py` would both map to `/api/hello`, so `metassr build` fails and the production server refuses to start, listing every conflicting route. In development the server warns, keeps the first file and keeps running.
+> **Note:** Every route shape must be claimed by a single file. `hello.js` and `hello.py` both map to `/api/hello`, and `$id.js` and `$slug.js` both map to `/api/:param`, so `metassr build` fails and the production server refuses to start, listing every conflict. Pages follow the same rule: `blog/$article.tsx` and `blog/$slug.tsx` both map to `/blog/:param`. In development the server warns, keeps the first file in deterministic order and keeps running.
 
 ### Special Files
 
