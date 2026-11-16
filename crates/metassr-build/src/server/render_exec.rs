@@ -8,7 +8,7 @@ use crate::traits::Exec;
 use anyhow::{anyhow, Result};
 use metacall::{
     load::{self, Handle},
-    metacall_handle_no_arg,
+    metacall_handle, metacall_handle_no_arg,
 };
 
 const RENDER_FUNC_PREFIX: &str = "render_";
@@ -54,6 +54,20 @@ impl RenderExec {
         ) {
             Err(e) => Err(anyhow!(
                 "Cannot run {RENDER_FUNC_PREFIX}{}(): {e:?}",
+                self.id
+            )),
+            Ok(out) => Ok(out),
+        }
+    }
+
+    pub fn call_with_context(&self, ctx_json: &str) -> Result<String> {
+        match metacall_handle(
+            &self.handle,
+            format!("{}{}", RENDER_FUNC_PREFIX, self.id),
+            vec![ctx_json.to_string()],
+        ) {
+            Err(e) => Err(anyhow!(
+                "Cannot run {RENDER_FUNC_PREFIX}{}(ctx): {e:?}",
                 self.id
             )),
             Ok(out) => Ok(out),
