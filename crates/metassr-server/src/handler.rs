@@ -10,7 +10,13 @@ use metassr_fs_analyzer::{
     dist_dir::{DistDir, PageEntry},
     DirectoryAnalyzer,
 };
-use std::{collections::HashMap, fs::read_to_string, path::PathBuf, sync::Arc};
+use metassr_utils::routes::{resolve_duplicates, DuplicateRoutesPolicy, RouteCandidate, RouteKind};
+use std::{
+    collections::HashMap,
+    fs::read_to_string,
+    path::{Path as FsPath, PathBuf},
+    sync::Arc,
+};
 use tracing::error;
 
 use crate::RunningType;
@@ -31,6 +37,34 @@ pub struct PagesHandler<'a, S: Clone + Send + Sync + 'static> {
     pub pages: HashMap<String, PageEntry>,
     pub dist_dir: PathBuf,
     pub running_type: RunningType,
+    pub duplicate_policy: DuplicateRoutesPolicy,
+    pub root_path: PathBuf,
+}
+
+/// A page route candidate that keeps both the manifest key (used by the
+/// renderer) and the axum route (used for registration).
+struct PageCandidate {
+    key: String,
+    route_path: String,
+    entry: PageEntry,
+}
+
+impl RouteCandidate for PageCandidate {
+    fn route_path(&self) -> &str {
+        &self.route_path
+    }
+
+    fn file_path(&self) -> &FsPath {
+        &self.entry.path
+    }
+}
+
+/// Convert a page manifest key (`#root`, `blog/$article`) to an axum route.
+fn page_route(key: &str) -> String {
+    match key {
+        "#root" => "/".to_string(),
+        route => format!("/{}", route.replace('\\', "/").replace('$', ":")),
+    }
 }
 
 impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
@@ -38,22 +72,49 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
         app: &'a mut RouterMut<S>,
         dist_dir: &str,
         running_type: RunningType,
+        duplicate_policy: DuplicateRoutesPolicy,
+        root_path: &FsPath,
     ) -> Result<Self> {
         Ok(Self {
             app,
             pages: DistDir::new(&dist_dir)?.analyze()?.pages,
             dist_dir: PathBuf::from(dist_dir),
             running_type,
+            duplicate_policy,
+            root_path: root_path.to_path_buf(),
         })
     }
     pub fn build(&mut self) -> Result<()> {
-        for (route, entries) in self.pages.iter() {
+        let candidates: Vec<PageCandidate> = self
+            .pages
+            .iter()
+            .map(|(key, entry)| PageCandidate {
+                key: key.clone(),
+                route_path: page_route(key),
+                entry: entry.clone(),
+            })
+            .collect();
+
+        let resolved = resolve_duplicates(
+            candidates,
+            self.duplicate_policy,
+            RouteKind::Page,
+            &self.root_path,
+        )?;
+
+        for candidate in resolved {
+            let PageCandidate {
+                key,
+                route_path,
+                entry: entries,
+            } = candidate;
+
             let source = match self.running_type {
                 RunningType::StaticSiteGeneration => {
                     PageSource::Static(read_to_string(entries.path.join("index.html"))?)
                 }
                 RunningType::ServerSideRendering => PageSource::Dynamic(Arc::new(
-                    PageRenderer::from_manifest(&self.dist_dir, route)?,
+                    PageRenderer::from_manifest(&self.dist_dir, &key)?,
                 )),
             };
 
@@ -75,14 +136,7 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
                     }
                 };
 
-            let route = format!(
-                "/{}",
-                match route {
-                    e if e == &String::from("#root") => "".to_string(),
-                    _ => route.replace('\\', "/").replace('$', ":"),
-                }
-            );
-            self.app.route(&route, get(handler));
+            self.app.route(&route_path, get(handler));
         }
         Ok(())
     }
@@ -98,6 +152,17 @@ mod tests {
     };
     use std::fs;
     use tower_service::Service;
+
+    fn write_page(pages: &std::path::Path, route: &str, body: &str) {
+        let page = pages.join(route);
+        fs::create_dir_all(&page).unwrap();
+        fs::write(page.join("index.js"), "// script").unwrap();
+        fs::write(
+            page.join("index.html"),
+            format!("<html><body>{body}</body></html>"),
+        )
+        .unwrap();
+    }
 
     #[tokio::test]
     async fn build_registers_root_and_nested_routes() {
@@ -125,6 +190,8 @@ mod tests {
             &mut router,
             dist_dir.to_str().unwrap(),
             RunningType::StaticSiteGeneration,
+            DuplicateRoutesPolicy::Error,
+            dist_dir,
         )
         .unwrap();
         handler.build().unwrap();
@@ -154,5 +221,65 @@ mod tests {
             .await
             .unwrap();
         assert!(String::from_utf8_lossy(&home_body).contains("home"));
+    }
+
+    #[tokio::test]
+    async fn build_rejects_parameter_name_collision_in_error_mode() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let pages = tmp.path().join("pages");
+        write_page(&pages, "blog/$article", "article");
+        write_page(&pages, "blog/$slug", "slug");
+
+        let mut router: RouterMut<()> = RouterMut::from(Router::new());
+        let mut handler = PagesHandler::new(
+            &mut router,
+            tmp.path().to_str().unwrap(),
+            RunningType::StaticSiteGeneration,
+            DuplicateRoutesPolicy::Error,
+            tmp.path(),
+        )
+        .unwrap();
+
+        let error = handler
+            .build()
+            .expect_err("colliding parameter names must fail the build");
+        let message = error.to_string();
+        assert!(message.contains("$article"), "{message}");
+        assert!(message.contains("$slug"), "{message}");
+    }
+
+    #[tokio::test]
+    async fn build_keeps_first_parameter_route_in_warn_mode() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let pages = tmp.path().join("pages");
+        write_page(&pages, "blog/$article", "article");
+        write_page(&pages, "blog/$slug", "slug");
+
+        let mut router = RouterMut::from(Router::new());
+        let mut handler = PagesHandler::new(
+            &mut router,
+            tmp.path().to_str().unwrap(),
+            RunningType::StaticSiteGeneration,
+            DuplicateRoutesPolicy::Warn,
+            tmp.path(),
+        )
+        .unwrap();
+        handler.build().unwrap();
+
+        let mut app = router.app();
+        let response = Service::call(
+            &mut app,
+            Request::builder()
+                .uri("/blog/hello")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        // `:article` sorts before `:slug`, so the first route is kept.
+        assert!(String::from_utf8_lossy(&body).contains("article"));
     }
 }

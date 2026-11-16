@@ -40,16 +40,7 @@ pub fn scan_api_dir(api_dir: &Path) -> Vec<ApiRouteFile> {
     routes
 }
 
-/// What to do when two or more files map to the same route path.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DuplicateRoutesPolicy {
-    /// Fail with an actionable error. Used by production builds, where an
-    /// invalid route layout must be rejected instead of surprising the user.
-    Error,
-    /// Warn and keep the first route (sorted order), dropping the duplicates.
-    /// Used by the development server so it can still boot and iterate.
-    Warn,
-}
+pub use metassr_utils::routes::DuplicateRoutesPolicy;
 
 /// A route path claimed by more than one file.
 struct DuplicateRoute {

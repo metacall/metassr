@@ -1,5 +1,6 @@
 pub mod api_routes;
 pub mod client;
+pub mod page_routes;
 pub mod rebuilder;
 pub mod server;
 pub(crate) mod shared;
