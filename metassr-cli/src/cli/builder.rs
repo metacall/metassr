@@ -1,10 +1,14 @@
+use std::env::current_dir;
 use std::mem;
 
 use super::traits::Exec;
 use anyhow::anyhow;
 use metacall::initialize;
 
-use metassr_build::{client::ClientBuilder, server::BuildingType, server::ServerSideBuilder};
+use metassr_build::api_routes::validate_api_routes;
+use metassr_build::{
+    client::ClientBuilder, server::BuildingType, server::ServerSideBuilder, DuplicateRoutesPolicy,
+};
 use metassr_bundler::WebBundler;
 
 use std::time::Instant;
@@ -14,11 +18,22 @@ use tracing::{error, info};
 pub struct Builder {
     out_dir: String,
     _type: BuildingType,
+    duplicate_routes_policy: DuplicateRoutesPolicy,
 }
 
 impl Builder {
     pub fn new(_type: BuildingType, out_dir: String) -> Self {
-        Self { out_dir, _type }
+        Self {
+            out_dir,
+            _type,
+            duplicate_routes_policy: DuplicateRoutesPolicy::Error,
+        }
+    }
+
+    /// Set how API routes claiming the same path are handled.
+    pub fn with_duplicate_routes_policy(mut self, policy: DuplicateRoutesPolicy) -> Self {
+        self.duplicate_routes_policy = policy;
+        self
     }
 }
 
@@ -26,6 +41,14 @@ impl Exec for Builder {
     fn exec(&self) -> anyhow::Result<()> {
         let _metacall = initialize().unwrap();
         let instant = Instant::now();
+
+        validate_api_routes(&current_dir()?, self.duplicate_routes_policy).map_err(|e| {
+            error!(
+                target = "builder",
+                message = format!("API routes validation failed: {e}")
+            );
+            e
+        })?;
 
         let client_builder = ClientBuilder::new("", &self.out_dir, false)?;
         let server_builder = ServerSideBuilder::new("", &self.out_dir, self._type, false)?;

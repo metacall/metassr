@@ -177,8 +177,8 @@ mod tests {
     #[test]
     fn test_create_and_analyze_source_dir() {
         let source_dir = create_temp_source_dir().unwrap();
-        let pages = vec!["page1.jsx", "page2.tsx"];
-        let specials = vec!["_app.jsx", "_head.tsx"];
+        let pages = ["page1.jsx", "page2.tsx"];
+        let specials = ["_app.jsx", "_head.tsx"];
 
         for page in pages.iter() {
             let path = source_dir.0.join("pages").join(page);
