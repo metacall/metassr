@@ -129,11 +129,20 @@ assert_status "$BASE_URL/static/assets/metacall-logo.png" 200 "GET static asset"
 
 echo ""
 echo "=== Dist Internals ==="
-assert_status "$BASE_URL/dist/pages/index.js.js"          200 "GET client bundle"
-assert_status "$BASE_URL/dist/pages/index.js.js.map"      404 "GET client bundle source map"
-assert_status "$BASE_URL/dist/server/pages/root.js"       303 "GET server bundle is not public"
-assert_status "$BASE_URL/dist/cache/pages/index.server.js" 303 "GET server cache is not public"
-assert_status "$BASE_URL/dist/manifest.json"              303 "GET build manifest is not public"
+# Published metassr CLIs older than this serve server bundles, cache and the
+# build manifest under /dist (#249).
+# METASSR_VERSION unset (source builds) => always enforce.
+METASSR_DIST_INTERNALS_SINCE="${METASSR_DIST_INTERNALS_SINCE:-1.0.0-alpha.3}"
+if [ -z "${METASSR_VERSION:-}" ] || \
+   [ "$(printf '%s\n%s\n' "$METASSR_DIST_INTERNALS_SINCE" "$METASSR_VERSION" | sort -V | head -n1)" = "$METASSR_DIST_INTERNALS_SINCE" ]; then
+    assert_status "$BASE_URL/dist/pages/index.js.js"          200 "GET client bundle"
+    assert_status "$BASE_URL/dist/pages/index.js.js.map"      404 "GET client bundle source map"
+    assert_status "$BASE_URL/dist/server/pages/root.js"       303 "GET server bundle is not public"
+    assert_status "$BASE_URL/dist/cache/pages/index.server.js" 303 "GET server cache is not public"
+    assert_status "$BASE_URL/dist/manifest.json"              303 "GET build manifest is not public"
+else
+    echo "[SKIP] Dist internals are private (metassr@$METASSR_VERSION predates it)"
+fi
 
 echo ""
 echo "=== API Endpoints ==="

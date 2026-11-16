@@ -102,7 +102,7 @@ A new behavior would fail against the published CLI.
 
 If that happens, a test declares the first version that carries the behavior
 and skips itself (reporting `[SKIP]`) when the running CLI is older. The gate is
-driven by two environment variables:
+driven by these environment variables:
 
 - `METASSR_VERSION` — the CLI version under test. The `Docker` workflow exports
   it from the pinned `npm/cli/package.json` version; source builds leave it
@@ -111,9 +111,14 @@ driven by two environment variables:
   request (default `1.0.0-alpha.3`); override it to test a different cutoff.
 - `METASSR_TS_API_SINCE` — the first version to load TypeScript (`.ts`) API
   routes (default `1.0.0-alpha.3`); override it to test a different cutoff.
+- `METASSR_DIST_INTERNALS_SINCE` — the first version to serve only client
+  bundles under `/dist`, keeping server bundles, cache and the build manifest
+  private (default `1.0.0-alpha.3`); used by both `ssr.sh` and `ssg.sh`.
 
 `tests/web-app/tests/ssr.sh` uses this mechanism for the per-request rendering
-assertion on `/clock` and for the `/api/tsgreet` TypeScript API assertions:
+assertion on `/clock`, the `/api/tsgreet` TypeScript API assertions, and the
+`/dist` internals assertions; `tests/web-app/tests/ssg.sh` gates its SSG `/dist`
+assertions the same way:
 
     METASSR_VERSION=1.0.0-alpha.2 bash tests/web-app/tests/ssr.sh   # [SKIP]
     METASSR_VERSION=1.0.0-alpha.3 bash tests/web-app/tests/ssr.sh   # enforced
