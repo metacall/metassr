@@ -164,12 +164,12 @@ impl Server {
 
         // Register API routes from ./src/api/ directory
         // This scans for .js files and registers GET/POST handlers
+        let duplicate_policy = match self.configs.mode {
+            ServerMode::Development => metassr_api_handler::DuplicateRoutesPolicy::Warn,
+            ServerMode::Production => metassr_api_handler::DuplicateRoutesPolicy::Error,
+        };
         let src_path = self.configs.root_path.join("src");
         if src_path.join("api").exists() {
-            let duplicate_policy = match self.configs.mode {
-                ServerMode::Development => metassr_api_handler::DuplicateRoutesPolicy::Warn,
-                ServerMode::Production => metassr_api_handler::DuplicateRoutesPolicy::Error,
-            };
             match metassr_api_handler::register_api_routes(
                 app.app(),
                 &self.configs.root_path,
@@ -193,7 +193,14 @@ impl Server {
             }
         }
 
-        PagesHandler::new(&mut app, &dist_dir, self.configs.running_type)?.build()?;
+        PagesHandler::new(
+            &mut app,
+            &dist_dir,
+            self.configs.running_type,
+            duplicate_policy,
+            &self.configs.root_path,
+        )?
+        .build()?;
 
         // Apply middleware again after PagesHandler to catch dynamic HTML
         if let ServerMode::Development = self.configs.mode {

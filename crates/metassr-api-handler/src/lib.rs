@@ -33,7 +33,7 @@ pub use scanner::DuplicateRoutesPolicy;
 
 use anyhow::{anyhow, Result};
 use axum::{
-    extract::Query,
+    extract::{Path as AxumPath, Query},
     http::{header, HeaderMap, Method, StatusCode},
     response::IntoResponse,
     routing::MethodRouter,
@@ -281,12 +281,17 @@ pub async fn register_api_routes(
             let file_path = file_path.clone();
             let route_path = route_path.clone();
             move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
+            move |headers: HeaderMap,
+                  AxumPath(params): AxumPath<HashMap<String, String>>,
+                  Query(query): Query<HashMap<String, String>>,
+                  body: String| {
                 let api_routes = Arc::clone(&api_routes);
                 let file_path = file_path.clone();
                 let route_path = route_path.clone();
                 async move {
                     handle_api_request(
                         api_routes, headers, method, query, body, file_path, route_path,
+                        api_routes, headers, method, params, query, body, file_path, route_path,
                     )
                     .await
                 }
@@ -308,6 +313,10 @@ pub async fn register_api_routes(
         if exported.contains(&Method::DELETE) {
             method_router = method_router.delete(make_handler(Method::DELETE));
         }
+        let method_router: MethodRouter = get(make_handler(Method::GET))
+            .post(make_handler(Method::POST))
+            .put(make_handler(Method::PUT))
+            .delete(make_handler(Method::DELETE));
         router = router.route(&route_path, method_router);
         debug!("Registered API route: {}", route_path);
     }
@@ -344,10 +353,12 @@ fn merge_response_headers(extra: &HashMap<String, String>) -> HeaderMap {
 }
 
 /// Handle an incoming API request.
+#[allow(clippy::too_many_arguments)]
 async fn handle_api_request(
     api_routes: Arc<ApiRoutes>,
     headers: HeaderMap,
     method: Method,
+    params: HashMap<String, String>,
     query: HashMap<String, String>,
     body: String,
     file_path: String,
@@ -369,7 +380,7 @@ async fn handle_api_request(
         method: method.to_string(),
         query,
         body: if body.is_empty() { None } else { Some(body) },
-        params: HashMap::new(),
+        params,
     };
 
     let method_str = method.as_str();
@@ -473,6 +484,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn register_api_routes_fails_on_param_name_collision() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api = root.join("src/api");
+        fs::create_dir_all(&api).unwrap();
+        fs::write(api.join("$foo.js"), "// empty").unwrap();
+        fs::write(api.join("$bar.js"), "// empty").unwrap();
+
+        let base_router = Router::new();
+        let result = register_api_routes(base_router, root, DuplicateRoutesPolicy::Error).await;
+
+        // No script loading happens when duplicates are detected, so this
+        // test never touches the MetaCall runtime.
+        let err = result
+            .err()
+            .expect("parameter name collision must fail registration");
+        let msg = err.to_string();
+        assert!(msg.contains("/api/"), "{msg}");
+        assert!(msg.contains("$foo.js"), "{msg}");
+        assert!(msg.contains("$bar.js"), "{msg}");
+    }
+
+    #[tokio::test]
     async fn register_api_routes_skips_failed_script() {
         let _lock = init_metacall_for_tests();
         let tmp = tempfile::TempDir::new().unwrap();
@@ -529,6 +563,7 @@ mod tests {
             routes,
             HeaderMap::new(),
             Method::GET,
+            HashMap::new(),
             HashMap::new(),
             String::new(),
             "src/api/missing.js".to_string(),
