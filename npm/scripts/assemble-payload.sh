@@ -17,6 +17,11 @@ if [ ! -f "$METASSR_BIN" ]; then
 	exit 1
 fi
 
+if ! command -v patchelf >/dev/null 2>&1; then
+	echo "error: patchelf not found (install it, e.g. apt-get install patchelf)" >&2
+	exit 1
+fi
+
 if [ ! -d "$VENDOR_BUNDLER/node_modules/esbuild" ]; then
 	echo "error: vendored esbuild not found at $VENDOR_BUNDLER (run npm install there, or set VENDOR_BUNDLER)" >&2
 	exit 1
@@ -40,6 +45,31 @@ cp "$LIB_NODE" "$PAYLOAD/node/$NODE_SONAME"
 cp "$METASSR_BIN" "$PAYLOAD/bin/metassr"
 cp "$VENDOR_BUNDLER/node_modules/@esbuild/linux-x64/bin/esbuild" "$PAYLOAD/bin/esbuild"
 chmod 755 "$PAYLOAD/bin/metassr" "$PAYLOAD/bin/esbuild"
+
+# The runtime image installs MetaCall with an absolute /usr/local/lib RUNPATH,
+# and metacall-sys puts the same directory first in the metassr binary's
+# RUNPATH. Rewrite them so the payload loads only its own libraries, even when
+# another MetaCall is installed on the host.
+patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../node' "$PAYLOAD/bin/metassr"
+for f in "$PAYLOAD"/lib/*.so*; do
+	if [ -f "$f" ] && [ ! -L "$f" ]; then
+		patchelf --set-rpath '$ORIGIN:$ORIGIN/../node' "$f"
+	fi
+done
+patchelf --set-rpath '$ORIGIN' "$PAYLOAD/node/$NODE_SONAME"
+
+bad_runpath=$(find "$PAYLOAD" -type f \( -name '*.so*' -o -path "$PAYLOAD/bin/*" \) | while read -r f; do
+	if readelf -d "$f" 2>/dev/null \
+		| sed -n 's/.*(\(RUNPATH\|RPATH\)).*\[\(.*\)\]/\2/p' \
+		| tr ':' '\n' | grep -qv '^\$ORIGIN'; then
+		echo "$f"
+	fi
+done)
+if [ -n "$bad_runpath" ]; then
+	echo "error: these payload files have a RUNPATH outside the payload:" >&2
+	echo "$bad_runpath" >&2
+	exit 1
+fi
 
 mkdir -p "$PAYLOAD/vendor"
 cp -rL --no-preserve=links "$VENDOR_BUNDLER" "$PAYLOAD/vendor/bundler"
