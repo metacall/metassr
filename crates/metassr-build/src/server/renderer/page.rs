@@ -1,6 +1,7 @@
-use std::ffi::OsStr;
+use std::{collections::HashMap, ffi::OsStr};
 
 use anyhow::Result;
+use serde_json::json;
 
 use metassr_fs_analyzer::dist_dir::PageEntry;
 use metassr_utils::cache_dir::CacheDir;
@@ -39,6 +40,23 @@ impl PageRenderer {
     pub fn render(&self) -> Result<String> {
         let body = self.exec.call()?;
         Ok(HtmlRenderer::new(&self.head, &body, &self.entries)
+            .render()?
+            .to_string())
+    }
+
+    pub fn render_with_context(
+        &self,
+        params: &HashMap<String, String>,
+        query: &HashMap<String, String>,
+    ) -> Result<String> {
+        let ctx = json!({
+            "params": params,
+            "query": query,
+        });
+        let ctx_json = serde_json::to_string(&ctx)?;
+        let body = self.exec.call_with_context(&ctx_json)?;
+        Ok(HtmlRenderer::new(&self.head, &body, &self.entries)
+            .with_props(ctx_json)
             .render()?
             .to_string())
     }

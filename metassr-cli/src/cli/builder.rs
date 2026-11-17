@@ -6,6 +6,7 @@ use anyhow::anyhow;
 use metacall::initialize;
 
 use metassr_build::api_routes::validate_api_routes;
+use metassr_build::page_routes::validate_page_routes;
 use metassr_build::{
     client::ClientBuilder, server::BuildingType, server::ServerSideBuilder, DuplicateRoutesPolicy,
 };
@@ -42,10 +43,20 @@ impl Exec for Builder {
         let _metacall = initialize().unwrap();
         let instant = Instant::now();
 
-        validate_api_routes(&current_dir()?, self.duplicate_routes_policy).map_err(|e| {
+        let cwd = current_dir()?;
+
+        validate_api_routes(&cwd, self.duplicate_routes_policy).map_err(|e| {
             error!(
                 target = "builder",
                 message = format!("API routes validation failed: {e}")
+            );
+            e
+        })?;
+
+        validate_page_routes(&cwd, self.duplicate_routes_policy).map_err(|e| {
+            error!(
+                target = "builder",
+                message = format!("Page routes validation failed: {e}")
             );
             e
         })?;

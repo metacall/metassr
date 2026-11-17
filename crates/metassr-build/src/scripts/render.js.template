@@ -4,11 +4,19 @@ import Page from "%PAGE_PATH%"
 import App from "%APP_PATH%"
 
 
-export function render_%FUNC_ID%() {
+export function render_%FUNC_ID%(ctx) {
+    let props = {};
+    if (ctx) {
+        try {
+            props = JSON.parse(ctx);
+        } catch (_) {
+            props = {};
+        }
+    }
+    const PageWithProps = () => <Page {...props} />;
     return renderToString(
         <React.StrictMode>
-            <App Component={Page}></App>
+            <App Component={PageWithProps}></App>
         </React.StrictMode>
     );
 }
-
