@@ -280,7 +280,6 @@ pub async fn register_api_routes(
             let api_routes = Arc::clone(&api_routes);
             let file_path = file_path.clone();
             let route_path = route_path.clone();
-            move |headers: HeaderMap, Query(query): Query<HashMap<String, String>>, body: String| {
             move |headers: HeaderMap,
                   AxumPath(params): AxumPath<HashMap<String, String>>,
                   Query(query): Query<HashMap<String, String>>,
@@ -290,7 +289,6 @@ pub async fn register_api_routes(
                 let route_path = route_path.clone();
                 async move {
                     handle_api_request(
-                        api_routes, headers, method, query, body, file_path, route_path,
                         api_routes, headers, method, params, query, body, file_path, route_path,
                     )
                     .await
@@ -313,10 +311,6 @@ pub async fn register_api_routes(
         if exported.contains(&Method::DELETE) {
             method_router = method_router.delete(make_handler(Method::DELETE));
         }
-        let method_router: MethodRouter = get(make_handler(Method::GET))
-            .post(make_handler(Method::POST))
-            .put(make_handler(Method::PUT))
-            .delete(make_handler(Method::DELETE));
         router = router.route(&route_path, method_router);
         debug!("Registered API route: {}", route_path);
     }
