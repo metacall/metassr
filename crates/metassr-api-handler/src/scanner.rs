@@ -1,9 +1,10 @@
 //! Directory scanner for API route files.
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use std::path::{Path, PathBuf};
 
 use metacall::load::Tag;
+use metassr_utils::routes::{resolve_duplicates, RouteCandidate, RouteKind};
 
 /// Represents a discovered API route file.
 #[derive(Debug, Clone)]
@@ -40,30 +41,28 @@ pub fn scan_api_dir(api_dir: &Path) -> Vec<ApiRouteFile> {
     routes
 }
 
-/// What to do when two or more files map to the same route path.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DuplicateRoutesPolicy {
-    /// Fail with an actionable error. Used by production builds, where an
-    /// invalid route layout must be rejected instead of surprising the user.
-    Error,
-    /// Warn and keep the first route (sorted order), dropping the duplicates.
-    /// Used by the development server so it can still boot and iterate.
-    Warn,
+pub use metassr_utils::routes::DuplicateRoutesPolicy;
+
+impl RouteCandidate for ApiRouteFile {
+    fn route_path(&self) -> &str {
+        &self.route_path
+    }
+
+    fn file_path(&self) -> &Path {
+        &self.file_path
+    }
 }
 
-/// A route path claimed by more than one file.
-struct DuplicateRoute {
-    route_path: String,
-    /// The conflicting files, relative to the project root when possible.
-    files: Vec<String>,
-}
-
-/// Detect route files that map to the same route path and resolve them
+/// Detect route files that map to the same route shape and resolve them
 /// according to the policy.
+///
+/// Shapes normalize parameter names, so `$foo.js` and `$bar.js` (both
+/// `/api/:param`) are reported as a conflict instead of reaching axum, which
+/// panics when two routes claim the same URL space.
 ///
 /// Returns the route files to use (duplicates removed under
 /// [`DuplicateRoutesPolicy::Warn`]) or an error listing every conflicting
-/// route path with all of its files (under [`DuplicateRoutesPolicy::Error`]).
+/// route with all of its files (under [`DuplicateRoutesPolicy::Error`]).
 ///
 /// `root_path` is used only to shorten paths in messages.
 pub fn resolve_route_duplicates(
@@ -71,98 +70,7 @@ pub fn resolve_route_duplicates(
     policy: DuplicateRoutesPolicy,
     root_path: &Path,
 ) -> Result<Vec<ApiRouteFile>> {
-    let mut resolved: Vec<ApiRouteFile> = Vec::with_capacity(route_files.len());
-    let mut duplicates: Vec<DuplicateRoute> = Vec::new();
-
-    for group in group_by_route_path(route_files) {
-        if group.len() == 1 {
-            resolved.push(group.into_iter().next().unwrap());
-            continue;
-        }
-
-        let route_path = group[0].route_path.clone();
-        let files = group
-            .iter()
-            .map(|r| display_path(root_path, &r.file_path))
-            .collect();
-
-        let mut group = group.into_iter();
-        resolved.push(group.next().unwrap());
-        duplicates.push(DuplicateRoute { route_path, files });
-    }
-
-    if duplicates.is_empty() {
-        return Ok(resolved);
-    }
-
-    match policy {
-        DuplicateRoutesPolicy::Error => Err(anyhow!(duplicate_routes_error(&duplicates))),
-        DuplicateRoutesPolicy::Warn => {
-            for duplicate in &duplicates {
-                tracing::warn!(
-                    "Duplicate API route '{}' found in: {}. Keeping '{}' and skipping the rest.",
-                    duplicate.route_path,
-                    duplicate.files.join(", "),
-                    duplicate.files[0]
-                );
-            }
-
-            Ok(resolved)
-        }
-    }
-}
-
-/// Group route files that share the same route path.
-///
-/// The input is expected to be sorted by route path (see [`scan_api_dir`]),
-/// so the groups are consecutive and the result keeps that order.
-fn group_by_route_path(route_files: Vec<ApiRouteFile>) -> Vec<Vec<ApiRouteFile>> {
-    let mut groups: Vec<Vec<ApiRouteFile>> = Vec::new();
-
-    for route_file in route_files {
-        match groups.last_mut() {
-            Some(group) if group[0].route_path == route_file.route_path => group.push(route_file),
-            _ => groups.push(vec![route_file]),
-        }
-    }
-
-    groups
-}
-
-/// Build the error message reporting every duplicated route path.
-fn duplicate_routes_error(duplicates: &[DuplicateRoute]) -> String {
-    let conflicts = if duplicates.len() == 1 {
-        "conflict"
-    } else {
-        "conflicts"
-    };
-
-    let mut message = format!(
-        "Duplicate API routes found: {} {}",
-        duplicates.len(),
-        conflicts
-    );
-
-    for duplicate in duplicates {
-        message.push_str(&format!(
-            "\n  {}: {}",
-            duplicate.route_path,
-            duplicate.files.join(", ")
-        ));
-    }
-
-    message.push_str("\nKeep only one file per route path (the extension selects the loader).");
-
-    message
-}
-
-/// Prefer a path relative to the project root for friendlier error messages.
-fn display_path(root_path: &Path, file_path: &Path) -> String {
-    file_path
-        .strip_prefix(root_path)
-        .unwrap_or(file_path)
-        .to_string_lossy()
-        .into_owned()
+    resolve_duplicates(route_files, policy, RouteKind::Api, root_path)
 }
 
 /// Recursively scan directories for API files.
@@ -247,16 +155,23 @@ fn build_route_path(relative_path: &Path, full_path: &Path) -> String {
 
     let mut route_path = String::from("/api");
     for (i, part) in route_parts.iter().enumerate() {
-        if i == route_parts.len() - 1 {
+        route_path.push('/');
+        let segment = if i == route_parts.len() - 1 {
             // Last part is the filename, remove extension
-            if let Some(stem) = full_path.file_stem().and_then(|s| s.to_str()) {
-                route_path.push('/');
-                route_path.push_str(stem);
-            }
+            full_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or(part)
         } else {
             // Directory name
-            route_path.push('/');
-            route_path.push_str(part);
+            part
+        };
+
+        if let Some(param) = segment.strip_prefix('$') {
+            route_path.push(':');
+            route_path.push_str(param);
+        } else {
+            route_path.push_str(segment);
         }
     }
 
@@ -411,6 +326,21 @@ mod tests {
         assert_eq!(route, "/api/users/profile");
     }
 
+    #[test]
+    fn test_build_route_path_dynamic_file() {
+        let relative = Path::new("users/$id.js");
+        let full = Path::new("/some/path/users/$id.js");
+        let route = build_route_path(relative, full);
+        assert_eq!(route, "/api/users/:id");
+    }
+
+    #[test]
+    fn test_build_route_path_dynamic_dir_and_file() {
+        let relative = Path::new("$org/members/$id.js");
+        let full = Path::new("/some/path/$org/members/$id.js");
+        let route = build_route_path(relative, full);
+        assert_eq!(route, "/api/:org/members/:id");
+    }
     /// Create hello.js + hello.py + world.js in a temp api dir and return the
     /// scanned routes (sorted, so hello.js comes before hello.py).
     fn create_duplicate_routes() -> (TempDir, Vec<ApiRouteFile>) {
@@ -476,7 +406,9 @@ mod tests {
         assert!(msg.contains("/api/hello"), "{msg}");
         assert!(msg.contains("/api/users/list"), "{msg}");
         assert!(
-            msg.contains("Keep only one file per route path (the extension selects the loader)."),
+            msg.contains(
+                "Keep only one file per route shape. Paths that differ only in parameter names match the same URLs."
+            ),
             "{msg}"
         );
     }
@@ -506,5 +438,66 @@ mod tests {
                 resolve_route_duplicates(routes.clone(), policy, temp_dir.path()).unwrap();
             assert_eq!(resolved.len(), 1);
         }
+    }
+
+    #[test]
+    fn test_resolve_duplicates_detects_param_name_collision() {
+        let temp_dir = TempDir::new().unwrap();
+        let api = temp_dir.path();
+        fs::write(api.join("$foo.js"), "function GET() {}").unwrap();
+        fs::write(api.join("$bar.js"), "function GET() {}").unwrap();
+
+        let routes = scan_api_dir(api);
+        let err = resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, temp_dir.path())
+            .expect_err("parameter name collision must fail");
+        let msg = err.to_string();
+
+        assert!(
+            msg.contains("Duplicate API routes found: 1 conflict"),
+            "{msg}"
+        );
+        assert!(msg.contains("/api/"), "{msg}");
+        assert!(msg.contains("$foo.js"), "{msg}");
+        assert!(msg.contains("$bar.js"), "{msg}");
+    }
+
+    #[test]
+    fn test_resolve_duplicates_detects_nested_param_name_collision() {
+        let temp_dir = TempDir::new().unwrap();
+        let api = temp_dir.path();
+
+        let org = api.join("$org/members");
+        fs::create_dir_all(&org).unwrap();
+        fs::write(org.join("$id.js"), "function GET() {}").unwrap();
+
+        let team = api.join("$team/members");
+        fs::create_dir_all(&team).unwrap();
+        fs::write(team.join("$member.js"), "function GET() {}").unwrap();
+
+        let routes = scan_api_dir(api);
+        let err = resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, temp_dir.path())
+            .expect_err("nested parameter name collision must fail");
+        let msg = err.to_string();
+
+        assert!(msg.contains("$id.js"), "{msg}");
+        assert!(msg.contains("$member.js"), "{msg}");
+    }
+
+    #[test]
+    fn test_resolve_duplicates_allows_distinct_param_shapes() {
+        let temp_dir = TempDir::new().unwrap();
+        let api = temp_dir.path();
+        fs::create_dir_all(api.join("users")).unwrap();
+        fs::create_dir_all(api.join("posts")).unwrap();
+        fs::write(api.join("users/$id.js"), "function GET() {}").unwrap();
+        fs::write(api.join("posts/$id.js"), "function GET() {}").unwrap();
+        fs::write(api.join("users/list.js"), "function GET() {}").unwrap();
+
+        let routes = scan_api_dir(api);
+        let resolved =
+            resolve_route_duplicates(routes, DuplicateRoutesPolicy::Error, temp_dir.path())
+                .expect("distinct shapes must not conflict");
+
+        assert_eq!(resolved.len(), 3);
     }
 }

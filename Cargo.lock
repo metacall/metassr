@@ -957,6 +957,7 @@ dependencies = [
  "lock_freedom",
  "metacall",
  "metacall-sys",
+ "metassr-utils",
  "serde",
  "serde_json",
  "tempfile",
@@ -1100,6 +1101,7 @@ dependencies = [
  "dunce",
  "regex",
  "serde",
+ "tracing",
  "walkdir",
 ]
 
