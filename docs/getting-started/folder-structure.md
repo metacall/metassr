@@ -98,6 +98,12 @@ my-metassr-project/
 - **pygreet.py**: A Python handler served at `/api/pygreet`.
 - **tsgreet.ts**: A TypeScript handler served at `/api/tsgreet`.
 
+#### Supported HTTP Methods
+
+API route files export functions named after the HTTP methods they handle: `GET`, `POST`, `PUT`, or `DELETE`. Only the exported methods are registered for the route. Requests using an unexported HTTP method return `405 Method Not Allowed` with an `Allow` header listing the supported methods (for example, a route exporting only `GET` returns `405` with `Allow: GET,HEAD` on `POST` requests).
+
+If a handler function throws an error or fails during execution, MetaSSR returns `500 Internal Server Error`.
+
 #### Dynamic Route Parameters
 
 API routes support dynamic path parameters using the `$` prefix on file stems and directory names. For example, `src/api/users/$id.js` is served at `/api/users/:id`, and `src/api/$org/members/$id.js` is served at `/api/:org/members/:id`. The handler receives matched parameters on `req.params`:

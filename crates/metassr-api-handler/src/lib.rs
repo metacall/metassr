@@ -36,7 +36,7 @@ use axum::{
     extract::{Path as AxumPath, Query},
     http::{header, HeaderMap, Method, StatusCode},
     response::IntoResponse,
-    routing::{get, MethodRouter},
+    routing::MethodRouter,
     Router,
 };
 use lock_freedom::map::Map;
@@ -45,7 +45,7 @@ use metacall::{
     metacall_handle,
 };
 use scanner::{resolve_route_duplicates, scan_api_dir, ApiRouteFile};
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, ffi::CString, path::Path, sync::Arc};
 use tracing::{debug, error, info, warn};
 use types::{ApiRequest, ApiResponse};
 
@@ -127,6 +127,41 @@ impl ApiRoutes {
 
         Ok(())
     }
+    /// Check whether a loaded script handle exports a function with the given name.
+    ///
+    /// # Safety
+    /// This function calls the MetaCall C FFI `metacall_handle_function`. It performs
+    /// null-pointer checks on both the handle pointer and function pointer, and only
+    /// accesses the handle within the `self.handles` guard lifetime.
+    pub fn has_method(&self, file_path: &str, method: &str) -> bool {
+        let guard = match self.handles.get(file_path) {
+            Some(g) => g,
+            None => return false,
+        };
+        let raw_handle = guard.val().as_mut_raw_ptr();
+        if raw_handle.is_null() {
+            return false;
+        }
+        let c_method = match CString::new(method) {
+            Ok(c) => c,
+            Err(_) => return false,
+        };
+        // SAFETY: `raw_handle` is verified non-null and guarded by `self.handles`.
+        // `c_method` is a valid null-terminated C string. `metacall_handle_function`
+        // inspects the handle's symbol table without mutating it.
+        let func_ptr =
+            unsafe { metacall::bindings::metacall_handle_function(raw_handle, c_method.as_ptr()) };
+        !func_ptr.is_null()
+    }
+
+    /// Returns a list of supported HTTP methods (GET, POST, PUT, DELETE) exported by the script.
+    pub fn exported_methods(&self, file_path: &str) -> Vec<Method> {
+        const CANDIDATES: [Method; 4] = [Method::GET, Method::POST, Method::PUT, Method::DELETE];
+        CANDIDATES
+            .into_iter()
+            .filter(|m| self.has_method(file_path, m.as_str()))
+            .collect()
+    }
 
     /// Reload a changed script: drops the old handle (clearing its symbols) then reloads.
     pub fn reload_script(&self, file_path: &Path, tag: Tag) -> Result<()> {
@@ -156,6 +191,10 @@ impl ApiRoutes {
         method: &str,
         request: ApiRequest,
     ) -> Result<ApiResponse> {
+        if !self.has_method(file_path, method) {
+            return Err(anyhow!("Method {} not exported", method));
+        }
+
         let request_json = serde_json::to_string(&request)?;
 
         debug!("Calling {}() with request: {}", method, request_json);
@@ -258,10 +297,20 @@ pub async fn register_api_routes(
         };
 
         // Create method router for supported API handler exports.
-        let method_router: MethodRouter = get(make_handler(Method::GET))
-            .post(make_handler(Method::POST))
-            .put(make_handler(Method::PUT))
-            .delete(make_handler(Method::DELETE));
+        let exported = api_routes.exported_methods(&file_path);
+        let mut method_router = MethodRouter::new();
+        if exported.contains(&Method::GET) {
+            method_router = method_router.get(make_handler(Method::GET));
+        }
+        if exported.contains(&Method::POST) {
+            method_router = method_router.post(make_handler(Method::POST));
+        }
+        if exported.contains(&Method::PUT) {
+            method_router = method_router.put(make_handler(Method::PUT));
+        }
+        if exported.contains(&Method::DELETE) {
+            method_router = method_router.delete(make_handler(Method::DELETE));
+        }
         router = router.route(&route_path, method_router);
         debug!("Registered API route: {}", route_path);
     }
@@ -356,6 +405,25 @@ mod tests {
     use super::*;
     use axum::Router;
     use std::fs;
+    use std::sync::{Mutex, Once};
+    use tower_service::Service;
+
+    static INIT_METACALL: Once = Once::new();
+    static METACALL_TEST_MUTEX: Mutex<()> = Mutex::new(());
+
+    fn init_metacall_for_tests() -> std::sync::MutexGuard<'static, ()> {
+        let guard = METACALL_TEST_MUTEX
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        INIT_METACALL.call_once(|| {
+            if !metacall::is_initialized() {
+                if let Ok(destroy_guard) = metacall::initialize() {
+                    std::mem::forget(destroy_guard);
+                }
+            }
+        });
+        guard
+    }
 
     #[tokio::test]
     async fn register_api_routes_skips_when_api_dir_missing() {
@@ -434,6 +502,7 @@ mod tests {
 
     #[tokio::test]
     async fn register_api_routes_skips_failed_script() {
+        let _lock = init_metacall_for_tests();
         let tmp = tempfile::TempDir::new().unwrap();
         let root = tmp.path();
         let api_dir = root.join("src/api");
@@ -451,6 +520,7 @@ mod tests {
 
     #[tokio::test]
     async fn load_from_dir_excludes_scripts_that_fail_to_load() {
+        let _lock = init_metacall_for_tests();
         let tmp = tempfile::TempDir::new().unwrap();
         let api_dir = tmp.path();
         fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();
@@ -566,5 +636,188 @@ mod tests {
 
         assert_eq!(headers.len(), 1);
         assert!(headers.contains_key(header::CONTENT_TYPE));
+    }
+    #[tokio::test]
+    async fn unexported_methods_return_405_and_allow_headers() {
+        let _lock = init_metacall_for_tests();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let root = tmp.path();
+        let api_dir = root.join("src/api");
+        let users_dir = api_dir.join("users");
+        fs::create_dir_all(&users_dir).unwrap();
+
+        // 1. Single method handler (GET only)
+        fs::write(
+            api_dir.join("fast.js"),
+            r#"
+function GET(_req) {
+    return JSON.stringify({ status: 200, body: { ok: true } });
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        // 2. Handler with no HTTP methods exported (only helper)
+        fs::write(
+            api_dir.join("none.js"),
+            r#"
+function helper() {}
+module.exports = { helper };
+"#,
+        )
+        .unwrap();
+
+        // 3. Multi-method handler (GET + POST)
+        fs::write(
+            api_dir.join("multi.js"),
+            r#"
+function GET(_req) {
+    return JSON.stringify({ status: 200, body: { ok: true } });
+}
+function POST(_req) {
+    return JSON.stringify({ status: 201, body: { created: true } });
+}
+module.exports = { GET, POST };
+"#,
+        )
+        .unwrap();
+
+        // 4. Failing handler (GET throws runtime crash)
+        fs::write(
+            api_dir.join("crash.js"),
+            r#"
+function GET(_req) {
+    throw new Error("genuine runtime crash");
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        // 5. Nested route handler (users/profile.js, GET only)
+        fs::write(
+            users_dir.join("profile.js"),
+            r#"
+function GET(_req) {
+    return JSON.stringify({ status: 200, body: { ok: true } });
+}
+module.exports = { GET };
+"#,
+        )
+        .unwrap();
+
+        let (mut router, routes) =
+            register_api_routes(Router::new(), root, DuplicateRoutesPolicy::Error)
+                .await
+                .unwrap();
+
+        // --- Test 1: Single method (fast.js: GET only) ---
+        // GET -> 200
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // POST -> 405 with Allow: GET
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
+        assert!(allow.contains("GET"));
+        assert!(!allow.contains("POST"));
+
+        // DELETE -> 405
+        let req = axum::http::Request::builder()
+            .method("DELETE")
+            .uri("/api/fast")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        // --- Test 2: No HTTP methods exported (none.js) ---
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/none")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        // --- Test 3: Multiple methods (multi.js: GET, POST) ---
+        // GET -> 200
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/multi")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // POST -> 201
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/multi")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::CREATED);
+
+        // DELETE -> 405 with Allow: GET, POST
+        let req = axum::http::Request::builder()
+            .method("DELETE")
+            .uri("/api/multi")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
+        assert!(allow.contains("GET"));
+        assert!(allow.contains("POST"));
+        assert!(!allow.contains("DELETE"));
+
+        // --- Test 4: Handler error returns 500, not 405 (crash.js) ---
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/crash")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        // --- Test 5: Nested route (users/profile.js: GET only) ---
+        // GET -> 200
+        let req = axum::http::Request::builder()
+            .method("GET")
+            .uri("/api/users/profile")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // POST -> 405 with Allow: GET
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/users/profile")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let res = Service::call(&mut router, req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let allow = res.headers().get(header::ALLOW).unwrap().to_str().unwrap();
+        assert!(allow.contains("GET"));
+        assert!(!allow.contains("POST"));
+
+        // Keep router and handles alive to prevent metacall_clear from running
+        // during test teardown, which corrupts Node.js loader for other tests.
+        std::mem::forget(routes);
+        std::mem::forget(router);
     }
 }
