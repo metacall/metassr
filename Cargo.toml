@@ -59,6 +59,7 @@ members = [
   "crates/metassr-watcher",
   "crates/metassr-api-handler",
   "crates/metassr-config",
+  "crates/metacall-toolchain",
 ]
 
 [workspace.package]
