@@ -52,6 +52,14 @@ pub enum Error {
     /// The artifact belongs to the host package and cannot be removed.
     #[error("{0} is built in and cannot be removed")]
     External(String),
+
+    /// Two components want the same file name in the view's loader directory.
+    #[error("`{name}` is provided by both {first} and {second}")]
+    ViewConflict {
+        name: String,
+        first: String,
+        second: String,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

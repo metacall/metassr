@@ -72,6 +72,24 @@ impl Manifest {
         }
         Ok(())
     }
+
+    /// The loader config with [`ARTIFACT_DIR_VAR`] replaced by `root` in
+    /// every string value.
+    pub fn render_config(&self, root: &Path) -> Option<serde_json::Value> {
+        let root = root.to_string_lossy();
+        let mut config = self.config.clone()?;
+        replace_strings(&mut config, &|s| s.replace(ARTIFACT_DIR_VAR, &root));
+        Some(config)
+    }
+}
+
+fn replace_strings(value: &mut serde_json::Value, f: &impl Fn(&str) -> String) {
+    match value {
+        serde_json::Value::String(s) => *s = f(s),
+        serde_json::Value::Array(items) => items.iter_mut().for_each(|v| replace_strings(v, f)),
+        serde_json::Value::Object(map) => map.values_mut().for_each(|v| replace_strings(v, f)),
+        _ => {}
+    }
 }
 
 /// A non-empty relative path made only of normal components (no `..`, no
@@ -81,4 +99,45 @@ pub(crate) fn is_safe_relative(path: &Path) -> bool {
         && path
             .components()
             .all(|c| matches!(c, Component::Normal(_) | Component::CurDir))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn renders_artifact_dir_in_nested_strings() {
+        let manifest = Manifest {
+            schema: 1,
+            id: "py".into(),
+            kind: ArtifactKind::Loader,
+            core: "0.9.24".into(),
+            loader: Some("py".into()),
+            runtime_version: Some("3.14".into()),
+            lib: vec![],
+            config: Some(json!({
+                "dependencies": { "python": ["${ARTIFACT_DIR}/runtime/lib/libpython3.14.so"] },
+                "environment": [{ "name": "PYTHONHOME", "value": "${ARTIFACT_DIR}/runtime" }],
+                "log": 3
+            })),
+        };
+        let rendered = manifest.render_config(Path::new("/store/py")).unwrap();
+        assert_eq!(
+            rendered,
+            json!({
+                "dependencies": { "python": ["/store/py/runtime/lib/libpython3.14.so"] },
+                "environment": [{ "name": "PYTHONHOME", "value": "/store/py/runtime" }],
+                "log": 3
+            })
+        );
+    }
+
+    #[test]
+    fn safe_relative_paths() {
+        assert!(is_safe_relative(Path::new("lib/libpy_loader.so")));
+        assert!(!is_safe_relative(Path::new("../x")));
+        assert!(!is_safe_relative(Path::new("/x")));
+        assert!(!is_safe_relative(Path::new("")));
+    }
 }
