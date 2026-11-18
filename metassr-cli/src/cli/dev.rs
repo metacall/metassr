@@ -1,10 +1,10 @@
 use std::env::current_dir;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use tokio::sync::broadcast;
 
-use anyhow::{self, Result};
+use anyhow::{Context, Result};
 
 use crate::cli::traits::Exec;
 use crate::cli::{Builder, BuildingType};
@@ -16,15 +16,25 @@ use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_utils::ansi::ansi_regex;
 use metassr_watcher::FileWatcher;
 
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 use super::traits::AsyncExec;
+
+/// Directories watched by `metassr dev`.
+///
+/// Directories that do not exist are not watched, they are watched as soon as
+/// they are created. A missing directory must not stop the dev server.
+const WATCHED_DIRS: [&str; 2] = ["src", "static"];
 
 pub struct Dev {
     port: u16,
     ws_port: u16,
     // todo change this to a normal option, and edit impl asyncexec
     watcher: Arc<Mutex<Option<FileWatcher>>>,
+    /// Directories currently watched by the file watcher.
+    watched_dirs: Arc<Mutex<Vec<PathBuf>>>,
+    /// Directories that do not exist yet, they are watched once created.
+    pending_dirs: Arc<Mutex<Vec<PathBuf>>>,
     rebuilder: Arc<Rebuilder>,
     root_path: PathBuf,
     rebuild_tx: broadcast::Sender<RebuildType>,
@@ -45,6 +55,8 @@ impl Dev {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
+        let watched_dirs = Arc::new(Mutex::new(Vec::new()));
+        let pending_dirs = Arc::new(Mutex::new(Vec::new()));
         let rebuilder = Arc::new(Rebuilder::new(
             root_path.clone(),
             build_type,
@@ -55,6 +67,8 @@ impl Dev {
             port,
             ws_port,
             watcher,
+            watched_dirs,
+            pending_dirs,
             rebuilder,
             root_path,
             rebuild_tx,
@@ -67,11 +81,42 @@ impl Dev {
     fn setup_watcher(&self) -> Result<()> {
         let mut watcher = FileWatcher::new()?;
 
-        let src_dir = current_dir()?.join("src");
-        let static_dir = current_dir()?.join("static");
+        let mut watched_dirs = Vec::new();
+        let mut pending_dirs = Vec::new();
 
-        watcher.watch(Path::new(&src_dir))?;
-        watcher.watch(Path::new(&static_dir))?;
+        for dir in WATCHED_DIRS {
+            let path = self.root_path.join(dir);
+
+            if !path.is_dir() {
+                info!(
+                    "Directory '{}' does not exist, it will not be watched until it is created",
+                    path.display()
+                );
+                pending_dirs.push(path);
+                continue;
+            }
+
+            watcher
+                .watch(&path)
+                .with_context(|| format!("Failed to watch directory '{}'", path.display()))?;
+            watched_dirs.push(path);
+        }
+
+        // The project root is watched (non recursively) to detect the creation
+        // of the directories that do not exist yet.
+        if !pending_dirs.is_empty() {
+            watcher
+                .watch_non_recursive(&self.root_path)
+                .with_context(|| {
+                    format!(
+                        "Failed to watch project root '{}'",
+                        self.root_path.display()
+                    )
+                })?;
+        }
+
+        *self.watched_dirs.lock().unwrap() = watched_dirs;
+        *self.pending_dirs.lock().unwrap() = pending_dirs;
 
         // store the watcher in the option, by modifying it with a lock on the mutex
         let mut watcher_guard = self.watcher.lock().unwrap();
@@ -87,9 +132,21 @@ impl Dev {
 
         let rebuilder = self.rebuilder.clone();
         let rebuild_tx = self.rebuild_tx.clone();
+        let file_watcher = self.watcher.clone();
+        let watched_dirs = self.watched_dirs.clone();
+        let pending_dirs = self.pending_dirs.clone();
 
         tokio::spawn(async move {
             while let Ok(event) = rx.recv().await {
+                // A directory that did not exist when the dev server started may
+                // have been created in the meantime.
+                watch_created_dirs(&file_watcher, &pending_dirs, &watched_dirs, &event.paths);
+
+                if !is_watched_event(&watched_dirs, &event.paths) {
+                    debug!("Skipping event outside of the watched directories");
+                    continue;
+                }
+
                 match rebuilder.handle_event(event) {
                     Ok(Some(rebuild_type)) => {
                         // Notify the server about what needs rebuilding
@@ -190,5 +247,176 @@ impl AsyncExec for Dev {
         self.start_server().await?;
 
         Ok(())
+    }
+}
+
+/// Watches the directories that did not exist when the dev server started and
+/// have been created since then.
+fn watch_created_dirs(
+    file_watcher: &Arc<Mutex<Option<FileWatcher>>>,
+    pending_dirs: &Arc<Mutex<Vec<PathBuf>>>,
+    watched_dirs: &Arc<Mutex<Vec<PathBuf>>>,
+    paths: &[PathBuf],
+) {
+    let mut pending = pending_dirs.lock().unwrap();
+    if pending.is_empty() {
+        return;
+    }
+
+    let created: Vec<PathBuf> = pending
+        .iter()
+        .filter(|dir| dir.is_dir() && paths.iter().any(|path| path == *dir))
+        .cloned()
+        .collect();
+
+    if created.is_empty() {
+        return;
+    }
+
+    let mut watcher_guard = file_watcher.lock().unwrap();
+    let Some(watcher) = watcher_guard.as_mut() else {
+        return;
+    };
+
+    for dir in created {
+        match watcher.watch(&dir) {
+            Ok(()) => {
+                debug!("Watching '{}'", dir.display());
+                watched_dirs.lock().unwrap().push(dir.clone());
+                pending.retain(|pending_dir| pending_dir != &dir);
+            }
+            Err(err) => error!("Failed to watch directory '{}': {}", dir.display(), err),
+        }
+    }
+}
+
+/// Whether the given paths are inside one of the watched directories.
+///
+/// Events on the watched directories themselves are ignored, they carry no
+/// meaningful change.
+fn is_watched_event(watched_dirs: &Arc<Mutex<Vec<PathBuf>>>, paths: &[PathBuf]) -> bool {
+    let watched = watched_dirs.lock().unwrap();
+
+    paths.iter().any(|path| {
+        watched
+            .iter()
+            .any(|dir| path != dir && path.starts_with(dir))
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("metassr-dev-{name}-{}", std::process::id()));
+
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        dir
+    }
+
+    fn dev(root_path: PathBuf) -> Dev {
+        Dev::new(
+            8080,
+            8561,
+            root_path,
+            "dist".to_string(),
+            BuildingType::ServerSideRendering,
+            false,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn setup_watcher_succeeds_when_static_directory_is_missing() {
+        let root = temp_dir("missing-static");
+        fs::create_dir_all(root.join("src")).unwrap();
+
+        let dev = dev(root.clone());
+        dev.setup_watcher().unwrap();
+
+        // The existing directory is watched, the missing one is pending.
+        let watched = dev.watched_dirs.lock().unwrap().clone();
+        assert_eq!(watched, vec![root.join("src")]);
+
+        let pending = dev.pending_dirs.lock().unwrap().clone();
+        assert_eq!(pending, vec![root.join("static")]);
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn setup_watcher_watches_every_existing_directory() {
+        let root = temp_dir("all-directories");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(root.join("static")).unwrap();
+
+        let dev = dev(root.clone());
+        dev.setup_watcher().unwrap();
+
+        let watched = dev.watched_dirs.lock().unwrap().clone();
+        assert_eq!(watched, vec![root.join("src"), root.join("static")]);
+        assert!(dev.pending_dirs.lock().unwrap().is_empty());
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn missing_directories_are_watched_once_created() {
+        let root = temp_dir("created-later");
+        let static_dir = root.join("static");
+
+        let file_watcher = Arc::new(Mutex::new(Some(FileWatcher::new().unwrap())));
+        let pending_dirs = Arc::new(Mutex::new(vec![static_dir.clone()]));
+        let watched_dirs = Arc::new(Mutex::new(Vec::new()));
+
+        // The directory does not exist yet, so it is not watched.
+        watch_created_dirs(
+            &file_watcher,
+            &pending_dirs,
+            &watched_dirs,
+            std::slice::from_ref(&static_dir),
+        );
+        assert!(watched_dirs.lock().unwrap().is_empty());
+
+        // Once created, it is watched.
+        fs::create_dir_all(&static_dir).unwrap();
+        watch_created_dirs(
+            &file_watcher,
+            &pending_dirs,
+            &watched_dirs,
+            std::slice::from_ref(&static_dir),
+        );
+
+        assert_eq!(
+            watched_dirs.lock().unwrap().clone(),
+            vec![static_dir.clone()]
+        );
+        assert!(pending_dirs.lock().unwrap().is_empty());
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn events_outside_of_the_watched_directories_are_ignored() {
+        let watched_dirs = Arc::new(Mutex::new(vec![PathBuf::from("/project/src")]));
+
+        assert!(is_watched_event(
+            &watched_dirs,
+            &[PathBuf::from("/project/src/pages/index.tsx")]
+        ));
+        assert!(!is_watched_event(
+            &watched_dirs,
+            &[PathBuf::from("/project/package.json")]
+        ));
+        // The watched directory itself carries no meaningful change.
+        assert!(!is_watched_event(
+            &watched_dirs,
+            &[PathBuf::from("/project/src")]
+        ));
+        assert!(!is_watched_event(&watched_dirs, &[]));
     }
 }
