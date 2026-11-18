@@ -72,8 +72,15 @@ mod tests {
         temp_dir().join(format!("metassr-watcher-missing-{}", std::process::id()))
     }
 
-    fn existing_path() -> std::path::PathBuf {
-        let path = temp_dir().join(format!("metassr-watcher-existing-{}", std::process::id()));
+    // Each test needs its own directory: the tests run in parallel, so a
+    // shared path lets one test's cleanup delete the directory while another
+    // is still watching it.
+    fn existing_path(name: &str) -> std::path::PathBuf {
+        let path = temp_dir().join(format!(
+            "metassr-watcher-existing-{}-{}",
+            name,
+            std::process::id()
+        ));
 
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
@@ -91,9 +98,16 @@ mod tests {
     #[test]
     fn watching_an_existing_path_succeeds() {
         let mut watcher = FileWatcher::new().unwrap();
-        let path = existing_path();
+        let path = existing_path("recursive");
 
-        assert!(watcher.watch(&path).is_ok());
+        // Report the underlying notify::Error on failure (e.g. inotify
+        // `ENOSPC`/`EMFILE` inside containers) instead of discarding it.
+        let result = watcher.watch(&path);
+        assert!(
+            result.is_ok(),
+            "watch({path:?}) failed: {:?}",
+            result.unwrap_err()
+        );
 
         let _ = fs::remove_dir_all(&path);
     }
@@ -101,9 +115,14 @@ mod tests {
     #[test]
     fn watching_non_recursively_succeeds() {
         let mut watcher = FileWatcher::new().unwrap();
-        let path = existing_path();
+        let path = existing_path("non-recursive");
 
-        assert!(watcher.watch_non_recursive(&path).is_ok());
+        let result = watcher.watch_non_recursive(&path);
+        assert!(
+            result.is_ok(),
+            "watch_non_recursive({path:?}) failed: {:?}",
+            result.unwrap_err()
+        );
 
         let _ = fs::remove_dir_all(&path);
     }
