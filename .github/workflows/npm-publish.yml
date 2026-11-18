@@ -92,6 +92,9 @@ jobs:
             echo "libnode.so restored from cache; skipping build"
           fi
 
+      - name: Install patchelf
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends patchelf
+
       - name: Assemble payload
         env:
           OUT: ${{ runner.temp }}/out

@@ -17,7 +17,7 @@ cp -a /usr/local/lib/libmetacall.so \
 	"$P/lib/"
 cp -a /usr/local/lib/bootstrap.js /usr/local/lib/bootstrap.ts "$P/lib/"
 
-for m in acorn acorn-jsx eslint-visitor-keys espree metacall; do
+for m in acorn acorn-jsx eslint-visitor-keys espree metacall typescript; do
 	cp -a "/usr/local/lib/node_modules/$m" "$P/lib/node_modules/"
 done
 
