@@ -9,17 +9,21 @@
 //! download.
 
 pub mod error;
+pub mod fetch;
 pub mod index;
 pub mod manifest;
 pub mod resolve;
 pub mod store;
 pub mod target;
+mod toolchain;
 pub mod view;
 
 pub use error::{Error, Result};
+pub use fetch::{FetchPolicy, Fetched, HttpTransport, Transport};
 pub use index::{Artifact, ArtifactKind, Index, TrustedKeys};
 pub use manifest::Manifest;
 pub use resolve::{resolve, LoaderSpec, Missing, Requirements, Resolution};
 pub use store::{Installed, Store};
 pub use target::{DottedVersion, Target};
+pub use toolchain::{NoProgress, Options, Progress, Toolchain};
 pub use view::View;

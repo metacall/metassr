@@ -53,6 +53,26 @@ pub enum Error {
     #[error("{0} is built in and cannot be removed")]
     External(String),
 
+    /// A download failed.
+    #[error("cannot fetch {url}: {reason}")]
+    Fetch { url: String, reason: String },
+
+    /// No index URL is configured, and fetching was required.
+    #[error("no index URL configured (set METACALL_INDEX_URL)")]
+    NoIndexUrl,
+
+    /// Offline, and no verified index is cached.
+    #[error("no cached index; run once with network access")]
+    NoCachedIndex,
+
+    /// This host cannot run the requested artifacts.
+    #[error("unsupported host: {0}")]
+    UnsupportedHost(String),
+
+    /// A view was requested for a resolution that still misses components.
+    #[error("not installed: {0}")]
+    Incomplete(String),
+
     /// Two components want the same file name in the view's loader directory.
     #[error("`{name}` is provided by both {first} and {second}")]
     ViewConflict {
