@@ -11,11 +11,15 @@
 pub mod error;
 pub mod index;
 pub mod manifest;
+pub mod resolve;
 pub mod store;
 pub mod target;
+pub mod view;
 
 pub use error::{Error, Result};
 pub use index::{Artifact, ArtifactKind, Index, TrustedKeys};
 pub use manifest::Manifest;
+pub use resolve::{resolve, LoaderSpec, Missing, Requirements, Resolution};
 pub use store::{Installed, Store};
 pub use target::{DottedVersion, Target};
+pub use view::View;

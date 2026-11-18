@@ -66,7 +66,7 @@ pub enum ArtifactKind {
 }
 
 /// One downloadable tarball.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Artifact {
     pub id: String,
     pub kind: ArtifactKind,
