@@ -10,8 +10,12 @@
 
 pub mod error;
 pub mod index;
+pub mod manifest;
+pub mod store;
 pub mod target;
 
 pub use error::{Error, Result};
 pub use index::{Artifact, ArtifactKind, Index, TrustedKeys};
+pub use manifest::Manifest;
+pub use store::{Installed, Store};
 pub use target::{DottedVersion, Target};
