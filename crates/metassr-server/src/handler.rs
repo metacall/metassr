@@ -2,7 +2,7 @@ use anyhow::Result;
 use axum::{
     extract::{Path, Query},
     http::StatusCode,
-    response::{Html, IntoResponse},
+    response::{Html, IntoResponse, Response},
     routing::get,
 };
 use metassr_build::server::renderer::page::PageRenderer;
@@ -31,6 +31,28 @@ enum PageSource {
     /// Renderer re-invoked on every request (SSR).
     Dynamic(Arc<PageRenderer>),
 }
+
+impl PageSource {
+    fn respond(
+        &self,
+        params: &HashMap<String, String>,
+        query: &HashMap<String, String>,
+    ) -> Response {
+        match self {
+            PageSource::Static(html) => Html(html.clone()).into_response(),
+            PageSource::Dynamic(renderer) => match renderer.render_with_context(params, query) {
+                Ok(html) => Html(html).into_response(),
+                Err(e) => {
+                    error!("SSR render failed: {e:?}");
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()
+                }
+            },
+        }
+    }
+}
+
+/// Manifest key of the page served for unknown routes (`src/pages/_notfound`).
+const NOT_FOUND_PAGE: &str = "_notfound";
 
 pub struct PagesHandler<'a, S: Clone + Send + Sync + 'static> {
     pub app: &'a mut RouterMut<S>,
@@ -118,22 +140,26 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
                 )),
             };
 
+            // Unknown routes render the `_notfound` page in place with a 404,
+            // in both SSG and SSR, instead of redirecting to it (#239).
+            if key == NOT_FOUND_PAGE {
+                let source = source.clone();
+                self.app.fallback(
+                    move |Query(query): Query<HashMap<String, String>>| async move {
+                        let mut response = source.respond(&HashMap::new(), &query);
+                        // Keep a 500 from a failed render; only a rendered page becomes a 404.
+                        if response.status() == StatusCode::OK {
+                            *response.status_mut() = StatusCode::NOT_FOUND;
+                        }
+                        response
+                    },
+                );
+            }
+
             let handler =
                 move |Query(query): Query<HashMap<String, String>>,
                       Path(params): Path<HashMap<String, String>>| async move {
-                    match &source {
-                        PageSource::Static(html) => Html(html.clone()).into_response(),
-                        PageSource::Dynamic(renderer) => {
-                            match renderer.render_with_context(&params, &query) {
-                                Ok(html) => Html(html).into_response(),
-                                Err(e) => {
-                                    error!("SSR render failed: {e:?}");
-                                    (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
-                                        .into_response()
-                                }
-                            }
-                        }
-                    }
+                    source.respond(&params, &query)
                 };
 
             self.app.route(&route_path, get(handler));
@@ -281,5 +307,41 @@ mod tests {
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         // `:article` sorts before `:slug`, so the first route is kept.
         assert!(String::from_utf8_lossy(&body).contains("article"));
+    }
+
+    #[tokio::test]
+    async fn unknown_route_renders_notfound_page_with_404() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let pages = tmp.path().join("pages");
+        fs::create_dir_all(&pages).unwrap();
+        fs::write(pages.join("index.js"), "// root script").unwrap();
+        fs::write(pages.join("index.html"), "<html><body>root</body></html>").unwrap();
+        write_page(&pages, "_notfound", "custom not found");
+
+        let mut router = RouterMut::from(Router::new());
+        let mut handler = PagesHandler::new(
+            &mut router,
+            tmp.path().to_str().unwrap(),
+            RunningType::StaticSiteGeneration,
+            DuplicateRoutesPolicy::Error,
+            tmp.path(),
+        )
+        .unwrap();
+        handler.build().unwrap();
+
+        let response = Service::call(
+            &mut router.app(),
+            Request::builder()
+                .uri("/does-not-exist")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert!(response.headers().get("location").is_none());
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert!(String::from_utf8_lossy(&body).contains("custom not found"));
     }
 }

@@ -10,11 +10,7 @@ use layers::tracing::{LayerSetup, TracingLayer, TracingLayerOptions};
 
 use anyhow::Result;
 use axum::routing::get;
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Redirect},
-    Router,
-};
+use axum::{http::StatusCode, response::IntoResponse, Router};
 use live_reload::LiveReloadServer;
 use metassr_build::rebuilder::Rebuilder;
 use router::RouterMut;
@@ -88,10 +84,6 @@ impl Server {
 
         let static_dir = format!("{}/static", self.configs.root_path.to_str().unwrap());
         let dist_dir = format!("{}/dist", self.configs.root_path.to_str().unwrap());
-        let notfound_page = Box::new(format!(
-            "{}/dist/pages/_notfound/index.html",
-            self.configs.root_path.to_str().unwrap()
-        ));
 
         let mut base_router = static_router(Path::new(&static_dir), Path::new(&dist_dir));
 
@@ -143,24 +135,10 @@ impl Server {
 
         let mut app = RouterMut::from(base_router);
 
-        match self.configs.running_type {
-            RunningType::StaticSiteGeneration => {
-                let fallback = move || async {
-                    (
-                        StatusCode::NOT_FOUND,
-                        match Path::new(&*notfound_page).exists() {
-                            true => Fallback::from_file(PathBuf::from(*notfound_page)).unwrap(),
-                            false => Fallback::default(),
-                        }
-                        .to_html(),
-                    )
-                };
-                app.fallback(fallback);
-            }
-            RunningType::ServerSideRendering => {
-                app.fallback(|| async { Redirect::to("/_notfound") })
-            }
-        }
+        // Default 404 for apps without a `_notfound` page. When the page
+        // exists, `PagesHandler` replaces this fallback with it, in both SSG
+        // and SSR.
+        app.fallback(|| async { (StatusCode::NOT_FOUND, Fallback::default().to_html()) });
 
         // Register API routes from ./src/api/ directory
         // This scans for .js files and registers GET/POST handlers
