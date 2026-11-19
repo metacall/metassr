@@ -121,7 +121,17 @@ assert_contains "$BASE_URL/" "<script"  "Script tag injected"
 echo ""
 echo "=== 404 Handling ==="
 assert_status "$BASE_URL/_notfound" 200 "GET /_notfound page exists"
-assert_status "$BASE_URL/nonexistent-route" 303 "GET /nonexistent-route redirects"
+# Published metassr CLIs older than this redirect unknown SSR routes to
+# /_notfound (303) instead of rendering it with a 404 (#239).
+# METASSR_VERSION unset (source builds) => always enforce.
+METASSR_SSR_NOTFOUND_SINCE="${METASSR_SSR_NOTFOUND_SINCE:-1.0.0-alpha.3}"
+if [ -z "${METASSR_VERSION:-}" ] || \
+   [ "$(printf '%s\n%s\n' "$METASSR_SSR_NOTFOUND_SINCE" "$METASSR_VERSION" | sort -V | head -n1)" = "$METASSR_SSR_NOTFOUND_SINCE" ]; then
+    assert_status "$BASE_URL/nonexistent-route" 404 "GET /nonexistent-route returns 404"
+    assert_contains "$BASE_URL/nonexistent-route" "404 Page not found" "Unknown route renders _notfound page"
+else
+    assert_status "$BASE_URL/nonexistent-route" 303 "GET /nonexistent-route redirects (metassr@$METASSR_VERSION predates #239)"
+fi
 
 echo ""
 echo "=== Static Files ==="
@@ -131,9 +141,9 @@ echo ""
 echo "=== Dist Internals ==="
 assert_status "$BASE_URL/dist/pages/index.js.js"          200 "GET client bundle"
 assert_status "$BASE_URL/dist/pages/index.js.js.map"      404 "GET client bundle source map"
-assert_status "$BASE_URL/dist/server/pages/root.js"       303 "GET server bundle is not public"
-assert_status "$BASE_URL/dist/cache/pages/index.server.js" 303 "GET server cache is not public"
-assert_status "$BASE_URL/dist/manifest.json"              303 "GET build manifest is not public"
+assert_status "$BASE_URL/dist/server/pages/root.js"       404 "GET server bundle is not public"
+assert_status "$BASE_URL/dist/cache/pages/index.server.js" 404 "GET server cache is not public"
+assert_status "$BASE_URL/dist/manifest.json"              404 "GET build manifest is not public"
 
 echo ""
 echo "=== API Endpoints ==="
