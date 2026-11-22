@@ -398,8 +398,7 @@ mod tests {
     use std::sync::Once;
 
     static METACALL_INIT: Once = Once::new();
-    static METACALL_TEST_MUTEX: tokio::sync::Mutex<()> =
-        tokio::sync::Mutex::const_new(());
+    static METACALL_TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
     fn init_test_runtime() {
         METACALL_INIT.call_once(|| {
