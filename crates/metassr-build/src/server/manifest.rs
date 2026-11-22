@@ -90,6 +90,19 @@ impl Manifest {
         file.write_all(self.to_json()?.as_bytes())?;
         Ok(path)
     }
+
+    pub fn load<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Self> {
+        let manifest_filename = "manifest.json";
+        let path = PathBuf::from(path.as_ref()).join(manifest_filename);
+        let content = read_to_string(&path)
+            .map_err(|e| anyhow!("Failed to read manifest at {}: {e}", path.display()))?;
+
+        let manifest = serde_json::from_str(&content)
+            .map_err(|e| anyhow!("Failed to parse manifest at {}: {e}", path.display()))?;
+
+        Ok(manifest)
+    }
+
     pub fn get(&self, route: &str) -> Option<&ManifestEntry> {
         self.routes.get(route)
     }
@@ -97,11 +110,7 @@ impl Manifest {
 
 impl<S: AsRef<OsStr> + ?Sized> From<&S> for Manifest {
     fn from(path: &S) -> Self {
-        let manifest_filename = "manifest.json";
-        let path = PathBuf::from(path).join(manifest_filename);
-        let content = read_to_string(path).unwrap();
-
-        serde_json::from_str(&content).unwrap()
+        Self::load(path).expect("failed to load manifest")
     }
 }
 

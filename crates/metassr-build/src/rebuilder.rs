@@ -105,6 +105,13 @@ impl Rebuilder {
         self.sender.subscribe()
     }
 
+    pub fn emit(
+        &self,
+        rebuild_type: RebuildType,
+    ) -> Result<usize, broadcast::error::SendError<RebuildType>> {
+        self.sender.send(rebuild_type)
+    }
+
     pub fn building_type(&self) -> BuildingType {
         self.building_type
     }
@@ -146,16 +153,16 @@ impl Rebuilder {
 
     fn map_path_to_type(&self, path: &Path) -> Result<RebuildType> {
         let path_buf = path.to_path_buf();
-        let path_str = path.to_string_lossy(); // make path a Cow. not all filenames are valid UTF-8
+        let path_str = path.to_string_lossy();
+        let normalized = path_str.replace('\\', "/");
 
-        let rebuild_type: RebuildType = match path_str {
+        let rebuild_type: RebuildType = match normalized.as_str() {
             path if path.starts_with("src/pages") => RebuildType::Page(path_buf.clone()),
             path if path.starts_with("src/api") => RebuildType::Api(path_buf.clone()),
             path if path.starts_with("src/layout") => RebuildType::Layout,
             path if path.starts_with("src/components") => RebuildType::Component,
             path if path.starts_with("src/styles") => RebuildType::Style,
             path if path.starts_with("static") => RebuildType::Static,
-            // entered rebuilding everything if we're not sure of entered rebuilding kind
             _ => RebuildType::Layout,
         };
 
