@@ -395,6 +395,20 @@ mod tests {
     use super::*;
     use axum::Router;
     use std::fs;
+    use std::sync::Once;
+
+    static METACALL_INIT: Once = Once::new();
+    static METACALL_TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    fn init_test_runtime() {
+        METACALL_INIT.call_once(|| {
+            if !metacall::is_initialized() {
+                let destroy = metacall::initialize()
+                    .expect("Failed to initialize process-global MetaCall runtime for tests");
+                std::mem::forget(destroy);
+            }
+        });
+    }
 
     #[tokio::test]
     async fn register_api_routes_skips_when_api_dir_missing() {
@@ -473,6 +487,8 @@ mod tests {
 
     #[tokio::test]
     async fn register_api_routes_skips_failed_script() {
+        let _guard = METACALL_TEST_MUTEX.lock().await;
+        init_test_runtime();
         let tmp = tempfile::TempDir::new().unwrap();
         let root = tmp.path();
         let api_dir = root.join("src/api");
@@ -490,6 +506,8 @@ mod tests {
 
     #[tokio::test]
     async fn load_from_dir_excludes_scripts_that_fail_to_load() {
+        let _guard = METACALL_TEST_MUTEX.lock().await;
+        init_test_runtime();
         let tmp = tempfile::TempDir::new().unwrap();
         let api_dir = tmp.path();
         fs::write(api_dir.join("broken.js"), "function { invalid syntax").unwrap();

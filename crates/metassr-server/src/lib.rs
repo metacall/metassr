@@ -205,6 +205,7 @@ impl Server {
             duplicate_policy,
             &self.configs.root_path,
         )?
+        .with_rebuilder(self.configs.rebuilder.clone())
         .build()?;
 
         // Apply middleware again after PagesHandler to catch dynamic HTML
