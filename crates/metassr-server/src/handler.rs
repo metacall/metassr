@@ -20,7 +20,9 @@ use std::{
     path::{Path as FsPath, PathBuf},
     sync::{Arc, RwLock},
 };
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::broadcast;
+#[cfg(test)]
+use tokio::sync::mpsc;
 use tracing::{debug, error, info};
 
 use crate::RunningType;
@@ -44,7 +46,7 @@ pub struct PagesHandler<'a, S: Clone + Send + Sync + 'static> {
     pub duplicate_policy: DuplicateRoutesPolicy,
     pub root_path: PathBuf,
     pub rebuilder: Option<Arc<Rebuilder>>,
-    rebuild_rx: Option<broadcast::Receiver<RebuildType>>,
+    #[cfg(test)]
     reload_tx: Option<mpsc::UnboundedSender<String>>,
 }
 
@@ -90,7 +92,7 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
             duplicate_policy,
             root_path: root_path.to_path_buf(),
             rebuilder: None,
-            rebuild_rx: None,
+            #[cfg(test)]
             reload_tx: None,
         })
     }
@@ -100,11 +102,7 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
         self
     }
 
-    pub fn with_rebuild_rx(mut self, rx: broadcast::Receiver<RebuildType>) -> Self {
-        self.rebuild_rx = Some(rx);
-        self
-    }
-
+    #[cfg(test)]
     pub fn with_reload_tx(mut self, tx: mpsc::UnboundedSender<String>) -> Self {
         self.reload_tx = Some(tx);
         self
@@ -179,16 +177,14 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
             self.app.route(&route_path, get(handler));
         }
 
-        let rx_opt = self
-            .rebuild_rx
-            .take()
-            .or_else(|| self.rebuilder.as_ref().map(|r| r.subscribe()));
+        let rx_opt = self.rebuilder.as_ref().map(|r| r.subscribe());
 
         if let Some(mut rx) = rx_opt {
             let sources = Arc::new(sources);
             let dist_dir = self.dist_dir.clone();
             let running_type = self.running_type;
             let pages = self.pages.clone();
+            #[cfg(test)]
             let reload_tx = self.reload_tx.clone();
 
             tokio::spawn(async move {
@@ -228,6 +224,7 @@ impl<'a, S: Clone + Send + Sync + 'static> PagesHandler<'a, S> {
                             };
                             *guard = new_source;
                             info!("Reloaded page renderer for route: {route}");
+                            #[cfg(test)]
                             if let Some(tx) = reload_tx.as_ref() {
                                 let _ = tx.send(route);
                             }
@@ -620,7 +617,14 @@ mod tests {
         )
         .unwrap();
 
-        let (tx, rx) = broadcast::channel(16);
+        let rebuilder = Arc::new(
+            Rebuilder::new(
+                dist_dir.to_path_buf(),
+                BuildingType::StaticSiteGeneration,
+                dist_dir.to_path_buf(),
+            )
+            .unwrap(),
+        );
         let (reload_tx, mut reload_rx) = mpsc::unbounded_channel();
 
         let mut router = RouterMut::from(Router::new());
@@ -632,24 +636,26 @@ mod tests {
             dist_dir,
         )
         .unwrap()
-        .with_rebuild_rx(rx)
+        .with_rebuilder(Some(Arc::clone(&rebuilder)))
         .with_reload_tx(reload_tx);
         handler.build().unwrap();
 
         let mut app = router.app();
 
         // 1. Send BuildError, followed by a valid reload of home as a FIFO synchronization sentinel
-        tx.send(RebuildType::BuildError {
-            errors: vec!["syntax error in page".to_string()],
-        })
-        .unwrap();
+        rebuilder
+            .emit(RebuildType::BuildError {
+                errors: vec!["syntax error in page".to_string()],
+            })
+            .unwrap();
 
         fs::write(
             home_page.join("index.html"),
             "<html><body>home reloaded</body></html>",
         )
         .unwrap();
-        tx.send(RebuildType::Page(PathBuf::from("src/pages/home.tsx")))
+        rebuilder
+            .emit(RebuildType::Page(PathBuf::from("src/pages/home.tsx")))
             .unwrap();
 
         let reloaded = reload_rx.recv().await.expect("home reload expected");
@@ -668,7 +674,8 @@ mod tests {
         );
 
         // 2. Send rebuild for nonexistent route, followed by another reload of home as sentinel
-        tx.send(RebuildType::Page(PathBuf::from("src/pages/missing.tsx")))
+        rebuilder
+            .emit(RebuildType::Page(PathBuf::from("src/pages/missing.tsx")))
             .unwrap();
 
         fs::write(
@@ -676,7 +683,8 @@ mod tests {
             "<html><body>home reloaded 2</body></html>",
         )
         .unwrap();
-        tx.send(RebuildType::Page(PathBuf::from("src/pages/home.tsx")))
+        rebuilder
+            .emit(RebuildType::Page(PathBuf::from("src/pages/home.tsx")))
             .unwrap();
 
         let reloaded2 = reload_rx.recv().await.expect("home reload 2 expected");
@@ -709,7 +717,14 @@ mod tests {
         )
         .unwrap();
 
-        let (tx, rx) = broadcast::channel(16);
+        let rebuilder = Arc::new(
+            Rebuilder::new(
+                dist_dir.to_path_buf(),
+                BuildingType::StaticSiteGeneration,
+                dist_dir.to_path_buf(),
+            )
+            .unwrap(),
+        );
         let (reload_tx, mut reload_rx) = mpsc::unbounded_channel();
 
         let mut router = RouterMut::from(Router::new());
@@ -721,7 +736,7 @@ mod tests {
             dist_dir,
         )
         .unwrap()
-        .with_rebuild_rx(rx)
+        .with_rebuilder(Some(Arc::clone(&rebuilder)))
         .with_reload_tx(reload_tx);
         handler.build().unwrap();
 
@@ -742,7 +757,8 @@ mod tests {
             }));
         }
 
-        tx.send(RebuildType::Page(PathBuf::from("src/pages/index.tsx")))
+        rebuilder
+            .emit(RebuildType::Page(PathBuf::from("src/pages/index.tsx")))
             .unwrap();
 
         let reloaded = reload_rx.recv().await.expect("reload expected");
