@@ -16,15 +16,9 @@ use metassr_server::{RunningType, Server, ServerConfigs};
 use metassr_utils::ansi::ansi_regex;
 use metassr_watcher::FileWatcher;
 
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 
 use super::traits::AsyncExec;
-
-/// Directories watched by `metassr dev`.
-///
-/// Directories that do not exist are not watched, they are watched as soon as
-/// they are created. A missing directory must not stop the dev server.
-const WATCHED_DIRS: [&str; 2] = ["src", "static"];
 
 pub struct Dev {
     port: u16,
@@ -81,42 +75,17 @@ impl Dev {
     fn setup_watcher(&self) -> Result<()> {
         let mut watcher = FileWatcher::new()?;
 
-        let mut watched_dirs = Vec::new();
-        let mut pending_dirs = Vec::new();
+        // `src/` is required (the initial build above just succeeded), so a
+        // missing directory here is a genuine misconfiguration: keep it fatal.
+        // `static/` is not watched: assets are served from disk per request,
+        // so it may not exist.
+        let src_dir = self.root_path.join("src");
 
-        for dir in WATCHED_DIRS {
-            let path = self.root_path.join(dir);
+        watcher
+            .watch(&src_dir)
+            .with_context(|| format!("Failed to watch directory '{}'", src_dir.display()))?;
 
-            if !path.is_dir() {
-                info!(
-                    "Directory '{}' does not exist, it will not be watched until it is created",
-                    path.display()
-                );
-                pending_dirs.push(path);
-                continue;
-            }
-
-            watcher
-                .watch(&path)
-                .with_context(|| format!("Failed to watch directory '{}'", path.display()))?;
-            watched_dirs.push(path);
-        }
-
-        // The project root is watched (non recursively) to detect the creation
-        // of the directories that do not exist yet.
-        if !pending_dirs.is_empty() {
-            watcher
-                .watch_non_recursive(&self.root_path)
-                .with_context(|| {
-                    format!(
-                        "Failed to watch project root '{}'",
-                        self.root_path.display()
-                    )
-                })?;
-        }
-
-        *self.watched_dirs.lock().unwrap() = watched_dirs;
-        *self.pending_dirs.lock().unwrap() = pending_dirs;
+        *self.watched_dirs.lock().unwrap() = vec![src_dir];
 
         // store the watcher in the option, by modifying it with a lock on the mutex
         let mut watcher_guard = self.watcher.lock().unwrap();
@@ -331,35 +300,23 @@ mod tests {
     }
 
     #[test]
-    fn setup_watcher_succeeds_when_static_directory_is_missing() {
+    fn setup_watcher_succeeds_with_no_static_dir() {
         let root = temp_dir("missing-static");
         fs::create_dir_all(root.join("src")).unwrap();
+        // deliberately no `static/` directory
+        assert!(!root.join("static").exists());
 
         let dev = dev(root.clone());
-        dev.setup_watcher().unwrap();
+        let result = dev.setup_watcher();
 
-        // The existing directory is watched, the missing one is pending.
+        assert!(
+            result.is_ok(),
+            "setup_watcher failed without static/: {:?}",
+            result.unwrap_err()
+        );
+
         let watched = dev.watched_dirs.lock().unwrap().clone();
         assert_eq!(watched, vec![root.join("src")]);
-
-        let pending = dev.pending_dirs.lock().unwrap().clone();
-        assert_eq!(pending, vec![root.join("static")]);
-
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn setup_watcher_watches_every_existing_directory() {
-        let root = temp_dir("all-directories");
-        fs::create_dir_all(root.join("src")).unwrap();
-        fs::create_dir_all(root.join("static")).unwrap();
-
-        let dev = dev(root.clone());
-        dev.setup_watcher().unwrap();
-
-        let watched = dev.watched_dirs.lock().unwrap().clone();
-        assert_eq!(watched, vec![root.join("src"), root.join("static")]);
-        assert!(dev.pending_dirs.lock().unwrap().is_empty());
 
         let _ = fs::remove_dir_all(&root);
     }
