@@ -1,10 +1,10 @@
 use std::env::current_dir;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use tokio::sync::broadcast;
 
-use anyhow::{self, Result};
+use anyhow::{Context, Result};
 
 use crate::cli::traits::Exec;
 use crate::cli::{Builder, BuildingType};
@@ -67,11 +67,15 @@ impl Dev {
     fn setup_watcher(&self) -> Result<()> {
         let mut watcher = FileWatcher::new()?;
 
-        let src_dir = current_dir()?.join("src");
-        let static_dir = current_dir()?.join("static");
+        // `src/` is required (the initial build above just succeeded), so a
+        // missing directory here is a genuine misconfiguration: keep it fatal.
+        // `static/` is not watched: assets are served from disk per request,
+        // so it may not exist.
+        let src_dir = self.root_path.join("src");
 
-        watcher.watch(Path::new(&src_dir))?;
-        watcher.watch(Path::new(&static_dir))?;
+        watcher
+            .watch(&src_dir)
+            .with_context(|| format!("Failed to watch directory '{}'", src_dir.display()))?;
 
         // store the watcher in the option, by modifying it with a lock on the mutex
         let mut watcher_guard = self.watcher.lock().unwrap();
@@ -190,5 +194,51 @@ impl AsyncExec for Dev {
         self.start_server().await?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("metassr-dev-{name}-{}", std::process::id()));
+
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        dir
+    }
+
+    fn dev(root_path: PathBuf) -> Dev {
+        Dev::new(
+            8080,
+            8561,
+            root_path,
+            "dist".to_string(),
+            BuildingType::ServerSideRendering,
+            false,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn setup_watcher_succeeds_with_no_static_dir() {
+        let root = temp_dir("missing-static");
+        fs::create_dir_all(root.join("src")).unwrap();
+        // deliberately no `static/` directory
+        assert!(!root.join("static").exists());
+
+        let dev = dev(root.clone());
+        let result = dev.setup_watcher();
+
+        assert!(
+            result.is_ok(),
+            "setup_watcher failed without static/: {:?}",
+            result.unwrap_err()
+        );
+
+        let _ = fs::remove_dir_all(&root);
     }
 }
