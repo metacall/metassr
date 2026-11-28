@@ -25,8 +25,6 @@ pub struct Dev {
     ws_port: u16,
     // todo change this to a normal option, and edit impl asyncexec
     watcher: Arc<Mutex<Option<FileWatcher>>>,
-    /// Directories currently watched by the file watcher.
-    watched_dirs: Arc<Mutex<Vec<PathBuf>>>,
     rebuilder: Arc<Rebuilder>,
     root_path: PathBuf,
     rebuild_tx: broadcast::Sender<RebuildType>,
@@ -47,7 +45,6 @@ impl Dev {
         let (rebuild_tx, _) = broadcast::channel(100); //channel for rebuild notifications
 
         let watcher = Arc::new(Mutex::new(None)); //FileWatcher::new()?;
-        let watched_dirs = Arc::new(Mutex::new(Vec::new()));
         let rebuilder = Arc::new(Rebuilder::new(
             root_path.clone(),
             build_type,
@@ -58,7 +55,6 @@ impl Dev {
             port,
             ws_port,
             watcher,
-            watched_dirs,
             rebuilder,
             root_path,
             rebuild_tx,
@@ -81,8 +77,6 @@ impl Dev {
             .watch(&src_dir)
             .with_context(|| format!("Failed to watch directory '{}'", src_dir.display()))?;
 
-        *self.watched_dirs.lock().unwrap() = vec![src_dir];
-
         // store the watcher in the option, by modifying it with a lock on the mutex
         let mut watcher_guard = self.watcher.lock().unwrap();
         *watcher_guard = Some(watcher);
@@ -97,15 +91,9 @@ impl Dev {
 
         let rebuilder = self.rebuilder.clone();
         let rebuild_tx = self.rebuild_tx.clone();
-        let watched_dirs = self.watched_dirs.clone();
 
         tokio::spawn(async move {
             while let Ok(event) = rx.recv().await {
-                if !is_watched_event(&watched_dirs, &event.paths) {
-                    debug!("Skipping event outside of the watched directories");
-                    continue;
-                }
-
                 match rebuilder.handle_event(event) {
                     Ok(Some(rebuild_type)) => {
                         // Notify the server about what needs rebuilding
@@ -209,20 +197,6 @@ impl AsyncExec for Dev {
     }
 }
 
-/// Whether the given paths are inside one of the watched directories.
-///
-/// Events on the watched directories themselves are ignored, they carry no
-/// meaningful change.
-fn is_watched_event(watched_dirs: &Arc<Mutex<Vec<PathBuf>>>, paths: &[PathBuf]) -> bool {
-    let watched = watched_dirs.lock().unwrap();
-
-    paths.iter().any(|path| {
-        watched
-            .iter()
-            .any(|dir| path != dir && path.starts_with(dir))
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -265,29 +239,6 @@ mod tests {
             result.unwrap_err()
         );
 
-        let watched = dev.watched_dirs.lock().unwrap().clone();
-        assert_eq!(watched, vec![root.join("src")]);
-
         let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn events_outside_of_the_watched_directories_are_ignored() {
-        let watched_dirs = Arc::new(Mutex::new(vec![PathBuf::from("/project/src")]));
-
-        assert!(is_watched_event(
-            &watched_dirs,
-            &[PathBuf::from("/project/src/pages/index.tsx")]
-        ));
-        assert!(!is_watched_event(
-            &watched_dirs,
-            &[PathBuf::from("/project/package.json")]
-        ));
-        // The watched directory itself carries no meaningful change.
-        assert!(!is_watched_event(
-            &watched_dirs,
-            &[PathBuf::from("/project/src")]
-        ));
-        assert!(!is_watched_event(&watched_dirs, &[]));
     }
 }
