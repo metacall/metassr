@@ -47,16 +47,6 @@ impl FileWatcher {
         Ok(())
     }
 
-    /// Watches the given path without descending into its subdirectories.
-    ///
-    /// This is useful for detecting the creation of directories that do not
-    /// exist yet, without watching the whole project.
-    pub fn watch_non_recursive(&mut self, path: &Path) -> notify::Result<()> {
-        self.watcher.watch(path, RecursiveMode::NonRecursive)?;
-
-        Ok(())
-    }
-
     pub fn subscribe(&self) -> broadcast::Receiver<DebouncedEvent> {
         self.sender.subscribe()
     }
@@ -106,21 +96,6 @@ mod tests {
         assert!(
             result.is_ok(),
             "watch({path:?}) failed: {:?}",
-            result.unwrap_err()
-        );
-
-        let _ = fs::remove_dir_all(&path);
-    }
-
-    #[test]
-    fn watching_non_recursively_succeeds() {
-        let mut watcher = FileWatcher::new().unwrap();
-        let path = existing_path("non-recursive");
-
-        let result = watcher.watch_non_recursive(&path);
-        assert!(
-            result.is_ok(),
-            "watch_non_recursive({path:?}) failed: {:?}",
             result.unwrap_err()
         );
 
